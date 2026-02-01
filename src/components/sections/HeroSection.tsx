@@ -7,7 +7,7 @@ const HeroSection: React.FC = () => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [currentSlide, setCurrentSlide] = useState(0);
   const { scrollY } = useScroll();
-  
+
   // Parallax effects
   const y1 = useTransform(scrollY, [0, 500], [0, -150]);
   const y2 = useTransform(scrollY, [0, 500], [0, -100]);
@@ -118,7 +118,7 @@ const HeroSection: React.FC = () => {
             ease: "easeInOut" as const
           }}
         />
-        
+
         <motion.div
           className="absolute bottom-20 right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl"
           style={{ y: y2 }}
@@ -133,45 +133,8 @@ const HeroSection: React.FC = () => {
           }}
         />
 
-        {/* Floating Icons */}
-        <motion.div
-          className="absolute top-1/4 left-1/4"
-          variants={floatingVariants}
-          animate="animate"
-          style={{
-            x: mousePosition.x * 0.02,
-            y: mousePosition.y * 0.02
-          }}
-        >
-          <Sparkles className="w-8 h-8 text-primary/40" />
-        </motion.div>
-
-        <motion.div
-          className="absolute top-1/3 right-1/3"
-          variants={floatingVariants}
-          animate="animate"
-          style={{
-            x: mousePosition.x * -0.03,
-            y: mousePosition.y * -0.02
-          }}
-        >
-          <Zap className="w-6 h-6 text-primary/30" />
-        </motion.div>
-
-        <motion.div
-          className="absolute bottom-1/3 left-1/3"
-          variants={floatingVariants}
-          animate="animate"
-          style={{
-            x: mousePosition.x * 0.01,
-            y: mousePosition.y * 0.03
-          }}
-        >
-          <Star className="w-10 h-10 text-primary/20" />
-        </motion.div>
-
         {/* Grid Pattern */}
-        <div 
+        <div
           className="absolute inset-0 opacity-[0.02]"
           style={{
             backgroundImage: `
@@ -255,7 +218,7 @@ const HeroSection: React.FC = () => {
                 {slides[currentSlide].cta}
                 <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
               </Button>
-              
+
               <Button className="hero-button-outline">
                 View Collection
               </Button>
@@ -275,8 +238,8 @@ const HeroSection: React.FC = () => {
               key={index}
               onClick={() => setCurrentSlide(index)}
               className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentSlide 
-                  ? 'bg-primary w-8' 
+                index === currentSlide
+                  ? 'bg-primary w-8'
                   : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
               }`}
             />
