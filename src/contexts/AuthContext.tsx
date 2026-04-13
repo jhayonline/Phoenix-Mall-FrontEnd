@@ -3,7 +3,7 @@ import { authApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 
 interface User {
-  id: number;
+  id: string;
   email: string;
   first_name: string;
   last_name: string;
@@ -12,17 +12,19 @@ interface User {
   created_at: string;
 }
 
+interface RegisterData {
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+}
+
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (userData: {
-    email: string;
-    password: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-  }) => Promise<void>;
+  register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -53,10 +55,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (response.success) {
         setUser(response.data);
       }
-    } catch (error: any) {
-      // Not authenticated, clear user
+    } catch (error) {
       setUser(null);
-      console.log('Auth check failed (expected if not logged in):', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.log('Auth check failed (expected if not logged in):', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -73,9 +75,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Welcome back to Phoenix!",
         });
       }
-    } catch (error: any) {
-      // Show the actual error message from the API
-      const errorMessage = error.message || "Invalid email or password";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Invalid email or password";
       toast({
         title: "Login Failed",
         description: errorMessage,
@@ -87,13 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (userData: {
-    email: string;
-    password: string;
-    first_name: string;
-    last_name: string;
-    role: string;
-  }) => {
+  const register = async (userData: RegisterData) => {
     try {
       setIsLoading(true);
       const response = await authApi.register(userData);
@@ -104,9 +99,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           description: "Welcome to Phoenix! Your account has been created successfully.",
         });
       }
-    } catch (error: any) {
-      // Show the actual error message from the API
-      const errorMessage = error.message || "Something went wrong during registration";
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong during registration";
       toast({
         title: "Registration Failed",
         description: errorMessage,
@@ -126,8 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         title: "Logged Out",
         description: "You have been successfully logged out",
       });
-    } catch (error: any) {
-      // Even if the API call fails, clear local state and show success
+    } catch (error) {
       setUser(null);
       localStorage.removeItem('access_token');
       toast({
