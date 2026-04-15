@@ -5,14 +5,15 @@ import {
   ProductResponseData,
   ProductsResponse,
   UpdateProductData,
+  PaginatedProductsResponse,
 } from './types';
 
 export const productsApi = {
   async getProducts(_filters?: Record<string, unknown>): Promise<ProductsResponse> {
-    const response = await backendRequest<ProductResponseData[]>('/products/list');
+    const response = await backendRequest<PaginatedProductsResponse>('/products/list');
     return {
       success: true,
-      data: response.data,
+      data: response.data.items,
       message: 'Success'
     };
   },

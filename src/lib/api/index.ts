@@ -2,22 +2,6 @@ export { authApi } from './auth';
 export { profileApi } from './profile';
 export { productsApi } from './products';
 export { categoriesApi } from './categories';
-
-export type {
-  ApiResponse,
-  User,
-  AuthResponse,
-  CurrentUserResponse,
-  ProfileResponse,
-  StatsResponse,
-  ListingsResponse,
-  ProductsResponse,
-  ProductResponse,
-  CategoriesResponse,
-  CategoryResponse,
-  RegisterData,
-  LoginCredentials,
-  UpdateProfileData,
-  CreateProductData,
-  UpdateProductData,
-} from './types';
+export { favoritesApi } from './favorites';
+export { imagesApi } from './images';
+export type * from './types';

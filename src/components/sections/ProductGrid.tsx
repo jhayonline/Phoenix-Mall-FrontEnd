@@ -1,84 +1,161 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Heart, MapPin, Star, ShoppingCart, Grid, List } from "lucide-react";
+import { Link } from "react-router-dom";
+import { favoritesApi } from "@/lib/api";
+import type { ProductResponseData } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
-interface Product {
-  id: number;
-  name: string;
-  price: number;
+// Extended product type for frontend use
+interface ProductWithDetails extends ProductResponseData {
+  primaryImage?: string;
+  rating?: number;
+  reviews?: number;
   originalPrice?: number;
-  rating: number;
-  reviews: number;
-  image: string;
-  category: string;
-  badge?: string;
-  description: string;
-  location: string;
-  condition: string;
-  isLiked: boolean;
   discount?: number;
-  seller: string;
-  inStock: boolean;
+  seller?: string;
 }
 
 interface ProductGridProps {
-  products: Product[];
+  products: ProductWithDetails[];
   viewMode: string;
   onViewModeChange: (mode: string) => void;
+  loading?: boolean;
 }
 
-const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewModeChange }) => {
-  const [likedProducts, setLikedProducts] = useState<Set<number>>(new Set());
-  const [cartItems, setCartItems] = useState<Set<number>>(new Set());
+const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewModeChange, loading }) => {
+  const [likedProducts, setLikedProducts] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+  const { user } = useAuth();
 
-  useEffect(() => {
-    const initialLiked = new Set(products.filter((p) => p.isLiked).map((p) => p.id));
-    setLikedProducts(initialLiked);
+  // Define checkFavorites with useCallback
+  const checkFavorites = useCallback(async () => {
+    try {
+      const checks = await Promise.all(
+        products.map(async (product) => {
+          try {
+            const response = await favoritesApi.check(product.pid);
+            return { pid: product.pid, favorited: response.data.favorited };
+          } catch {
+            return { pid: product.pid, favorited: false };
+          }
+        })
+      );
+      const favoritedSet = new Set(checks.filter(c => c.favorited).map(c => c.pid));
+      setLikedProducts(favoritedSet);
+    } catch (error) {
+      console.error('Failed to check favorites:', error);
+    }
   }, [products]);
 
-  const toggleLike = (id: number) => {
-    setLikedProducts((prev) => {
-      const newSet = new Set(prev);
-      newSet.has(id) ? newSet.delete(id) : newSet.add(id);
-      return newSet;
-    });
-  };
+  // Check favorites on load
+  useEffect(() => {
+    if (user && products.length > 0) {
+      checkFavorites();
+    }
+  }, [user, products, checkFavorites]);
+  const toggleLike = async (pid: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-  const addToCart = (id: number) => {
-    setCartItems((prev) => {
-      const newSet = new Set(prev);
-      newSet.add(id);
-      return newSet;
-    });
-  };
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please login to add items to wishlist",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  const getBadgeColor = (badge: string) => {
-    switch (badge.toLowerCase()) {
-      case "new": return "bg-red-500 text-white";
-      case "bestseller": return "bg-blue-500 text-white";
-      case "sale": return "bg-green-500 text-white";
-      case "hot": return "bg-orange-500 text-white";
-      case "trending": return "bg-purple-500 text-white";
-      case "rare": return "bg-yellow-500 text-black";
-      default: return "bg-gray-200 text-gray-800";
+    try {
+      if (likedProducts.has(pid)) {
+        await favoritesApi.remove(pid);
+        setLikedProducts(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(pid);
+          return newSet;
+        });
+        toast({
+          title: "Removed",
+          description: "Item removed from wishlist",
+        });
+      } else {
+        await favoritesApi.add(pid);
+        setLikedProducts(prev => new Set([...prev, pid]));
+        toast({
+          title: "Added",
+          description: "Item added to wishlist",
+        });
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error);
+      toast({
+        title: "Error",
+        description: "Something went wrong",
+        variant: "destructive",
+      });
     }
   };
 
-  const getConditionColor = (condition: string) => {
-    return condition === "Brand New"
-      ? "bg-green-100 text-green-800"
-      : "bg-blue-100 text-blue-800";
+  const addToCart = (product: ProductWithDetails, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (product.status !== 'active') {
+      toast({
+        title: "Not Available",
+        description: "This product is not available for purchase",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Get existing cart from localStorage
+    const existingCart = localStorage.getItem('cart');
+    const cart = existingCart ? JSON.parse(existingCart) : [];
+
+    // Check if item already in cart
+    const existingIndex = cart.findIndex((item: any) => item.pid === product.pid);
+
+    if (existingIndex >= 0) {
+      cart[existingIndex].quantity += 1;
+    } else {
+      cart.push({
+        id: product.id,
+        pid: product.pid,
+        title: product.title,
+        price: product.price,
+        quantity: 1,
+        condition: product.condition,
+        location: product.location,
+        seller_id: product.seller_id,
+      });
+    }
+
+    localStorage.setItem('cart', JSON.stringify(cart));
+
+    toast({
+      title: "Added to Cart",
+      description: `${product.title} added to your cart`,
+    });
   };
 
-  const renderStars = (rating: number) => {
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'GHS'
+    }).format(amount);
+  };
+
+  const renderStars = (rating: number = 4.5) => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star
         key={i}
-        className={`w-3 h-3 ${
-          i < Math.floor(rating)
-            ? "text-yellow-400 fill-yellow-400"
-            : "text-gray-300"
-        }`}
+        className={`w-3 h-3 ${i < Math.floor(rating)
+          ? "text-yellow-400 fill-yellow-400"
+          : "text-gray-300"
+          }`}
       />
     ));
   };
@@ -92,6 +169,33 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
       default: return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4';
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex-1">
+        <div className={`grid gap-3 sm:gap-4 ${getGridCols()}`}>
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg overflow-hidden shadow-soft animate-pulse">
+              <div className="aspect-square bg-gray-200"></div>
+              <div className="p-3 space-y-2">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-5 bg-gray-200 rounded w-1/3"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (products.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center py-16">
+        <p className="text-gray-500">No products found</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1">
@@ -108,9 +212,8 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
               <button
                 key={view}
                 onClick={() => onViewModeChange(view)}
-                className={`p-2 rounded transition-colors ${
-                  viewMode === view ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+                className={`p-2 rounded transition-colors ${viewMode === view ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
               >
                 {view === '1' ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
               </button>
@@ -123,144 +226,103 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
       <div className={`grid gap-3 sm:gap-4 ${getGridCols()}`}>
         {products.map((product) => (
           <motion.div
-            key={product.id}
+            key={product.pid}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
-            className={`group relative bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-300 ${
-              viewMode === '1' ? 'flex gap-4 p-3' : 'overflow-hidden'
-            }`}
+            className={`group relative bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-300 ${viewMode === '1' ? 'flex gap-4 p-3' : 'overflow-hidden'
+              }`}
           >
-            {/* Product Image */}
-            <div className={`relative ${
-              viewMode === '1' ? 'w-24 h-24 flex-shrink-0' : 'aspect-square'
-            } overflow-hidden ${viewMode !== '1' ? 'rounded-t-lg' : 'rounded-lg'}`}>
-              <img
-                src={product.image}
-                alt={product.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              />
+            <Link to={`/product/${product.pid}`} className="block w-full">
+              {/* Product Image */}
+              <div className={`relative ${viewMode === '1' ? 'w-24 h-24 flex-shrink-0' : 'aspect-square'
+                } overflow-hidden ${viewMode !== '1' ? 'rounded-t-lg' : 'rounded-lg'}`}>
+                <img
+                  src={product.primaryImage || 'https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image'}
+                  alt={product.title}
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                />
 
-              {/* Wishlist Button */}
-              <button
-                onClick={() => toggleLike(product.id)}
-                className={`absolute top-2 right-2 p-1.5 rounded-full shadow-sm transition-all ${
-                  likedProducts.has(product.id) ? 'bg-red-500 text-white' : 'bg-white/80 text-gray-600 hover:bg-white'
-                } ${viewMode === '1' ? 'scale-75' : ''}`}
-              >
-                <Heart className={`w-3 h-3 ${likedProducts.has(product.id) ? 'fill-current' : ''}`} />
-              </button>
-
-              {/* Quick Add Button - Desktop */}
-              <button
-                onClick={() => addToCart(product.id)}
-                className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-gray-900 text-white text-xs rounded-full opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hidden sm:block ${
-                  viewMode === '1' ? 'hidden' : ''
-                }`}
-              >
-                Quick Add
-              </button>
-
-              {product.badge && (
-                <span className={`absolute top-2 left-2 px-2 py-1 ${getBadgeColor(product.badge)} text-xs font-medium rounded ${
-                  viewMode === '1' ? 'text-xs px-1.5 py-0.5' : ''
-                }`}>
-                  {product.badge}
-                </span>
-              )}
-
-              {!product.inStock && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <span className="bg-gray-900 text-white px-3 py-1.5 rounded-full font-semibold text-xs">
-                    Out of Stock
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Product Info */}
-            <div className={`${viewMode === '1' ? 'flex-1' : 'p-3'}`}>
-              <div className="flex items-start justify-between mb-1">
-                <h3 className={`font-medium text-gray-900 line-clamp-2 ${
-                  viewMode === '1' ? 'text-sm' : 'text-sm sm:text-base'
-                }`}>
-                  {product.name}
-                </h3>
-              </div>
-
-              <p className={`text-gray-500 mb-2 ${
-                viewMode === '1' ? 'text-xs' : 'text-xs sm:text-sm'
-              }`}>
-                {product.category}
-              </p>
-
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center">
-                  {renderStars(product.rating)}
-                </div>
-                <span className="text-xs text-gray-500">({product.reviews})</span>
-              </div>
-
-              <div className="flex items-center gap-1 mb-2">
-                <MapPin className="w-3 h-3 text-gray-400" />
-                <span className="text-xs text-gray-500">{product.location}</span>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className={`font-semibold text-gray-900 ${
-                    viewMode === '1' ? 'text-sm' : 'text-base'
-                  }`}>
-                    ${product.price}
-                  </span>
-                  {product.originalPrice && (
-                    <span className={`text-gray-400 line-through ${
-                      viewMode === '1' ? 'text-xs' : 'text-sm'
-                    }`}>
-                      ${product.originalPrice}
-                    </span>
-                  )}
-                </div>
-
-                {/* Mobile Add Button */}
+                {/* Wishlist Button */}
                 <button
-                  onClick={() => addToCart(product.id)}
-                  disabled={!product.inStock}
-                  className={`sm:hidden p-1.5 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed ${
-                    viewMode === '1' ? 'p-1' : ''
-                  }`}
+                  onClick={(e) => toggleLike(product.pid, e)}
+                  className={`absolute top-2 right-2 p-1.5 rounded-full shadow-sm transition-all ${likedProducts.has(product.pid) ? 'bg-red-500 text-white' : 'bg-white/80 text-gray-600 hover:bg-white'
+                    } ${viewMode === '1' ? 'scale-75' : ''}`}
                 >
-                  <ShoppingCart className={`${viewMode === '1' ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                  <Heart className={`w-3 h-3 ${likedProducts.has(product.pid) ? 'fill-current' : ''}`} />
                 </button>
+
+                {/* Quick Add Button - Desktop */}
+                <button
+                  onClick={(e) => addToCart(product, e)}
+                  className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-gray-900 text-white text-xs rounded-full opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hidden sm:flex items-center gap-1 ${viewMode === '1' ? 'hidden' : ''
+                    }`}
+                >
+                  <ShoppingCart className="w-3 h-3" />
+                  Quick Add
+                </button>
+
+                {/* Status Badge */}
+                {product.status !== 'active' && (
+                  <span className={`absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded ${viewMode === '1' ? 'text-xs px-1.5 py-0.5' : ''
+                    }`}>
+                    {product.status === 'sold' ? 'SOLD' : 'INACTIVE'}
+                  </span>
+                )}
               </div>
-            </div>
+
+              {/* Product Info */}
+              <div className={`${viewMode === '1' ? 'flex-1' : 'p-3'}`}>
+                <div className="flex items-start justify-between mb-1">
+                  <h3 className={`font-medium text-gray-900 line-clamp-2 ${viewMode === '1' ? 'text-sm' : 'text-sm sm:text-base'
+                    }`}>
+                    {product.title}
+                  </h3>
+                </div>
+
+                {product.condition && (
+                  <p className={`text-gray-500 mb-2 ${viewMode === '1' ? 'text-xs' : 'text-xs sm:text-sm'
+                    }`}>
+                    {product.condition}
+                  </p>
+                )}
+
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center">
+                    {renderStars(4.5)}
+                  </div>
+                  <span className="text-xs text-gray-500">(Coming soon)</span>
+                </div>
+
+                {product.location && (
+                  <div className="flex items-center gap-1 mb-2">
+                    <MapPin className="w-3 h-3 text-gray-400" />
+                    <span className="text-xs text-gray-500">{product.location}</span>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`font-semibold text-gray-900 ${viewMode === '1' ? 'text-sm' : 'text-base'
+                      }`}>
+                      {formatCurrency(product.price)}
+                    </span>
+                  </div>
+
+                  {/* Mobile Add Button */}
+                  <button
+                    onClick={(e) => addToCart(product, e)}
+                    disabled={product.status !== 'active'}
+                    className={`sm:hidden p-1.5 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed ${viewMode === '1' ? 'p-1' : ''
+                      }`}
+                  >
+                    <ShoppingCart className={`${viewMode === '1' ? 'w-3 h-3' : 'w-4 h-4'}`} />
+                  </button>
+                </div>
+              </div>
+            </Link>
           </motion.div>
         ))}
-      </div>
-
-      {/* Load More Button - Mobile */}
-      <div className="lg:hidden mt-6 text-center">
-        <button className="w-full py-3 bg-red-600 text-white rounded-lg font-medium hover:bg-red-800 transition-colors">
-          Load More Products
-        </button>
-      </div>
-
-      {/* Pagination - Desktop */}
-      <div className="hidden lg:flex items-center justify-center gap-2 mt-8">
-        <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900">
-          Previous
-        </button>
-        {[1, 2, 3, 4, 5].map((page) => (
-          <button
-            key={page}
-            className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            {page}
-          </button>
-        ))}
-        <button className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900">
-          Next
-        </button>
       </div>
     </div>
   );

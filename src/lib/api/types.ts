@@ -43,6 +43,14 @@ export interface StatsResponseData {
   total_views: number;
 }
 
+export interface ProductImage {
+  id: string;
+  image_url: string;
+  is_primary: boolean;
+  display_order: number;
+  created_at?: string | null;
+}
+
 // Product backend responses
 export interface ProductResponseData {
   id: string;
@@ -60,6 +68,15 @@ export interface ProductResponseData {
   views_count: number;
   created_at: string | null;
   updated_at: string | null;
+  images?: ProductImage[];
+}
+
+export interface PaginatedProductsResponse {
+  items: ProductResponseData[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
 }
 
 // Category backend responses

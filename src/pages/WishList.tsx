@@ -1,134 +1,169 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart,
-  ShoppingBag,
   Trash2,
   Share2,
   Search,
   Filter,
-  X,
   Clock,
   Eye,
   ShoppingCart,
   ChevronRight,
   ArrowRight,
-  Star,
-  TrendingUp,
   Sparkles
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import Footer from '@/components/layout/Footer';
 import { Button } from '@/components/ui/button';
+import { favoritesApi, imagesApi } from '@/lib/api';
+import type { ProductResponseData } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
-interface WishlistItem {
-  id: string;
-  name: string;
-  price: number;
-  originalPrice?: number;
-  image: string;
-  rating: number;
-  reviews: number;
-  category: string;
-  isInStock: boolean;
-  addedDate: Date;
+type FilterType = 'all' | 'viewed' | 'not-viewed';
+type SortType = 'date' | 'price' | 'name';
+
+interface WishlistItemWithDetails extends ProductResponseData {
   viewed: boolean;
+  addedDate: Date;
+  primaryImage?: string;
 }
 
 const Wishlist = () => {
-  const [wishlistItems, setWishlistItems] = useState<WishlistItem[]>([]);
-  const [filter, setFilter] = useState<'all' | 'viewed' | 'not-viewed'>('all');
-  const [sortBy, setSortBy] = useState<'date' | 'price' | 'name'>('date');
+  const [wishlistItems, setWishlistItems] = useState<WishlistItemWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<FilterType>('all');
+  const [sortBy, setSortBy] = useState<SortType>('date');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [showSortOptions, setShowSortOptions] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Sample wishlist data
-  useEffect(() => {
-    const sampleWishlist: WishlistItem[] = [
-      {
-        id: '1',
-        name: 'Minimalist Smart Watch',
-        price: 299,
-        originalPrice: 399,
-        image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=400&fit=crop',
-        rating: 4.8,
-        reviews: 124,
-        category: 'Electronics',
-        isInStock: true,
-        addedDate: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-        viewed: true
-      },
-      {
-        id: '2',
-        name: 'Luxury Leather Handbag',
-        price: 189,
-        originalPrice: 250,
-        image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400&h=400&fit=crop',
-        rating: 4.9,
-        reviews: 89,
-        category: 'Fashion',
-        isInStock: true,
-        addedDate: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 days ago
-        viewed: false
-      },
-      {
-        id: '3',
-        name: 'Professional Camera Lens',
-        price: 450,
-        originalPrice: 599,
-        image: 'https://images.unsplash.com/photo-1606983340126-99ab4feaa64a?w=400&h=400&fit=crop',
-        rating: 4.7,
-        reviews: 67,
-        category: 'Electronics',
-        isInStock: true,
-        addedDate: new Date(Date.now() - 1000 * 60 * 60 * 72), // 3 days ago
-        viewed: true
-      },
-      {
-        id: '4',
-        name: 'Designer Sunglasses',
-        price: 129,
-        originalPrice: 180,
-        image: 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=400&h=400&fit=crop',
-        rating: 4.5,
-        reviews: 156,
-        category: 'Fashion',
-        isInStock: false,
-        addedDate: new Date(Date.now() - 1000 * 60 * 60 * 96), // 4 days ago
-        viewed: false
-      },
-      {
-        id: '5',
-        name: 'Wireless Bluetooth Earbuds',
-        price: 99,
-        originalPrice: 150,
-        image: 'https://images.unsplash.com/photo-1590658268037-6bf12165a8df?w=400&h=400&fit=crop',
-        rating: 4.6,
-        reviews: 210,
-        category: 'Electronics',
-        isInStock: true,
-        addedDate: new Date(Date.now() - 1000 * 60 * 60 * 120), // 5 days ago
-        viewed: true
-      },
-      {
-        id: '6',
-        name: 'Modern Office Chair',
-        price: 250,
-        originalPrice: 300,
-        image: 'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop',
-        rating: 4.7,
-        reviews: 75,
-        category: 'Furniture',
-        isInStock: true,
-        addedDate: new Date(Date.now() - 1000 * 60 * 60 * 144), // 6 days ago
-        viewed: false
+  // Load favorites from backend
+  const loadFavorites = useCallback(async () => {
+    setLoading(true);
+    try {
+      const response = await favoritesApi.list();
+      if (response.success && response.data) {
+        // Enhance products with additional data
+        const itemsWithDetails = await Promise.all(
+          response.data.map(async (product) => {
+            // Get product images
+            let primaryImage: string | undefined;
+            try {
+              const imagesResponse = await imagesApi.getImages(product.pid);
+              if (imagesResponse.success && imagesResponse.data.length > 0) {
+                const primaryImg = imagesResponse.data.find(img => img.is_primary);
+                primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+              }
+            } catch (error) {
+              console.error('Failed to load images for product:', product.pid);
+            }
+
+            return {
+              ...product,
+              viewed: false, // Track if user has clicked on product
+              addedDate: new Date(), // Backend should provide this
+              primaryImage,
+            };
+          })
+        );
+        setWishlistItems(itemsWithDetails);
       }
-    ];
+    } catch (error) {
+      console.error('Failed to load favorites:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load wishlist items",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [toast]);
 
-    setWishlistItems(sampleWishlist);
-  }, []);
+  useEffect(() => {
+    if (user) {
+      loadFavorites();
+    }
+  }, [user, loadFavorites]);
+
+  // Remove item from wishlist
+  const removeFromWishlist = async (pid: string) => {
+    try {
+      await favoritesApi.remove(pid);
+      setWishlistItems(prev => prev.filter(item => item.pid !== pid));
+      setSelectedItems(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(pid);
+        return newSet;
+      });
+      toast({
+        title: "Removed",
+        description: "Item removed from wishlist",
+      });
+    } catch (error) {
+      console.error('Failed to remove from wishlist:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove item",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Remove all selected items
+  const removeSelected = async () => {
+    const selectedPids = Array.from(selectedItems);
+    for (const pid of selectedPids) {
+      try {
+        await favoritesApi.remove(pid);
+      } catch (error) {
+        console.error('Failed to remove:', pid);
+      }
+    }
+    setWishlistItems(prev => prev.filter(item => !selectedItems.has(item.pid)));
+    setSelectedItems(new Set());
+    toast({
+      title: "Removed",
+      description: `${selectedPids.length} items removed from wishlist`,
+    });
+  };
+
+  // Mark item as viewed (when clicked)
+  const markAsViewed = (pid: string) => {
+    setWishlistItems(prev =>
+      prev.map(item =>
+        item.pid === pid ? { ...item, viewed: true } : item
+      )
+    );
+  };
+
+  // Toggle item selection
+  const toggleSelection = (pid: string) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(pid)) {
+        newSet.delete(pid);
+      } else {
+        newSet.add(pid);
+      }
+      return newSet;
+    });
+  };
+
+  // Select all items
+  const selectAll = () => {
+    setSelectedItems(new Set(filteredItems.map(item => item.pid)));
+  };
+
+  // Clear selection
+  const clearSelection = () => {
+    setSelectedItems(new Set());
+  };
 
   // Filter items based on current filter
   const filteredItems = wishlistItems.filter(item => {
@@ -136,8 +171,8 @@ const Wishlist = () => {
       (filter === 'viewed' && item.viewed) ||
       (filter === 'not-viewed' && !item.viewed);
 
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.category.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (item.condition?.toLowerCase() || '').includes(searchQuery.toLowerCase());
 
     return matchesFilter && matchesSearch;
   });
@@ -149,59 +184,15 @@ const Wishlist = () => {
     } else if (sortBy === 'price') {
       return b.price - a.price;
     } else {
-      return a.name.localeCompare(b.name);
+      return a.title.localeCompare(b.title);
     }
   });
 
-  // Remove item from wishlist
-  const removeFromWishlist = (id: string) => {
-    setWishlistItems(prev => prev.filter(item => item.id !== id));
-    setSelectedItems(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(id);
-      return newSet;
-    });
-  };
-
-  // Remove all selected items
-  const removeSelected = () => {
-    setWishlistItems(prev => prev.filter(item => !selectedItems.has(item.id)));
-    setSelectedItems(new Set());
-  };
-
-  // Toggle item selection
-  const toggleSelection = (id: string) => {
-    setSelectedItems(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
-    });
-  };
-
-  // Select all items
-  const selectAll = () => {
-    setSelectedItems(new Set(filteredItems.map(item => item.id)));
-  };
-
-  // Clear selection
-  const clearSelection = () => {
-    setSelectedItems(new Set());
-  };
-
-  // Calculate total savings
-  const totalSavings = wishlistItems.reduce((total, item) => {
-    return total + (item.originalPrice ? item.originalPrice - item.price : 0);
-  }, 0);
-
-  // Format currency
+  // Format currency (GHS)
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
-      currency: 'USD'
+      currency: 'GHS'
     }).format(amount);
   };
 
@@ -217,6 +208,19 @@ const Wishlist = () => {
 
     return date.toLocaleDateString();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+        <Footer />
+        <MobileBottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -238,7 +242,7 @@ const Wishlist = () => {
               <div>
                 <h1 className="text-3xl font-bold font-heading">My Wishlist</h1>
                 <p className="text-gray-600">
-                  {wishlistItems.length} items • Saved {formatCurrency(totalSavings)}
+                  {wishlistItems.length} items
                 </p>
               </div>
             </div>
@@ -266,14 +270,16 @@ const Wishlist = () => {
                 </>
               ) : (
                 <>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={selectAll}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-200"
-                  >
-                    Select all
-                  </motion.button>
+                  {wishlistItems.length > 0 && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={selectAll}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-200"
+                    >
+                      Select all
+                    </motion.button>
+                  )}
                   <motion.button
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
@@ -292,7 +298,7 @@ const Wishlist = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+          className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8"
         >
           <div className="bg-white rounded-xl p-4 shadow-soft flex items-center">
             <div className="p-3 bg-blue-100 rounded-lg mr-4">
@@ -301,16 +307,6 @@ const Wishlist = () => {
             <div>
               <p className="text-sm text-gray-600">Total Items</p>
               <p className="text-xl font-bold">{wishlistItems.length}</p>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl p-4 shadow-soft flex items-center">
-            <div className="p-3 bg-green-100 rounded-lg mr-4">
-              <TrendingUp className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Savings</p>
-              <p className="text-xl font-bold">{formatCurrency(totalSavings)}</p>
             </div>
           </div>
 
@@ -349,18 +345,17 @@ const Wishlist = () => {
               {/* Filter Buttons */}
               <div className="flex space-x-2">
                 {[
-                  { value: 'all', label: 'All' },
-                  { value: 'viewed', label: 'Viewed' },
-                  { value: 'not-viewed', label: 'Not Viewed' }
+                  { value: 'all' as const, label: 'All' },
+                  { value: 'viewed' as const, label: 'Viewed' },
+                  { value: 'not-viewed' as const, label: 'Not Viewed' }
                 ].map((option) => (
                   <button
                     key={option.value}
-                    onClick={() => setFilter(option.value as any)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                      filter === option.value
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
+                    onClick={() => setFilter(option.value)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${filter === option.value
+                      ? 'bg-blue-100 text-blue-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
                   >
                     {option.label}
                   </button>
@@ -392,21 +387,20 @@ const Wishlist = () => {
                     className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-10 overflow-hidden"
                   >
                     {[
-                      { value: 'date', label: 'Recently Added' },
-                      { value: 'price', label: 'Price: High to Low' },
-                      { value: 'name', label: 'Name: A to Z' }
+                      { value: 'date' as const, label: 'Recently Added' },
+                      { value: 'price' as const, label: 'Price: High to Low' },
+                      { value: 'name' as const, label: 'Name: A to Z' }
                     ].map((option) => (
                       <button
                         key={option.value}
                         onClick={() => {
-                          setSortBy(option.value as any);
+                          setSortBy(option.value);
                           setShowSortOptions(false);
                         }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${
-                          sortBy === option.value
-                            ? 'bg-blue-50 text-blue-600'
-                            : 'hover:bg-gray-50 text-gray-700'
-                        }`}
+                        className={`w-full text-left px-4 py-2 text-sm transition-colors ${sortBy === option.value
+                          ? 'bg-blue-50 text-blue-600'
+                          : 'hover:bg-gray-50 text-gray-700'
+                          }`}
                       >
                         {option.label}
                       </button>
@@ -424,7 +418,7 @@ const Wishlist = () => {
             {sortedItems.length > 0 ? (
               sortedItems.map((item, index) => (
                 <motion.div
-                  key={item.id}
+                  key={item.pid}
                   layout
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -436,26 +430,27 @@ const Wishlist = () => {
                     delay: index * 0.05
                   }}
                   className="bg-white rounded-xl shadow-soft overflow-hidden group relative"
+                  onClick={() => markAsViewed(item.pid)}
                 >
                   {/* Selection Checkbox */}
                   <div className="absolute top-3 left-3 z-10">
                     <label className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={selectedItems.has(item.id)}
-                        onChange={() => toggleSelection(item.id)}
+                        checked={selectedItems.has(item.pid)}
+                        onChange={() => toggleSelection(item.pid)}
+                        onClick={(e) => e.stopPropagation()}
                         className="hidden"
                       />
                       <motion.div
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${
-                          selectedItems.has(item.id)
-                            ? 'bg-blue-500 border-blue-500'
-                            : 'bg-white border-gray-300 group-hover:border-blue-400'
-                        }`}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-colors ${selectedItems.has(item.pid)
+                          ? 'bg-blue-500 border-blue-500'
+                          : 'bg-white border-gray-300 group-hover:border-blue-400'
+                          }`}
                       >
-                        {selectedItems.has(item.id) && (
+                        {selectedItems.has(item.pid) && (
                           <motion.svg
                             initial={{ scale: 0 }}
                             animate={{ scale: 1 }}
@@ -475,21 +470,16 @@ const Wishlist = () => {
                   <div className="relative overflow-hidden">
                     <motion.img
                       whileHover={{ scale: 1.05 }}
-                      src={item.image}
-                      alt={item.name}
+                      src={item.primaryImage || 'https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image'}
+                      alt={item.title}
                       className="w-full h-48 object-cover transition-transform duration-300"
                     />
 
                     {/* Status Badges */}
                     <div className="absolute top-3 right-3 space-y-2">
-                      {!item.isInStock && (
+                      {item.status !== 'active' && (
                         <span className="px-2 py-1 bg-gray-500 text-white text-xs rounded-full">
-                          Out of stock
-                        </span>
-                      )}
-                      {item.originalPrice && (
-                        <span className="px-2 py-1 bg-green-500 text-white text-xs rounded-full">
-                          Save {formatCurrency(item.originalPrice - item.price)}
+                          {item.status === 'sold' ? 'Sold' : 'Inactive'}
                         </span>
                       )}
                     </div>
@@ -500,7 +490,10 @@ const Wishlist = () => {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         className="p-2 bg-white rounded-full shadow-md text-gray-700 hover:text-red-500 transition-colors"
-                        onClick={() => removeFromWishlist(item.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeFromWishlist(item.pid);
+                        }}
                       >
                         <Trash2 className="w-4 h-4" />
                       </motion.button>
@@ -509,6 +502,7 @@ const Wishlist = () => {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         className="p-2 bg-white rounded-full shadow-md text-gray-700 hover:text-blue-500 transition-colors"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <ShoppingCart className="w-4 h-4" />
                       </motion.button>
@@ -518,24 +512,14 @@ const Wishlist = () => {
                   {/* Product Details */}
                   <div className="p-4">
                     <div className="flex justify-between items-start mb-2">
-                      <h3 className="font-semibold text-gray-900 line-clamp-1">{item.name}</h3>
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                        <span className="text-sm text-gray-600">{item.rating}</span>
-                        <span className="text-sm text-gray-400">({item.reviews})</span>
-                      </div>
+                      <h3 className="font-semibold text-gray-900 line-clamp-1">{item.title}</h3>
                     </div>
 
-                    <p className="text-sm text-gray-500 mb-3">{item.category}</p>
+                    <p className="text-sm text-gray-500 mb-3">{item.condition || 'N/A'}</p>
 
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <span className="font-bold text-gray-900">{formatCurrency(item.price)}</span>
-                        {item.originalPrice && (
-                          <span className="text-sm text-gray-400 line-through">
-                            {formatCurrency(item.originalPrice)}
-                          </span>
-                        )}
                       </div>
 
                       <div className="flex items-center text-xs text-gray-400">
@@ -572,7 +556,7 @@ const Wishlist = () => {
                     ? `No items found for "${searchQuery}"`
                     : 'Save your favorite items here to easily find them later.'}
                 </p>
-                <Button className="hero-button">
+                <Button className="hero-button" onClick={() => window.location.href = '/shop'}>
                   Start Shopping
                   <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
@@ -580,38 +564,6 @@ const Wishlist = () => {
             )}
           </AnimatePresence>
         </div>
-
-        {/* Recommendations Section */}
-        {wishlistItems.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-16"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold font-heading">You might also like</h2>
-              <button className="text-blue-600 font-medium flex items-center">
-                View all
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[1, 2, 3, 4].map((item) => (
-                <motion.div
-                  key={item}
-                  whileHover={{ y: -5 }}
-                  className="bg-white rounded-xl p-3 shadow-soft"
-                >
-                  <div className="h-32 bg-gray-200 rounded-lg mb-3"></div>
-                  <div className="h-4 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
       </main>
 
       <Footer />
