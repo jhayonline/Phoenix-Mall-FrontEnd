@@ -22,6 +22,7 @@ import { productsApi, imagesApi, favoritesApi } from '@/lib/api';
 import type { ProductResponseData, ProductImage } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import { cartApi } from '@/lib/api';
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -186,44 +187,33 @@ const DetailPage: React.FC = () => {
     }
   };
 
-  const addToCart = (product: ProductWithDetails, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (product.status !== 'active') {
+  const addToCart = async () => {
+    if (!product) return;
+    if (!user) {
       toast({
-        title: "Not Available",
-        description: "This product is not available for purchase",
+        title: "Login Required",
+        description: "Please login to add items to cart",
         variant: "destructive",
       });
+      navigate('/login');
       return;
     }
 
-    const existingCart = localStorage.getItem('cart');
-    const cart: CartItem[] = existingCart ? JSON.parse(existingCart) : [];
-    const existingIndex = cart.findIndex((item: CartItem) => item.pid === product.pid);
-
-    if (existingIndex >= 0) {
-      cart[existingIndex].quantity += 1;
-    } else {
-      cart.push({
-        id: product.id,
-        pid: product.pid,
-        title: product.title,
-        price: product.price,
-        quantity: 1,
-        condition: product.condition,
-        location: product.location,
-        seller_id: product.seller_id,
+    try {
+      await cartApi.addToCart(product.pid, quantity);
+      toast({
+        title: "Added to Cart",
+        description: `${quantity} × ${product.title} added to your cart`,
+      });
+      // Dispatch event to update header badge
+      window.dispatchEvent(new Event('cartUpdated'));
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add to cart",
+        variant: "destructive",
       });
     }
-
-    localStorage.setItem('cart', JSON.stringify(cart));
-
-    toast({
-      title: "Added to Cart",
-      description: `${product.title} added to your cart`,
-    });
   };
 
   const copyPhoneNumber = () => {

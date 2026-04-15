@@ -10,17 +10,59 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
+import { cartApi } from '@/lib/api';
+
+interface CartItem {
+  id: string;
+  pid: string;
+  title: string;
+  price: number;
+  quantity: number;
+  condition?: string | null;
+  location?: string | null;
+  seller_id: number;
+}
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [cartCount, setCartCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
   // Get user and logout function from AuthContext
   const { user, logout } = useAuth();
+
+  // Load cart count from localStorage
+  useEffect(() => {
+    const loadCartCount = async () => {
+      if (!user) {
+        setCartCount(0);
+        return;
+      }
+      try {
+        const response = await cartApi.getCart();
+        if (response.success && response.data) {
+          const totalItems = response.data.reduce((sum, item) => sum + item.quantity, 0);
+          setCartCount(totalItems);
+        }
+      } catch (error) {
+        console.error('Failed to load cart count:', error);
+      }
+    };
+
+    loadCartCount();
+
+    // Listen for cart updates
+    const handleCartUpdate = () => {
+      loadCartCount();
+    };
+
+    window.addEventListener('cartUpdated', handleCartUpdate);
+    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+  }, [user]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -73,8 +115,8 @@ const Header: React.FC = () => {
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 20, stiffness: 100 }}
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-            ? 'glass shadow-medium backdrop-blur-lg bg-background/80'
-            : 'bg-transparent'
+          ? 'glass shadow-medium backdrop-blur-lg bg-background/80'
+          : 'bg-transparent'
           }`}
       >
         <div className="container mx-auto px-4 py-3">
@@ -103,8 +145,8 @@ const Header: React.FC = () => {
                   <motion.a
                     href={item.path}
                     className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all ${isActive(item.path)
-                        ? 'bg-primary/10 text-primary font-medium'
-                        : 'text-foreground/80 hover:text-foreground hover:bg-accent'
+                      ? 'bg-primary/10 text-primary font-medium'
+                      : 'text-foreground/80 hover:text-foreground hover:bg-accent'
                       }`}
                     onClick={(e) => {
                       e.preventDefault();
@@ -265,7 +307,7 @@ const Header: React.FC = () => {
                         animate="animate"
                         className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
                       >
-                        3
+                        {cartCount}
                       </motion.span>
                     </motion.div>
 
@@ -351,7 +393,7 @@ const Header: React.FC = () => {
                         animate="animate"
                         className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
                       >
-                        0
+                        {cartCount}
                       </motion.span>
                     </motion.div>
                   )
@@ -456,8 +498,8 @@ const Header: React.FC = () => {
                             setIsMobileMenuOpen(false);
                           }}
                           className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium ${isActive(item.path)
-                              ? 'bg-primary/10 text-primary'
-                              : 'hover:bg-accent text-foreground/80'
+                            ? 'bg-primary/10 text-primary'
+                            : 'hover:bg-accent text-foreground/80'
                             }`}
                         >
                           {item.icon}

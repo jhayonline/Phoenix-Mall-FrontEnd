@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Heart, MapPin, Star, ShoppingCart, Grid, List } from "lucide-react";
 import { Link } from "react-router-dom";
-import { favoritesApi } from "@/lib/api";
+import { favoritesApi, cartApi } from "@/lib/api";
 import type { ProductResponseData } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -55,6 +55,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
       checkFavorites();
     }
   }, [user, products, checkFavorites]);
+
   const toggleLike = async (pid: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -98,7 +99,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
     }
   };
 
-  const addToCart = (product: ProductWithDetails, e: React.MouseEvent) => {
+  const addToCart = async (product: ProductWithDetails, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
@@ -111,34 +112,31 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
       return;
     }
 
-    // Get existing cart from localStorage
-    const existingCart = localStorage.getItem('cart');
-    const cart = existingCart ? JSON.parse(existingCart) : [];
-
-    // Check if item already in cart
-    const existingIndex = cart.findIndex((item: any) => item.pid === product.pid);
-
-    if (existingIndex >= 0) {
-      cart[existingIndex].quantity += 1;
-    } else {
-      cart.push({
-        id: product.id,
-        pid: product.pid,
-        title: product.title,
-        price: product.price,
-        quantity: 1,
-        condition: product.condition,
-        location: product.location,
-        seller_id: product.seller_id,
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please login to add items to cart",
+        variant: "destructive",
       });
+      return;
     }
 
-    localStorage.setItem('cart', JSON.stringify(cart));
-
-    toast({
-      title: "Added to Cart",
-      description: `${product.title} added to your cart`,
-    });
+    try {
+      await cartApi.addToCart(product.pid, 1);
+      toast({
+        title: "Added to Cart",
+        description: `${product.title} added to your cart`,
+      });
+      // Dispatch event to update header badge
+      window.dispatchEvent(new Event('cartUpdated'));
+    } catch (error: any) {
+      console.error('Failed to add to cart:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add to cart",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatCurrency = (amount: number) => {
