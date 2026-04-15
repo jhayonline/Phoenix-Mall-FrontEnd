@@ -1,4 +1,3 @@
-// App.tsx
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -8,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import HomePage from "./pages/HomePage";
 import NotFound from "./pages/NotFound";
 import ShopPage from "./pages/ShopPage";
 import DetailPage from "./pages/DetailPage";
@@ -43,7 +41,7 @@ const App = () => (
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/shop" element={<ShopPage />} />
-              <Route path="/detail" element={<DetailPage />} />
+              <Route path="/product/:pid" element={<DetailPage />} />
               <Route path="/shopping-bag" element={<ShoppingPage />} />
               <Route path="/messaging" element={<Messaging />} />
               <Route path="/notifications" element={<Notifications />} />
@@ -55,7 +53,6 @@ const App = () => (
 
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
 
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
