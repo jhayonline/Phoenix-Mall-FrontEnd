@@ -18,6 +18,8 @@ import Contact from "./pages/Contact";
 import Categories from "./pages/Categories";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
+import SellPage from "./pages/SellPage";
+
 
 // Admin
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -50,6 +52,7 @@ const App = () => (
               <Route path="/categories" element={<Categories />} />
               <Route path="/about" element={<About />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/sell" element={<SellPage />} />
 
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
 

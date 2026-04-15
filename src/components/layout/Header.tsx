@@ -4,7 +4,7 @@ import {
   Search, ShoppingBag, User, Menu, X, LogIn, UserPlus,
   MessageSquare, Bell, Heart, Megaphone, PlusCircle,
   LogOut, Settings, BarChart2, MessageCircle, Store,
-  Home, ShoppingCart, Grid, Info, Mail
+  Home, ShoppingCart, Grid, Info, Mail, Plus
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -41,10 +41,10 @@ const Header: React.FC = () => {
 
   const profileMenuItems = [
     { name: 'My Profile', icon: <User className="w-4 h-4" />, action: () => navigate('/profile') },
+    { name: 'My Listings', icon: <Store className="w-4 h-4" />, action: () => navigate('/profile/listings') },
     { name: 'My Orders', icon: <ShoppingBag className="w-4 h-4" />, action: () => navigate('/orders') },
     { name: 'Settings', icon: <Settings className="w-4 h-4" />, action: () => navigate('/settings') },
     { name: 'Logout', icon: <LogOut className="w-4 h-4" />, action: () => logout() },
-    { name: 'My Profile', icon: <User className="w-4 h-4" />, action: () => navigate('/profile') }
   ];
 
   // Icon variants for animation
@@ -72,11 +72,10 @@ const Header: React.FC = () => {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 20, stiffness: 100 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
             ? 'glass shadow-medium backdrop-blur-lg bg-background/80'
             : 'bg-transparent'
-        }`}
+          }`}
       >
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between lg:gap-8">
@@ -87,16 +86,6 @@ const Header: React.FC = () => {
               className="flex items-center space-x-2 cursor-pointer"
               onClick={() => navigate('/')}
             >
-              <div className="relative">
-                {/* <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
-                  className="w-8 h-8 bg-gradient-to-r from-primary to-purple-600 rounded-lg flex items-center justify-center"
-                >
-                  <span className="text-white font-bold text-lg">P</span>
-                </motion.div> */}
-              </div>
               <span className="text-xl font-bold font-heading bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                 PhoeniX Mall
               </span>
@@ -113,11 +102,10 @@ const Header: React.FC = () => {
                 >
                   <motion.a
                     href={item.path}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all ${
-                      isActive(item.path)
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all ${isActive(item.path)
                         ? 'bg-primary/10 text-primary font-medium'
                         : 'text-foreground/80 hover:text-foreground hover:bg-accent'
-                    }`}
+                      }`}
                     onClick={(e) => {
                       e.preventDefault();
                       navigate(item.path);
@@ -191,6 +179,17 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-3">
                 {user ? (
                   <>
+                    {/* SELL BUTTON - Plus icon for posting products */}
+                    <motion.div
+                      variants={iconVariants}
+                      whileHover="hover"
+                      whileTap="tap"
+                      className="relative p-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md hover:shadow-lg transition-all cursor-pointer hidden md:block"
+                      onClick={() => navigate('/sell')}
+                    >
+                      <Plus className="w-5 h-5" />
+                    </motion.div>
+
                     {/* Messaging */}
                     <motion.div
                       variants={iconVariants}
@@ -251,27 +250,13 @@ const Header: React.FC = () => {
                       <Megaphone className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                     </motion.div>
 
-                    {/* Sell - Only for sellers */}
-                    {user.role === 'seller' && (
-                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="hidden md:block">
-                        <Button
-                          size="sm"
-                          onClick={() => navigate('/sell')}
-                          className="flex items-center space-x-1.5 rounded-full bg-gradient-to-r from-primary to-purple-600"
-                        >
-                          <PlusCircle className="w-4 h-4" />
-                          <span>Sell</span>
-                        </Button>
-                      </motion.div>
-                    )}
-
                     {/* Cart */}
                     <motion.div
                       variants={iconVariants}
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full hover:bg-accent cursor-pointer group"
-                      onClick={() => navigate('/cart')}
+                      onClick={() => navigate('/shopping-bag')}
                     >
                       <ShoppingBag className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       <motion.span
@@ -357,7 +342,7 @@ const Header: React.FC = () => {
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full hover:bg-accent cursor-pointer group"
-                      onClick={() => navigate('/cart')}
+                      onClick={() => navigate('/shopping-bag')}
                     >
                       <ShoppingBag className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       <motion.span
@@ -444,10 +429,9 @@ const Header: React.FC = () => {
                         transition={{ delay: 0.1 }}
                         className="flex items-center space-x-2"
                       >
-                        <div className="w-8 h-8 bg-gradient-to-r from-primary to-purple-600 rounded-lg flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">P</span>
-                        </div>
-                        <span className="text-xl font-bold font-heading">PhoeniX Mall</span>
+                        <span className="text-xl font-bold font-heading bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                          PhoeniX Mall
+                        </span>
                       </motion.div>
 
                       <motion.button
@@ -471,17 +455,34 @@ const Header: React.FC = () => {
                             navigate(item.path);
                             setIsMobileMenuOpen(false);
                           }}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium ${
-                            isActive(item.path)
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium ${isActive(item.path)
                               ? 'bg-primary/10 text-primary'
                               : 'hover:bg-accent text-foreground/80'
-                          }`}
+                            }`}
                         >
                           {item.icon}
                           <span>{item.name}</span>
                         </motion.button>
                       ))}
                     </div>
+
+                    {/* Sell button in mobile menu */}
+                    {user && (
+                      <div className="pt-4 border-t border-border/50">
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            navigate('/sell');
+                            setIsMobileMenuOpen(false);
+                          }}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium"
+                        >
+                          <Plus className="w-5 h-5" />
+                          <span>Sell an Item</span>
+                        </motion.button>
+                      </div>
+                    )}
 
                     {/* Auth buttons in mobile menu */}
                     {!user && (

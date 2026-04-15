@@ -1,4 +1,5 @@
-import { backendRequest } from './client';
+import { backendRequest, getImageUrl } from './client';
+import type { ProductImage } from './types';
 
 export interface ProductImage {
   id: string;
@@ -7,13 +8,31 @@ export interface ProductImage {
   display_order: number;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5150/api';
+const API_BASE_URL_WITHOUT_API = API_BASE_URL.replace('/api', '');
+
 export const imagesApi = {
+  async getImages(productPid: string): Promise<{ success: boolean; data: ProductImage[]; message: string }> {
+    const response = await backendRequest<ProductImage[]>(`/products/${productPid}/images`);
+    // Transform image URLs to full URLs
+    const imagesWithFullUrls = response.data.map(img => ({
+      ...img,
+      image_url: getImageUrl(img.image_url)
+    }));
+    return {
+      success: true,
+      data: imagesWithFullUrls,
+      message: 'Success'
+    };
+  },
+
+  // Also update the upload response
   async upload(productPid: string, file: File): Promise<{ success: boolean; data: ProductImage; message: string }> {
     const formData = new FormData();
     formData.append('image', file);
 
     const token = localStorage.getItem('access_token');
-    const url = `${import.meta.env.VITE_API_BASE_URL}/products/${productPid}/images`;
+    const url = `${API_BASE_URL_WITHOUT_API}/api/products/${productPid}/images`;
 
     const response = await fetch(url, {
       method: 'POST',
@@ -31,17 +50,11 @@ export const imagesApi = {
     const data = await response.json();
     return {
       success: true,
-      data,
+      data: {
+        ...data,
+        image_url: getImageUrl(data.image_url)
+      },
       message: 'Image uploaded'
-    };
-  },
-
-  async getImages(productPid: string): Promise<{ success: boolean; data: ProductImage[]; message: string }> {
-    const response = await backendRequest<ProductImage[]>(`/products/${productPid}/images`);
-    return {
-      success: true,
-      data: response.data,
-      message: 'Success'
     };
   },
 

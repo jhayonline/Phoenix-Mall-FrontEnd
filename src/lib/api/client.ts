@@ -1,6 +1,7 @@
 import { ApiResponse } from './types';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5150/api';
+const API_BASE_URL_WITHOUT_API = API_BASE_URL.replace('/api', '');
 
 export async function backendRequest<T>(
   endpoint: string,
@@ -33,3 +34,11 @@ export async function backendRequest<T>(
     message: 'Success'
   };
 }
+
+export const getImageUrl = (path: string): string => {
+  if (!path) return '';
+  if (path.startsWith('http')) return path;
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `${API_BASE_URL_WITHOUT_API}/${cleanPath}`;
+};
