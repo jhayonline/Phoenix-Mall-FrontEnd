@@ -11,9 +11,9 @@ import {
   X,
   Camera,
   Settings,
-  Plus,
-  Trash2,
-  Star
+  Heart,
+  Package,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,70 +21,60 @@ import { Textarea } from '@/components/ui/textarea';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+import { profileApi } from '@/lib/api';
 
 const Profile: React.FC = () => {
-  const { profile, isLoading, updateProfile, updateAvatar, addAddress, updateAddress, deleteAddress, setDefaultAddress, updateSettings } = useProfile();
+  const { profile, isLoading, updateProfile } = useProfile();
   const { user: authUser } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     first_name: '',
     last_name: '',
     phone: '',
-    date_of_birth: '',
-    gender: '',
-    bio: ''
+    location: '',
+    whatsapp_enabled: false,
+    phone_enabled: false,
   });
 
-  const [showAddAddress, setShowAddAddress] = useState(false);
-  const [newAddress, setNewAddress] = useState({
-    label: '',
-    recipient_name: '',
-    phone: '',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    state: '',
-    country: 'Ghana',
-    postal_code: '',
-    is_default: false
-  });
-
-  const [editSettings, setEditSettings] = useState(false);
-  const [settingsData, setSettingsData] = useState({
-    email_notifications: true,
-    sms_notifications: false,
-    newsletter_subscription: true,
-    two_factor_auth: false,
-    language: 'en',
-    currency: 'GHS'
+  const [stats, setStats] = useState({
+    total_listings: 0,
+    active_listings: 0,
+    sold_listings: 0,
+    total_views: 0,
   });
 
   // Initialize edit data when profile loads
   React.useEffect(() => {
-    if (profile?.user) {
+    if (profile) {
       setEditData({
-        first_name: profile.user.first_name || '',
-        last_name: profile.user.last_name || '',
-        phone: profile.user.phone || '',
-        date_of_birth: profile.user.date_of_birth || '',
-        gender: profile.user.gender || '',
-        bio: profile.user.bio || ''
+        first_name: profile.first_name || '',
+        last_name: profile.last_name || '',
+        phone: profile.phone || '',
+        location: profile.location || '',
+        whatsapp_enabled: profile.whatsapp_enabled || false,
+        phone_enabled: profile.phone_enabled || false,
       });
-
-      if (profile.settings) {
-        setSettingsData({
-          email_notifications: profile.settings.email_notifications ?? true,
-          sms_notifications: profile.settings.sms_notifications ?? false,
-          newsletter_subscription: profile.settings.newsletter_subscription ?? true,
-          two_factor_auth: profile.settings.two_factor_auth ?? false,
-          language: profile.settings.language || 'en',
-          currency: profile.settings.currency || 'GHS'
-        });
-      }
     }
   }, [profile]);
+
+  // Load stats
+  React.useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const response = await profileApi.getStats();
+        if (response.success && response.data) {
+          setStats(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    };
+    loadStats();
+  }, []);
 
   const handleSaveProfile = async () => {
     try {
@@ -102,52 +92,22 @@ const Profile: React.FC = () => {
       // For now, we'll just use a placeholder URL
       const avatarUrl = URL.createObjectURL(file);
       try {
-        await updateAvatar(avatarUrl);
+        await updateProfile({ avatar_url: avatarUrl });
       } catch (error) {
         // Error handling is done in the context
       }
     }
   };
 
-  const handleAddAddress = async () => {
-    try {
-      await addAddress(newAddress);
-      setShowAddAddress(false);
-      setNewAddress({
-        label: '',
-        recipient_name: '',
-        phone: '',
-        address_line1: '',
-        address_line2: '',
-        city: '',
-        state: '',
-        country: 'Ghana',
-        postal_code: '',
-        is_default: false
-      });
-    } catch (error) {
-      // Error handling is done in the context
-    }
-  };
-
-  const handleSaveSettings = async () => {
-    try {
-      await updateSettings(settingsData);
-      setEditSettings(false);
-    } catch (error) {
-      // Error handling is done in the context
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  if (!profile || !profile.user) {
+  if (!profile) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -158,10 +118,10 @@ const Profile: React.FC = () => {
     );
   }
 
-  const { user } = profile;
+  const fullName = `${profile.first_name} ${profile.last_name}`.trim();
 
   return (
-    <div className="min-h-screen bg-background py-8">
+    <div className="min-h-screen bg-gray-50 py-8 pt-24">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
         <motion.div
@@ -170,7 +130,7 @@ const Profile: React.FC = () => {
           className="text-center mb-8"
         >
           <h1 className="text-3xl font-bold font-heading mb-2">My Profile</h1>
-          <p className="text-muted-foreground">Manage your personal information and preferences</p>
+          <p className="text-gray-600">Manage your personal information and preferences</p>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -180,23 +140,23 @@ const Profile: React.FC = () => {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.1 }}
-              className="bg-card rounded-2xl shadow-soft border border-border p-6"
+              className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6"
             >
               {/* Avatar Section */}
               <div className="text-center mb-6">
                 <div className="relative inline-block mb-4">
-                  <div className="w-24 h-24 rounded-full bg-gradient-primary flex items-center justify-center text-white text-2xl font-bold mx-auto">
-                    {user.avatar_url ? (
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold mx-auto">
+                    {profile.avatar_url ? (
                       <img
-                        src={user.avatar_url}
+                        src={profile.avatar_url}
                         alt="Profile"
                         className="w-full h-full rounded-full object-cover"
                       />
                     ) : (
-                      <User className="w-12 h-12" />
+                      <span>{profile.first_name?.charAt(0) || profile.email?.charAt(0)}</span>
                     )}
                   </div>
-                  <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary/90 transition-colors">
+                  <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-gray-900 text-white p-2 rounded-full cursor-pointer hover:bg-gray-800 transition-colors">
                     <Camera className="w-4 h-4" />
                     <input
                       id="avatar-upload"
@@ -207,38 +167,79 @@ const Profile: React.FC = () => {
                     />
                   </label>
                 </div>
-                <h2 className="text-xl font-semibold">
-                  {user.first_name} {user.last_name}
-                </h2>
-                <p className="text-muted-foreground">{user.email}</p>
-                <p className="text-sm text-primary mt-1 capitalize">{user.role}</p>
+                <h2 className="text-xl font-semibold">{fullName || 'User'}</h2>
+                <p className="text-gray-600">{profile.email}</p>
+                <p className="text-sm text-blue-600 mt-1 capitalize">{profile.role}</p>
+                {profile.email_verified ? (
+                  <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Verified</span>
+                ) : (
+                  <span className="inline-block mt-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Not Verified</span>
+                )}
               </div>
 
               {/* Basic Info */}
-              <div className="space-y-3">
+              <div className="space-y-3 pt-4 border-t border-gray-200">
                 <div className="flex items-center text-sm">
-                  <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
-                  <span>{user.email}</span>
+                  <Mail className="w-4 h-4 mr-2 text-gray-500" />
+                  <span>{profile.email}</span>
                 </div>
-                {user.phone && (
+                {profile.phone && (
                   <div className="flex items-center text-sm">
-                    <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <span>{user.phone}</span>
+                    <Phone className="w-4 h-4 mr-2 text-gray-500" />
+                    <span>{profile.phone}</span>
                   </div>
                 )}
-                {user.date_of_birth && (
+                {profile.location && (
                   <div className="flex items-center text-sm">
-                    <Calendar className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <span>{new Date(user.date_of_birth).toLocaleDateString()}</span>
+                    <MapPin className="w-4 h-4 mr-2 text-gray-500" />
+                    <span>{profile.location}</span>
                   </div>
                 )}
-                {user.gender && (
-                  <div className="flex items-center text-sm">
-                    <User className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <span className="capitalize">{user.gender}</span>
-                  </div>
-                )}
+                <div className="flex items-center text-sm">
+                  <Calendar className="w-4 h-4 mr-2 text-gray-500" />
+                  <span>Joined {new Date(profile.created_at).toLocaleDateString()}</span>
+                </div>
               </div>
+            </motion.div>
+
+            {/* Stats Cards */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15 }}
+              className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6 mt-6"
+            >
+              <h3 className="font-semibold text-gray-900 mb-4">Statistics</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm text-gray-600">Total Listings</span>
+                  </div>
+                  <span className="font-semibold">{stats.total_listings}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-green-600" />
+                    <span className="text-sm text-gray-600">Total Views</span>
+                  </div>
+                  <span className="font-semibold">{stats.total_views}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Heart className="w-4 h-4 text-red-600" />
+                    <span className="text-sm text-gray-600">Active Listings</span>
+                  </div>
+                  <span className="font-semibold">{stats.active_listings}</span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full mt-4"
+                onClick={() => navigate('/profile/listings')}
+              >
+                View My Listings
+              </Button>
             </motion.div>
           </div>
 
@@ -249,7 +250,7 @@ const Profile: React.FC = () => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="bg-card rounded-2xl shadow-soft border border-border p-6"
+              className="bg-white rounded-2xl shadow-soft border border-gray-200 p-6"
             >
               <div className="flex items-center justify-between mb-6">
                 <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -268,7 +269,7 @@ const Profile: React.FC = () => {
                     <Button
                       size="sm"
                       onClick={handleSaveProfile}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 bg-gray-900 hover:bg-gray-800"
                     >
                       <Save className="w-4 h-4" />
                       Save
@@ -304,321 +305,48 @@ const Profile: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Phone</label>
+                  <label className="text-sm font-medium mb-2 block">Phone Number</label>
                   <Input
                     value={editData.phone}
                     onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
                     disabled={!isEditing}
+                    placeholder="Enter your phone number (e.g., 024XXXXXXX)"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Date of Birth</label>
+                  <label className="text-sm font-medium mb-2 block">Location</label>
                   <Input
-                    type="date"
-                    value={editData.date_of_birth}
-                    onChange={(e) => setEditData({ ...editData, date_of_birth: e.target.value })}
+                    value={editData.location}
+                    onChange={(e) => setEditData({ ...editData, location: e.target.value })}
                     disabled={!isEditing}
+                    placeholder="Enter your location (e.g., Accra, Kumasi)"
                   />
-                </div>
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Gender</label>
-                  <select
-                    value={editData.gender}
-                    onChange={(e) => setEditData({ ...editData, gender: e.target.value })}
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                  >
-                    <option value="">Select Gender</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
                 </div>
               </div>
 
               <div className="mt-4">
-                <label className="text-sm font-medium mb-2 block">Bio</label>
-                <Textarea
-                  value={editData.bio}
-                  onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
-                  disabled={!isEditing}
-                  rows={3}
-                  placeholder="Tell us a bit about yourself..."
-                />
-              </div>
-            </motion.div>
-
-            {/* Addresses Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-card rounded-2xl shadow-soft border border-border p-6"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold">Addresses</h3>
-                <Button
-                  size="sm"
-                  onClick={() => setShowAddAddress(true)}
-                  className="flex items-center gap-2"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add Address
-                </Button>
-              </div>
-
-              {showAddAddress && (
-                <div className="mb-6 p-4 border border-border rounded-lg bg-muted/20">
-                  <h4 className="font-medium mb-4">Add New Address</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <Input
-                      placeholder="Label (e.g., Home, Work)"
-                      value={newAddress.label}
-                      onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Recipient Name"
-                      value={newAddress.recipient_name}
-                      onChange={(e) => setNewAddress({ ...newAddress, recipient_name: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Phone"
-                      value={newAddress.phone}
-                      onChange={(e) => setNewAddress({ ...newAddress, phone: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Address Line 1"
-                      value={newAddress.address_line1}
-                      onChange={(e) => setNewAddress({ ...newAddress, address_line1: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Address Line 2 (Optional)"
-                      value={newAddress.address_line2}
-                      onChange={(e) => setNewAddress({ ...newAddress, address_line2: e.target.value })}
-                    />
-                    <Input
-                      placeholder="City"
-                      value={newAddress.city}
-                      onChange={(e) => setNewAddress({ ...newAddress, city: e.target.value })}
-                    />
-                    <Input
-                      placeholder="State"
-                      value={newAddress.state}
-                      onChange={(e) => setNewAddress({ ...newAddress, state: e.target.value })}
-                    />
-                    <Input
-                      placeholder="Postal Code (Optional)"
-                      value={newAddress.postal_code}
-                      onChange={(e) => setNewAddress({ ...newAddress, postal_code: e.target.value })}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2 mb-4">
+                <label className="text-sm font-medium mb-2 block">Contact Preferences</label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      id="default-address"
-                      checked={newAddress.is_default}
-                      onChange={(e) => setNewAddress({ ...newAddress, is_default: e.target.checked })}
+                      checked={editData.whatsapp_enabled}
+                      onChange={(e) => setEditData({ ...editData, whatsapp_enabled: e.target.checked })}
+                      disabled={!isEditing}
                       className="w-4 h-4"
                     />
-                    <label htmlFor="default-address" className="text-sm">
-                      Set as default address
-                    </label>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button onClick={handleAddAddress}>Save Address</Button>
-                    <Button variant="outline" onClick={() => setShowAddAddress(false)}>
-                      Cancel
-                    </Button>
-                  </div>
-                </div>
-              )}
-
-              {(!profile.addresses || profile.addresses.length === 0) ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  <MapPin className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>No addresses added yet</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {profile.addresses.map((address) => (
-                    <div key={address.id} className="border border-border rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{address.label}</h4>
-                            {address.is_default && (
-                              <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                                <Star className="w-3 h-3 fill-primary" />
-                                Default
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{address.recipient_name}</p>
-                        </div>
-                        <div className="flex gap-2">
-                          {!address.is_default && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDefaultAddress(address.id)}
-                            >
-                              Set Default
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => deleteAddress(address.id)}
-                            className="text-destructive hover:text-destructive"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                      <p className="text-sm">{address.address_line1}</p>
-                      {address.address_line2 && (
-                        <p className="text-sm">{address.address_line2}</p>
-                      )}
-                      <p className="text-sm">
-                        {address.city}, {address.state} {address.postal_code}
-                      </p>
-                      <p className="text-sm">{address.country}</p>
-                      <p className="text-sm mt-2">{address.phone}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-
-            {/* Settings Card */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              className="bg-card rounded-2xl shadow-soft border border-border p-6"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-semibold flex items-center gap-2">
-                  <Settings className="w-5 h-5" />
-                  Settings
-                </h3>
-                {!editSettings ? (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditSettings(true)}
-                    className="flex items-center gap-2"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleSaveSettings}
-                      className="flex items-center gap-2"
-                    >
-                      <Save className="w-4 h-4" />
-                      Save
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setEditSettings(false)}
-                      className="flex items-center gap-2"
-                    >
-                      <X className="w-4 h-4" />
-                      Cancel
-                    </Button>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Email Notifications</p>
-                    <p className="text-sm text-muted-foreground">Receive updates about your orders and promotions</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={settingsData.email_notifications}
-                    onChange={(e) => setSettingsData({ ...settingsData, email_notifications: e.target.checked })}
-                    disabled={!editSettings}
-                    className="w-4 h-4"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">SMS Notifications</p>
-                    <p className="text-sm text-muted-foreground">Receive text message updates</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={settingsData.sms_notifications}
-                    onChange={(e) => setSettingsData({ ...settingsData, sms_notifications: e.target.checked })}
-                    disabled={!editSettings}
-                    className="w-4 h-4"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Newsletter Subscription</p>
-                    <p className="text-sm text-muted-foreground">Receive our weekly newsletter</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={settingsData.newsletter_subscription}
-                    onChange={(e) => setSettingsData({ ...settingsData, newsletter_subscription: e.target.checked })}
-                    disabled={!editSettings}
-                    className="w-4 h-4"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">Two-Factor Authentication</p>
-                    <p className="text-sm text-muted-foreground">Add an extra layer of security to your account</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={settingsData.two_factor_auth}
-                    onChange={(e) => setSettingsData({ ...settingsData, two_factor_auth: e.target.checked })}
-                    disabled={!editSettings}
-                    className="w-4 h-4"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Language</label>
-                    <select
-                      value={settingsData.language}
-                      onChange={(e) => setSettingsData({ ...settingsData, language: e.target.value })}
-                      disabled={!editSettings}
-                      className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                    >
-                      <option value="en">English</option>
-                      <option value="fr">French</option>
-                      <option value="es">Spanish</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Currency</label>
-                    <select
-                      value={settingsData.currency}
-                      onChange={(e) => setSettingsData({ ...settingsData, currency: e.target.value })}
-                      disabled={!editSettings}
-                      className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
-                    >
-                      <option value="GHS">GHS - Ghanaian Cedi</option>
-                      <option value="USD">USD - US Dollar</option>
-                      <option value="EUR">EUR - Euro</option>
-                    </select>
-                  </div>
+                    <span className="text-sm">Enable WhatsApp contact</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={editData.phone_enabled}
+                      onChange={(e) => setEditData({ ...editData, phone_enabled: e.target.checked })}
+                      disabled={!isEditing}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">Enable phone call contact</span>
+                  </label>
                 </div>
               </div>
             </motion.div>
