@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Sparkles, Zap, Star } from 'lucide-react';
+import { ArrowRight, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const HeroSection: React.FC = () => {
@@ -169,7 +169,7 @@ const HeroSection: React.FC = () => {
               transition={{ delay: 0.2 }}
               className="inline-flex items-center space-x-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary font-medium text-sm"
             >
-              <Sparkles className="w-4 h-4" />
+              <Flame className="w-4 h-4 mr-2" />
               <span>{slides[currentSlide].accent}</span>
             </motion.div>
 
@@ -237,11 +237,10 @@ const HeroSection: React.FC = () => {
             <button
               key={index}
               onClick={() => setCurrentSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${
-                index === currentSlide
-                  ? 'bg-primary w-8'
-                  : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-              }`}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentSlide
+                ? 'bg-primary w-8'
+                : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
+                }`}
             />
           ))}
         </motion.div>

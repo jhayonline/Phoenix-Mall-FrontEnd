@@ -1,20 +1,19 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   Flame,
-  Laptop, 
-  Smartphone, 
-  Sofa, 
-  Home, 
-  Shirt, 
-  Gem, 
-  Building, 
-  Car, 
-  Wrench, 
-  Utensils, 
-  Baby, 
-  Sparkles, 
-  Briefcase 
+  Laptop,
+  Smartphone,
+  Sofa,
+  Home,
+  Shirt,
+  Gem,
+  Building,
+  Car,
+  Wrench,
+  Utensils,
+  Baby,
+  Sparkles,
 } from 'lucide-react';
 
 const categories = [
@@ -24,105 +23,106 @@ const categories = [
     description: "Laptops, Computers, Printers etc",
     image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=400&fit=crop&crop=center",
     IconComponent: Laptop,
-    color: "from-blue-500 to-cyan-500"
+    color: "from-blue-500 to-cyan-500",
   },
   {
     id: 2,
-    name: "Mobile Phones",
-    description: "Mobile Phones, Tablets",
-    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop&crop=center",
-    IconComponent: Smartphone,
-    color: "from-purple-500 to-indigo-500"
-  },
-  {
-    id: 3,
-    name: "Furniture",
-    description: "Home & Office Furniture",
-    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
-    IconComponent: Sofa,
-    color: "from-amber-500 to-orange-500"
-  },
-  {
-    id: 4,
-    name: "Home Appliances",
-    description: "Kitchen & Home Appliances",
-    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
-    IconComponent: Home,
-    color: "from-green-500 to-emerald-500"
-  },
-  {
-    id: 5,
     name: "Fashion",
     description: "Clothing & Accessories",
     image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop&crop=center",
     IconComponent: Shirt,
-    color: "from-pink-500 to-rose-500"
+    color: "from-pink-500 to-rose-500",
   },
   {
-    id: 6,
-    name: "Jewelries",
-    description: "Rings, Necklaces & More",
-    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop&crop=center",
-    IconComponent: Gem,
-    color: "from-violet-500 to-purple-500"
-  },
-  {
-    id: 7,
-    name: "Property",
-    description: "Houses & Real Estate",
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop&crop=center",
-    IconComponent: Building,
-    color: "from-slate-500 to-gray-500"
-  },
-  {
-    id: 8,
+    id: 3,
     name: "Vehicles",
     description: "Cars, Motorcycles & More",
     image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=400&fit=crop&crop=center",
     IconComponent: Car,
-    color: "from-red-500 to-pink-500"
+    color: "from-red-500 to-pink-500",
+  },
+  {
+    id: 4,
+    name: "Home & Living",
+    description: "Home & Living",
+    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
+    IconComponent: Home,
+    color: "from-green-500 to-emerald-500",
+  },
+  {
+    id: 5,
+    name: "Mobile Phones",
+    description: "Mobile Phones, Tablets",
+    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop&crop=center",
+    IconComponent: Smartphone,
+    color: "from-purple-500 to-indigo-500",
+  },
+  {
+    id: 6,
+    name: "Furniture",
+    description: "Home & Office Furniture",
+    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
+    IconComponent: Sofa,
+    color: "from-amber-500 to-orange-500",
+  },
+  {
+    id: 7,
+    name: "Home Appliances",
+    description: "Kitchen & Home Appliances",
+    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
+    IconComponent: Home,
+    color: "from-green-500 to-emerald-500",
+  },
+  {
+    id: 8,
+    name: "Jewelries",
+    description: "Rings, Necklaces & More",
+    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop&crop=center",
+    IconComponent: Gem,
+    color: "from-violet-500 to-purple-500",
   },
   {
     id: 9,
+    name: "Property",
+    description: "Houses & Real Estate",
+    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop&crop=center",
+    IconComponent: Building,
+    color: "from-slate-500 to-gray-500",
+  },
+  {
+    id: 10,
     name: "Services",
     description: "Professional Services",
     image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=400&fit=crop&crop=center",
     IconComponent: Wrench,
-    color: "from-teal-500 to-cyan-500"
+    color: "from-teal-500 to-cyan-500",
   },
   {
-    id: 10,
+    id: 11,
     name: "Food & Agriculture",
     description: "Fresh Food & Farm Products",
     image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop&crop=center",
     IconComponent: Utensils,
-    color: "from-lime-500 to-green-500"
+    color: "from-lime-500 to-green-500",
   },
   {
-    id: 11,
+    id: 12,
     name: "Babies & Kids",
     description: "Baby Items & Kids Products",
     image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=400&fit=crop&crop=center",
     IconComponent: Baby,
-    color: "from-yellow-400 to-amber-400"
+    color: "from-yellow-400 to-amber-400",
   },
   {
-    id: 12,
+    id: 13,
     name: "Beauty & Personal Care",
     description: "Skincare & Cosmetics",
     image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&crop=center",
     IconComponent: Sparkles,
-    color: "from-fuchsia-500 to-pink-500"
+    color: "from-fuchsia-500 to-pink-500",
   },
-  {
-    id: 13,
-    name: "Jobs",
-    description: "Career Opportunities",
-    image: "https://www.fantinipelletteria.com/wp-content/uploads/2022/05/Leather-Briefcase.jpg",
-    IconComponent: Briefcase,
-    color: "from-indigo-500 to-blue-500"
-  }
 ];
+
 
 const CategoriesSection: React.FC = () => {
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
@@ -149,13 +149,13 @@ const CategoriesSection: React.FC = () => {
   };
 
   const itemVariants = {
-    hidden: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       y: 30,
       scale: 0.8
     },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       scale: 1,
       transition: {
@@ -202,12 +202,12 @@ const CategoriesSection: React.FC = () => {
             const IconComponent = category.IconComponent;
             const isImageLoaded = loadedImages.has(category.id);
             const isHovered = hoveredCategory === category.id;
-            
+
             return (
               <motion.div
                 key={category.id}
                 variants={itemVariants}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.05,
                   y: -8,
                   transition: { type: "spring", stiffness: 300, damping: 20 }
@@ -222,12 +222,12 @@ const CategoriesSection: React.FC = () => {
                 <div className="relative mb-4">
                   {/* Main Circle */}
                   <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full overflow-hidden relative bg-gray-200 dark:bg-slate-700 shadow-lg group-hover:shadow-xl transition-all duration-300">
-                    
+
                     {/* Loading State */}
                     {!isImageLoaded && (
                       <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-20 animate-pulse rounded-full`} />
                     )}
-                    
+
                     {/* Category Image */}
                     <img
                       src={category.image}
@@ -236,7 +236,7 @@ const CategoriesSection: React.FC = () => {
                       onLoad={() => handleImageLoad(category.id)}
                       loading="lazy"
                     />
-                    
+
                     {/* Hover Overlay */}
                     <AnimatePresence>
                       {isHovered && (
@@ -269,7 +269,7 @@ const CategoriesSection: React.FC = () => {
                 </div>
 
                 {/* Category Name */}
-                <motion.h3 
+                <motion.h3
                   className="text-center font-semibold text-sm sm:text-base md:text-lg text-slate-900 dark:text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-300"
                   style={{
                     backgroundImage: isHovered ? `linear-gradient(to right, ${category.color.split(' ')[1].replace('to-', '')}, ${category.color.split(' ')[2]})` : 'none'
