@@ -12,6 +12,8 @@ export interface LoginResponseData {
   pid: string;
   name: string;
   is_verified: boolean;
+  role?: string;
+  email?: string;
 }
 
 export interface CurrentUserResponseData {

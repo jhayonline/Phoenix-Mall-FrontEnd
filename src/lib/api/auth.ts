@@ -48,10 +48,10 @@ export const authApi = {
       data: {
         user: {
           id: data.pid,
-          email: credentials.email,
-          first_name: data.name.split(' ')[0] || '',
-          last_name: data.name.split(' ')[1] || '',
-          role: 'user',
+          email: data.email || credentials.email,
+          first_name: data.name?.split(' ')[0] || '',
+          last_name: data.name?.split(' ')[1] || '',
+          role: data.role || 'user',
           is_verified: data.is_verified,
           created_at: new Date().toISOString()
         },
@@ -75,8 +75,8 @@ export const authApi = {
       data: {
         id: response.data.pid,
         email: response.data.email,
-        first_name: response.data.name.split(' ')[0] || '',
-        last_name: response.data.name.split(' ')[1] || '',
+        first_name: response.data.name?.split(' ')[0] || '',
+        last_name: response.data.name?.split(' ')[1] || '',
         role: 'user',
         is_verified: false,
         created_at: new Date().toISOString()
