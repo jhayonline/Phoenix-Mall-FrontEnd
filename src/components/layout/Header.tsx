@@ -1,22 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, Heart, User, Menu, X, LogIn, UserPlus,
+  Heart, User, Menu, X, LogIn, UserPlus,
   MessageSquare, Bell, Megaphone,
   LogOut, Settings, Store,
   Home, ShoppingCart, Grid, Info, Mail, Plus, Package
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
 import { wishlistApi } from '@/lib/api';
+import SearchBar from '@/components/SearchBar';
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [wishlistCount, setWishlistCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
@@ -580,16 +579,7 @@ const Header: React.FC = () => {
             }}
             className="md:hidden mt-3 overflow-hidden"
           >
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-              <Input
-                type="text"
-                placeholder="Search products..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2.5 rounded-full bg-background/80 backdrop-blur-sm"
-              />
-            </div>
+            <SearchBar placeholder="Search products..." className="w-full" />
           </motion.div>
         </div>
       </motion.header>

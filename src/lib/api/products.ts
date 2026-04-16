@@ -113,4 +113,13 @@ export const productsApi = {
       message: 'Product marked as sold'
     };
   },
+
+  async getSearchSuggestions(searchTerm: string): Promise<{ success: boolean; data: string[]; message: string }> {
+    const response = await backendRequest<string[]>(`/products/search/suggestions?search=${encodeURIComponent(searchTerm)}`);
+    return {
+      success: true,
+      data: response.data,
+      message: 'Success'
+    };
+  },
 };

@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Search,
   X,
   SlidersHorizontal,
   ArrowUpDown,
@@ -16,6 +15,8 @@ import ProductGrid from '@/components/sections/ProductGrid';
 import { productsApi, categoriesApi, imagesApi } from '@/lib/api';
 import type { ProductResponseData, CategoryResponseData } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import SearchBar from '@/components/SearchBar';
+import { useSearchParams } from 'react-router-dom';
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -52,6 +53,7 @@ const ShopPage = () => {
   const [showSort, setShowSort] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // Load categories on mount
   useEffect(() => {
@@ -63,11 +65,17 @@ const ShopPage = () => {
     loadProducts();
   }, [selectedCategories, priceRange, sortBy, searchQuery, currentPage]);
 
+  useEffect(() => {
+    const searchFromUrl = searchParams.get('search');
+    if (searchFromUrl) {
+      setSearchQuery(searchFromUrl);
+    }
+  }, []);
+
   const loadCategories = async () => {
     try {
       const response = await categoriesApi.getAllCategories();
       if (response.success && response.data) {
-        // Get only level 1 categories for filtering
         const topLevelCategories = response.data.filter(cat => cat.level === 1);
         setCategories(topLevelCategories);
       }
@@ -84,7 +92,6 @@ const ShopPage = () => {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      // Build query params
       const params: Record<string, any> = {
         page: currentPage,
         limit: 20,
@@ -105,7 +112,6 @@ const ShopPage = () => {
       }
 
       if (selectedCategories.length > 0) {
-        // Get category slugs from selected category names
         const selectedCategoryObjects = categories.filter(cat =>
           selectedCategories.includes(cat.name)
         );
@@ -124,12 +130,10 @@ const ShopPage = () => {
       const response = await productsApi.getProducts(params);
 
       if (response.success && response.data) {
-        // Update pagination info
         if (response.pagination) {
           setPagination(response.pagination);
         }
 
-        // Enhance products with images
         const productsWithDetails = await Promise.all(
           response.data.map(async (product) => {
             let primaryImage: string | undefined;
@@ -176,9 +180,14 @@ const ShopPage = () => {
     setCurrentPage(1);
   };
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value);
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
     setCurrentPage(1);
+    if (query) {
+      setSearchParams({ search: query });
+    } else {
+      setSearchParams({});
+    }
   };
 
   const goToPage = (page: number) => {
@@ -229,16 +238,11 @@ const ShopPage = () => {
 
         {/* Mobile Search Bar */}
         <div className="lg:hidden sticky top-16 z-40 bg-white border-b border-gray-200 p-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={handleSearch}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-            />
-          </div>
+          <SearchBar
+            placeholder="Search products..."
+            onSearch={handleSearch}
+            initialValue={searchQuery}
+          />
         </div>
 
         {/* Mobile Filter/Sort Buttons */}
@@ -267,16 +271,12 @@ const ShopPage = () => {
             <div className="hidden lg:block w-64 flex-shrink-0">
               <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-24">
                 {/* Search */}
-                <div className="relative mb-6">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Search products..."
-                    value={searchQuery}
-                    onChange={handleSearch}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                  />
-                </div>
+                <SearchBar
+                  placeholder="Search products..."
+                  onSearch={handleSearch}
+                  initialValue={searchQuery}
+                  className="mb-6"
+                />
 
                 {/* Categories */}
                 <div className="mb-6">
@@ -368,8 +368,8 @@ const ShopPage = () => {
                           key={page}
                           onClick={() => goToPage(page)}
                           className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === page
-                              ? 'bg-gray-900 text-white'
-                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            ? 'bg-gray-900 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                             }`}
                         >
                           {page}
@@ -428,16 +428,11 @@ const ShopPage = () => {
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                   {/* Search */}
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                    <input
-                      type="text"
-                      placeholder="Search products..."
-                      value={searchQuery}
-                      onChange={handleSearch}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    />
-                  </div>
+                  <SearchBar
+                    placeholder="Search products..."
+                    onSearch={handleSearch}
+                    initialValue={searchQuery}
+                  />
 
                   {/* Categories */}
                   <div>
