@@ -10,15 +10,14 @@ import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import ShopPage from "./pages/ShopPage";
 import DetailPage from "./pages/DetailPage";
-import ShoppingPage from "./pages/ShoppingBag";
 import Messaging from "./pages/Messaging";
 import Notifications from "./pages/Notifications";
-import WishList from "./pages/WishList";
 import Contact from "./pages/Contact";
 import Categories from "./pages/Categories";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
 import SellPage from "./pages/SellPage";
+import WishlistPage from "./pages/WishlistPage";
 import CategoriesManagement from "./pages/admin/CategoriesManagement";
 
 // Admin
@@ -44,15 +43,14 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/shop" element={<ShopPage />} />
               <Route path="/product/:pid" element={<DetailPage />} />
-              <Route path="/shopping-bag" element={<ShoppingPage />} />
               <Route path="/messaging" element={<Messaging />} />
               <Route path="/notifications" element={<Notifications />} />
-              <Route path="/wish-list" element={<WishList />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/categories" element={<Categories />} />
               <Route path="/about" element={<About />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/sell" element={<SellPage />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
 
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/categories" element={<CategoriesManagement />} />

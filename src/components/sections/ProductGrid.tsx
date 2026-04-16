@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Heart, MapPin, Star, ShoppingCart, Grid, List } from "lucide-react";
+import { Heart, MapPin, Star, Grid, List } from "lucide-react";
 import { Link } from "react-router-dom";
-import { favoritesApi, cartApi } from "@/lib/api";
+import { favoritesApi } from "@/lib/api";
 import type { ProductResponseData } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -81,6 +81,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
           title: "Removed",
           description: "Item removed from wishlist",
         });
+        window.dispatchEvent(new Event('wishlistUpdated'));
       } else {
         await favoritesApi.add(pid);
         setLikedProducts(prev => new Set([...prev, pid]));
@@ -88,52 +89,13 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
           title: "Added",
           description: "Item added to wishlist",
         });
+        window.dispatchEvent(new Event('wishlistUpdated'));
       }
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
       toast({
         title: "Error",
         description: "Something went wrong",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const addToCart = async (product: ProductWithDetails, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (product.status !== 'active') {
-      toast({
-        title: "Not Available",
-        description: "This product is not available for purchase",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please login to add items to cart",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await cartApi.addToCart(product.pid, 1);
-      toast({
-        title: "Added to Cart",
-        description: `${product.title} added to your cart`,
-      });
-      // Dispatch event to update header badge
-      window.dispatchEvent(new Event('cartUpdated'));
-    } catch (error: any) {
-      console.error('Failed to add to cart:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add to cart",
         variant: "destructive",
       });
     }
@@ -250,16 +212,6 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
                   <Heart className={`w-3 h-3 ${likedProducts.has(product.pid) ? 'fill-current' : ''}`} />
                 </button>
 
-                {/* Quick Add Button - Desktop */}
-                <button
-                  onClick={(e) => addToCart(product, e)}
-                  className={`absolute bottom-2 left-1/2 transform -translate-x-1/2 px-3 py-1 bg-gray-900 text-white text-xs rounded-full opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hidden sm:flex items-center gap-1 ${viewMode === '1' ? 'hidden' : ''
-                    }`}
-                >
-                  <ShoppingCart className="w-3 h-3" />
-                  Quick Add
-                </button>
-
                 {/* Status Badge */}
                 {product.status?.toLowerCase() !== 'active' && (
                   <span className={`absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded ${viewMode === '1' ? 'text-xs px-1.5 py-0.5' : ''
@@ -306,16 +258,6 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
                       {formatCurrency(product.price)}
                     </span>
                   </div>
-
-                  {/* Mobile Add Button */}
-                  <button
-                    onClick={(e) => addToCart(product, e)}
-                    disabled={product.status !== 'active'}
-                    className={`sm:hidden p-1.5 bg-gray-900 text-white rounded-full hover:bg-gray-800 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed ${viewMode === '1' ? 'p-1' : ''
-                      }`}
-                  >
-                    <ShoppingCart className={`${viewMode === '1' ? 'w-3 h-3' : 'w-4 h-4'}`} />
-                  </button>
                 </div>
               </div>
             </Link>

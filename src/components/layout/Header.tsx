@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, ShoppingBag, User, Menu, X, LogIn, UserPlus,
-  MessageSquare, Bell, Heart, Megaphone,
+  Search, Heart, User, Menu, X, LogIn, UserPlus,
+  MessageSquare, Bell, Megaphone,
   LogOut, Settings, Store,
   Home, ShoppingCart, Grid, Info, Mail, Plus
 } from 'lucide-react';
@@ -10,58 +10,46 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/contexts/AuthContext';
-import { cartApi } from '@/lib/api';
-
-interface CartItem {
-  id: string;
-  pid: string;
-  title: string;
-  price: number;
-  quantity: number;
-  condition?: string | null;
-  location?: string | null;
-  seller_id: number;
-}
+import { wishlistApi } from '@/lib/api';
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [cartCount, setCartCount] = useState(0);
+  const [wishlistCount, setWishlistCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
   // Get user and logout function from AuthContext
   const { user, logout } = useAuth();
 
-  // Load cart count from localStorage
+  // Load wishlist count
   useEffect(() => {
-    const loadCartCount = async () => {
+    const loadWishlistCount = async () => {
       if (!user) {
-        setCartCount(0);
+        setWishlistCount(0);
         return;
       }
       try {
-        const response = await cartApi.getCart();
+        const response = await wishlistApi.getWishlist();
         if (response.success && response.data) {
-          const totalItems = response.data.reduce((sum, item) => sum + item.quantity, 0);
-          setCartCount(totalItems);
+          setWishlistCount(response.data.length);
         }
       } catch (error) {
-        console.error('Failed to load cart count:', error);
+        console.error('Failed to load wishlist count:', error);
       }
     };
 
-    loadCartCount();
+    loadWishlistCount();
 
-    // Listen for cart updates
-    const handleCartUpdate = () => {
-      loadCartCount();
+    // Listen for wishlist updates
+    const handleWishlistUpdate = () => {
+      loadWishlistCount();
     };
 
-    window.addEventListener('cartUpdated', handleCartUpdate);
-    return () => window.removeEventListener('cartUpdated', handleCartUpdate);
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    return () => window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
   }, [user]);
 
   useEffect(() => {
@@ -84,7 +72,7 @@ const Header: React.FC = () => {
   const profileMenuItems = [
     { name: 'My Profile', icon: <User className="w-4 h-4" />, action: () => navigate('/profile') },
     { name: 'My Listings', icon: <Store className="w-4 h-4" />, action: () => navigate('/profile/listings') },
-    { name: 'My Orders', icon: <ShoppingBag className="w-4 h-4" />, action: () => navigate('/orders') },
+    { name: 'My Wishlist', icon: <Heart className="w-4 h-4" />, action: () => navigate('/wishlist') },
     { name: 'Settings', icon: <Settings className="w-4 h-4" />, action: () => navigate('/settings') },
     { name: 'Logout', icon: <LogOut className="w-4 h-4" />, action: () => logout() },
   ];
@@ -279,17 +267,6 @@ const Header: React.FC = () => {
                       </motion.span>
                     </motion.div>
 
-                    {/* Wish List */}
-                    <motion.div
-                      variants={iconVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      className="p-2 rounded-full hover:bg-accent cursor-pointer group hidden md:block"
-                      onClick={() => navigate('/wish-list')}
-                    >
-                      <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
-                    </motion.div>
-
                     {/* Ads */}
                     <motion.div
                       variants={iconVariants}
@@ -301,22 +278,22 @@ const Header: React.FC = () => {
                       <Megaphone className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                     </motion.div>
 
-                    {/* Cart */}
+                    {/* Wishlist Button */}
                     <motion.div
                       variants={iconVariants}
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full hover:bg-accent cursor-pointer group"
-                      onClick={() => navigate('/shopping-bag')}
+                      onClick={() => navigate('/wishlist')}
                     >
-                      <ShoppingBag className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
+                      <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       <motion.span
                         variants={badgeVariants}
                         initial="initial"
                         animate="animate"
                         className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
                       >
-                        {cartCount}
+                        {wishlistCount}
                       </motion.span>
                     </motion.div>
 
@@ -386,23 +363,23 @@ const Header: React.FC = () => {
                     </div>
                   </>
                 ) : (
-                  // Show only cart for non-logged in users on non-home pages
+                  // Show only wishlist for non-logged in users on non-home pages
                   !isHome && (
                     <motion.div
                       variants={iconVariants}
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full hover:bg-accent cursor-pointer group"
-                      onClick={() => navigate('/shopping-bag')}
+                      onClick={() => navigate('/wishlist')}
                     >
-                      <ShoppingBag className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
+                      <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       <motion.span
                         variants={badgeVariants}
                         initial="initial"
                         animate="animate"
                         className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
                       >
-                        {cartCount}
+                        {wishlistCount}
                       </motion.span>
                     </motion.div>
                   )

@@ -3,7 +3,6 @@ import {
   Heart,
   MapPin,
   Star,
-  ShoppingCart,
   ChevronLeft,
   ChevronRight,
   ZoomIn,
@@ -22,7 +21,6 @@ import { productsApi, imagesApi, favoritesApi } from '@/lib/api';
 import type { ProductResponseData, ProductImage } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
-import { cartApi } from '@/lib/api';
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -31,17 +29,6 @@ interface ProductWithDetails extends ProductResponseData {
     name: string;
     phone?: string;
   };
-}
-
-interface CartItem {
-  id: string;
-  pid: string;
-  title: string;
-  price: number;
-  quantity: number;
-  condition?: string | null;
-  location?: string | null;
-  seller_id: number;
 }
 
 const DetailPage: React.FC = () => {
@@ -55,12 +42,10 @@ const DetailPage: React.FC = () => {
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [showZoom, setShowZoom] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [quantity, setQuantity] = useState(1);
   const [relatedProducts, setRelatedProducts] = useState<ProductResponseData[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Define loadProduct with useCallback
   const loadProduct = useCallback(async () => {
     setLoading(true);
     try {
@@ -109,7 +94,6 @@ const DetailPage: React.FC = () => {
     }
   }, [pid, toast]);
 
-  // Define checkFavoriteStatus with useCallback
   const checkFavoriteStatus = useCallback(async () => {
     if (!user || !product) return;
     try {
@@ -147,7 +131,6 @@ const DetailPage: React.FC = () => {
     }
   }, [product, user, checkFavoriteStatus]);
 
-  // Rest of your component remains the same...
   const toggleFavorite = async () => {
     if (!user) {
       toast({
@@ -169,6 +152,7 @@ const DetailPage: React.FC = () => {
           title: "Removed",
           description: "Item removed from wishlist",
         });
+        window.dispatchEvent(new Event('wishlistUpdated'));
       } else {
         await favoritesApi.add(product.pid);
         setIsLiked(true);
@@ -176,41 +160,13 @@ const DetailPage: React.FC = () => {
           title: "Added",
           description: "Item added to wishlist",
         });
+        window.dispatchEvent(new Event('wishlistUpdated'));
       }
     } catch (error) {
       console.error('Failed to toggle favorite:', error);
       toast({
         title: "Error",
         description: "Something went wrong",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const addToCart = async () => {
-    if (!product) return;
-    if (!user) {
-      toast({
-        title: "Login Required",
-        description: "Please login to add items to cart",
-        variant: "destructive",
-      });
-      navigate('/login');
-      return;
-    }
-
-    try {
-      await cartApi.addToCart(product.pid, quantity);
-      toast({
-        title: "Added to Cart",
-        description: `${quantity} × ${product.title} added to your cart`,
-      });
-      // Dispatch event to update header badge
-      window.dispatchEvent(new Event('cartUpdated'));
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to add to cart",
         variant: "destructive",
       });
     }
@@ -260,16 +216,6 @@ const DetailPage: React.FC = () => {
   const toggleZoom = () => {
     setZoomEnabled(!zoomEnabled);
     setShowZoom(false);
-  };
-
-  const incrementQuantity = () => {
-    setQuantity(prev => prev + 1);
-  };
-
-  const decrementQuantity = () => {
-    if (quantity > 1) {
-      setQuantity(prev => prev - 1);
-    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -329,18 +275,14 @@ const DetailPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-4 pt-24">
       </div>
 
-      {/* Rest of your JSX remains the same */}
-      {/* Main Product Content */}
       <div className="container mx-auto px-4 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Product Images - same as before */}
+          {/* Product Images */}
           <div className="relative">
             <div className="sticky top-24">
-              {/* Main Image */}
               <div
                 className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 mb-4 cursor-zoom-in"
                 onMouseMove={handleImageHover}
@@ -389,7 +331,6 @@ const DetailPage: React.FC = () => {
                 )}
               </div>
 
-              {/* Thumbnail Images */}
               {hasImages && imageList.length > 1 && (
                 <div className="grid grid-cols-4 gap-3">
                   {imageList.map((image, index) => (
@@ -434,38 +375,16 @@ const DetailPage: React.FC = () => {
               </div>
             )}
 
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Quantity</h3>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center border border-gray-300 rounded-lg">
-                  <button onClick={decrementQuantity} className="px-3 py-2 text-gray-600 hover:text-gray-900 transition-colors">-</button>
-                  <span className="px-4 py-2 text-gray-900 font-medium">{quantity}</span>
-                  <button onClick={incrementQuantity} className="px-3 py-2 text-gray-600 hover:text-gray-900 transition-colors">+</button>
-                </div>
-                <span className="text-sm text-gray-600">{product.status === 'active' ? 'In Stock' : 'Out of Stock'}</span>
-              </div>
-            </div>
-
             <div className="flex gap-3 mb-8">
               <button
-                onClick={addToCart}
-                disabled={product.status !== 'active'}
-                className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${product.status === 'active'
-                  ? 'bg-gray-900 text-white hover:bg-gray-800'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-              >
-                <ShoppingCart className="w-5 h-5" />
-                Add to Cart
-              </button>
-              <button
                 onClick={toggleFavorite}
-                className={`p-3 rounded-lg border transition-colors ${isLiked
-                  ? 'bg-red-50 border-red-200 text-red-600'
-                  : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
+                className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${isLiked
+                  ? 'bg-red-500 text-white hover:bg-red-600'
+                  : 'bg-gray-900 text-white hover:bg-gray-800'
                   }`}
               >
                 <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
+                {isLiked ? 'Saved to Wishlist' : 'Add to Wishlist'}
               </button>
               <button className="p-3 rounded-lg border border-gray-300 text-gray-600 hover:border-gray-400 transition-colors">
                 <Share2 className="w-5 h-5" />
