@@ -19,7 +19,7 @@ import Categories from "./pages/Categories";
 import About from "./pages/About";
 import Profile from "./pages/Profile";
 import SellPage from "./pages/SellPage";
-
+import CategoriesManagement from "./pages/admin/CategoriesManagement";
 
 // Admin
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -55,6 +55,7 @@ const App = () => (
               <Route path="/sell" element={<SellPage />} />
 
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
+              <Route path="/admin/categories" element={<CategoriesManagement />} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

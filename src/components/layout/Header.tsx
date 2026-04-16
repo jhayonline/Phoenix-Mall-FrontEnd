@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, ShoppingBag, User, Menu, X, LogIn, UserPlus,
-  MessageSquare, Bell, Heart, Megaphone, PlusCircle,
-  LogOut, Settings, BarChart2, MessageCircle, Store,
+  MessageSquare, Bell, Heart, Megaphone,
+  LogOut, Settings, Store,
   Home, ShoppingCart, Grid, Info, Mail, Plus
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -88,6 +88,15 @@ const Header: React.FC = () => {
     { name: 'Settings', icon: <Settings className="w-4 h-4" />, action: () => navigate('/settings') },
     { name: 'Logout', icon: <LogOut className="w-4 h-4" />, action: () => logout() },
   ];
+
+  // Add admin items conditionally
+  if (user?.role === 'admin') {
+    profileMenuItems.push({
+      name: 'Manage Categories',
+      icon: <Grid className="w-4 h-4" />,
+      action: () => navigate('/admin/categories')
+    });
+  }
 
   // Icon variants for animation
   const iconVariants = {
