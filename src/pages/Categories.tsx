@@ -244,133 +244,137 @@ const Categories: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900">
+    <div className="min-h-screen bg-gray-50">
+
       <Header />
 
-      <div className="container mx-auto px-4 py-4 pt-16">
-      </div>
+      <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
 
-      {/* Main Content */}
-      <div className="container mx-auto px-4 pb-12 py-4 pt-16">
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <div className="inline-flex items-center px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-sm font-medium mb-4">
-            <Flame className="w-4 h-4 mr-2" />
-            Browse All Categories
-          </div>
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Shop by <span className="text-red-600">Category</span>
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
-            Explore our wide range of products organized into categories for easy browsing
-          </p>
-        </motion.div>
+        <div className="container mx-auto px-4 py-4">
+        </div>
 
-        {/* Categories Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mb-16"
-        >
-          {categories.map((category) => {
-            const IconComponent = category.IconComponent;
-            const isImageLoaded = loadedImages.has(category.id);
-            const isHovered = hoveredCategory === category.id;
+        {/* Main Content */}
+        <div className="container mx-auto px-4 pb-12 py-4 pt-16">
+          {/* Header Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-center mb-12"
+          >
+            <div className="inline-flex items-center px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-sm font-medium mb-4">
+              <Flame className="w-4 h-4 mr-2" />
+              Browse All Categories
+            </div>
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              Shop by <span className="text-red-600">Category</span>
+            </h1>
+            <p className="text-lg text-gray-600 dark:text-slate-400 max-w-2xl mx-auto">
+              Explore our wide range of products organized into categories for easy browsing
+            </p>
+          </motion.div>
 
-            return (
-              <motion.div
-                key={category.id}
-                variants={itemVariants}
-                whileHover={{
-                  scale: 1.05,
-                  y: -8,
-                  transition: { type: "spring", stiffness: 300, damping: 20 }
-                }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleCategoryClick(category.name)}
-                onHoverStart={() => setHoveredCategory(category.id)}
-                onHoverEnd={() => setHoveredCategory(null)}
-                className="flex flex-col items-center cursor-pointer group"
-              >
-                {/* Circle Container */}
-                <div className="relative mb-4">
-                  {/* Main Circle */}
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden relative bg-gray-200 dark:bg-slate-700 shadow-lg group-hover:shadow-xl transition-all duration-300">
+          {/* Categories Grid */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mb-16"
+          >
+            {categories.map((category) => {
+              const IconComponent = category.IconComponent;
+              const isImageLoaded = loadedImages.has(category.id);
+              const isHovered = hoveredCategory === category.id;
 
-                    {/* Loading State */}
-                    {!isImageLoaded && (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-20 animate-pulse rounded-full`} />
-                    )}
-
-                    {/* Category Image */}
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
-                      onLoad={() => handleImageLoad(category.id)}
-                      loading="lazy"
-                    />
-
-                    {/* Hover Overlay */}
-                    <AnimatePresence>
-                      {isHovered && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-80 flex items-center justify-center rounded-full`}
-                        >
-                          <IconComponent className="w-6 h-6 md:w-8 md:h-8 text-white drop-shadow-lg" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-
-                {/* Category Name */}
-                <motion.h3
-                  className="text-center font-semibold text-sm text-gray-900 dark:text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-300 mb-1"
-                  style={{
-                    backgroundImage: isHovered ? `linear-gradient(to right, ${category.color.split(' ')[1].replace('to-', '')}, ${category.color.split(' ')[2]})` : 'none'
+              return (
+                <motion.div
+                  key={category.id}
+                  variants={itemVariants}
+                  whileHover={{
+                    scale: 1.05,
+                    y: -8,
+                    transition: { type: "spring", stiffness: 300, damping: 20 }
                   }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handleCategoryClick(category.name)}
+                  onHoverStart={() => setHoveredCategory(category.id)}
+                  onHoverEnd={() => setHoveredCategory(null)}
+                  className="flex flex-col items-center cursor-pointer group"
                 >
-                  {category.name}
-                </motion.h3>
+                  {/* Circle Container */}
+                  <div className="relative mb-4">
+                    {/* Main Circle */}
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden relative bg-gray-200 dark:bg-slate-700 shadow-lg group-hover:shadow-xl transition-all duration-300">
 
-                {/* Product Count */}
-                <p className="text-xs text-gray-500 dark:text-slate-400">
-                  {category.productCount} products
-                </p>
+                      {/* Loading State */}
+                      {!isImageLoaded && (
+                        <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-20 animate-pulse rounded-full`} />
+                      )}
 
-                {/* Category Description - Show on Hover */}
-                <AnimatePresence>
-                  {isHovered && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.2, delay: 0.1 }}
-                      className="text-xs text-gray-500 dark:text-slate-400 text-center mt-1 max-w-[100px]"
-                    >
-                      {category.description}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-      </div>
+                      {/* Category Image */}
+                      <img
+                        src={category.image}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+                        onLoad={() => handleImageLoad(category.id)}
+                        loading="lazy"
+                      />
 
-      <Footer />
+                      {/* Hover Overlay */}
+                      <AnimatePresence>
+                        {isHovered && (
+                          <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                            className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-80 flex items-center justify-center rounded-full`}
+                          >
+                            <IconComponent className="w-6 h-6 md:w-8 md:h-8 text-white drop-shadow-lg" />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+
+                  {/* Category Name */}
+                  <motion.h3
+                    className="text-center font-semibold text-sm text-gray-900 dark:text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-300 mb-1"
+                    style={{
+                      backgroundImage: isHovered ? `linear-gradient(to right, ${category.color.split(' ')[1].replace('to-', '')}, ${category.color.split(' ')[2]})` : 'none'
+                    }}
+                  >
+                    {category.name}
+                  </motion.h3>
+
+                  {/* Product Count */}
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    {category.productCount} products
+                  </p>
+
+                  {/* Category Description - Show on Hover */}
+                  <AnimatePresence>
+                    {isHovered && (
+                      <motion.p
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2, delay: 0.1 }}
+                        className="text-xs text-gray-500 dark:text-slate-400 text-center mt-1 max-w-[100px]"
+                      >
+                        {category.description}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </motion.div>
+        </div>
+
+        <Footer />
+      </section>
     </div>
   );
 };
