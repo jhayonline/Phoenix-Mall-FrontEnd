@@ -20,6 +20,7 @@ import SellPage from "./pages/SellPage";
 import WishlistPage from "./pages/WishlistPage";
 import CategoriesManagement from "./pages/admin/CategoriesManagement";
 import SellerDashboard from "./pages/SellerDashboard";
+import EditProduct from "./pages/EditProduct";
 
 // Admin
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/sell" element={<SellPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/seller/dashboard" element={<SellerDashboard />} />
+              <Route path="/edit-product/:pid" element={<EditProduct />} />
 
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/categories" element={<CategoriesManagement />} />
