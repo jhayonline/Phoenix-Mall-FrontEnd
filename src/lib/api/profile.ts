@@ -81,4 +81,13 @@ export const profileApi = {
       message: 'Success'
     };
   },
+
+  async getSellerProducts(): Promise<{ success: boolean; data: any[]; message: string }> {
+    const response = await backendRequest<any[]>('/profile/seller/products');
+    return {
+      success: true,
+      data: response.data,
+      message: 'Success'
+    };
+  },
 };

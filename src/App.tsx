@@ -19,6 +19,7 @@ import Profile from "./pages/Profile";
 import SellPage from "./pages/SellPage";
 import WishlistPage from "./pages/WishlistPage";
 import CategoriesManagement from "./pages/admin/CategoriesManagement";
+import SellerDashboard from "./pages/SellerDashboard";
 
 // Admin
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -51,6 +52,7 @@ const App = () => (
               <Route path="/profile" element={<Profile />} />
               <Route path="/sell" element={<SellPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />
+              <Route path="/seller/dashboard" element={<SellerDashboard />} />
 
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/categories" element={<CategoriesManagement />} />
