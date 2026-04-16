@@ -5,4 +5,5 @@ export { categoriesApi } from './categories';
 export { favoritesApi } from './favorites';
 export { imagesApi } from './images';
 export { wishlistApi } from './wishlist';
+export { adminApi } from './admin';
 export type * from './types';

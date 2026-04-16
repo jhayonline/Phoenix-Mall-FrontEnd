@@ -1,395 +1,477 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Package, 
-  Users, 
-  Settings, 
-  ShoppingCart,
-  Sliders,
-  Tag,
-  BarChart3,
-  Home,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  X,
-  Menu
+import {
+  Users,
+  Package,
+  ShoppingBag,
+  TrendingUp,
+  Shield,
+  UserX,
+  UserCheck,
+  Trash2,
+  Eye,
+  Loader2,
+  Search
 } from 'lucide-react';
-import AdminHeader from '@/components/layout/AdminHeader';
+import Header from '@/components/layout/Header';
+import Footer from '@/components/layout/Footer';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { adminApi } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
-// Simple line chart component
-const RevenueChart = () => {
-  const data = [30, 40, 35, 50, 49, 60, 70, 91, 125, 100, 110, 120];
-  const maxValue = Math.max(...data);
-  
-  return (
-    <div className="w-full h-64 mt-4">
-      <div className="flex items-end justify-between h-48">
-        {data.map((value, index) => (
-          <div key={index} className="flex flex-col items-center flex-1">
-            <div
-              className="w-3/4 bg-gradient-to-t from-blue-500 to-blue-300 rounded-t"
-              style={{ height: `${(value / maxValue) * 100}%` }}
-            />
-            <span className="text-xs text-gray-500 mt-1">{['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'][index]}</span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-4 text-center">
-        <p className="text-sm text-gray-600">Monthly Revenue</p>
-      </div>
-    </div>
-  );
-};
+interface User {
+  id: number;
+  pid: string;
+  email: string;
+  name: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+}
 
-const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  
-  // Mock data for the dashboard
-  const statsData = {
-    totalOrders: 3,
-    totalAmount: 481.34,
-    deliveredOrders: 0,
-    deliveredAmount: 0.00,
-    cancelledOrders: 3,
-    cancelledAmount: 481.34,
-    pendingAmount: 481.34
-  };
+interface Product {
+  id: string;
+  pid: string;
+  title: string;
+  price: number;
+  status: string;
+  seller_id: number;
+  created_at: string;
+}
 
-  const revenueData = {
-    earnings: 37802,
-    earningsChange: -0.56,
-    other: 28305,
-    otherChange: -0.56
-  };
+interface Stats {
+  total_users: number;
+  total_products: number;
+  active_products: number;
+  sold_products: number;
+}
 
-  const recentOrders = [
-    {
-      id: 1,
-      orderNo: 'ORD-001',
-      customer: 'John Doe',
-      phone: '+1234567890',
-      subtotal: 150.00,
-      tax: 15.00,
-      total: 165.00,
-      status: 'Pending',
-      orderDate: '2023-12-15',
-      totalItems: 3,
-      delivered: false
-    },
-    {
-      id: 2,
-      orderNo: 'ORD-002',
-      customer: 'Jane Smith',
-      phone: '+0987654321',
-      subtotal: 250.00,
-      tax: 25.00,
-      total: 275.00,
-      status: 'Delivered',
-      orderDate: '2023-12-14',
-      totalItems: 5,
-      delivered: true
-    },
-    {
-      id: 3,
-      orderNo: 'ORD-003',
-      customer: 'Mike Johnson',
-      phone: '+1122334455',
-      subtotal: 75.50,
-      tax: 7.55,
-      total: 83.05,
-      status: 'Cancelled',
-      orderDate: '2023-12-13',
-      totalItems: 2,
-      delivered: false
+const AdminDashboard: React.FC = () => {
+  const [stats, setStats] = useState<Stats | null>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [activeTab, setActiveTab] = useState<'stats' | 'users' | 'products'>('stats');
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [updatingUserId, setUpdatingUserId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      loadDashboard();
     }
-  ];
+  }, [user]);
 
-  const sidebarItems = [
-    { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
-    { id: 'products', name: 'Products', icon: Package },
-    { id: 'brand', name: 'Brand', icon: Tag },
-    { id: 'category', name: 'Category', icon: Sliders },
-    { id: 'order', name: 'Order', icon: ShoppingCart },
-    { id: 'slider', name: 'Slider', icon: Sliders },
-    { id: 'coupons', name: 'Coupons', icon: Tag },
-    { id: 'user', name: 'User', icon: Users },
-    { id: 'settings', name: 'Settings', icon: Settings }
-  ];
+  const loadDashboard = async () => {
+    setLoading(true);
+    try {
+      const [statsRes, usersRes, productsRes] = await Promise.all([
+        adminApi.getStats(),
+        adminApi.getUsers(),
+        adminApi.getProducts(),
+      ]);
+
+      if (statsRes.success) setStats(statsRes.data);
+      if (usersRes.success) setUsers(usersRes.data);
+      if (productsRes.success) setProducts(productsRes.data);
+    } catch (error) {
+      console.error('Failed to load dashboard:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load admin dashboard",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleUserStatus = async (userId: number, currentStatus: boolean) => {
+    setUpdatingUserId(userId);
+    try {
+      await adminApi.updateUserStatus(userId, !currentStatus);
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === userId ? { ...u, is_active: !currentStatus } : u
+        )
+      );
+      toast({
+        title: "Updated",
+        description: `User ${!currentStatus ? 'activated' : 'suspended'} successfully`,
+      });
+    } catch (error) {
+      console.error('Failed to update user status:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user status",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdatingUserId(null);
+    }
+  };
+
+  const handleUpdateRole = async (userId: number, newRole: string) => {
+    try {
+      await adminApi.updateUserRole(userId, newRole);
+      setUsers(prev =>
+        prev.map(u =>
+          u.id === userId ? { ...u, role: newRole } : u
+        )
+      );
+      toast({
+        title: "Updated",
+        description: `User role updated to ${newRole}`,
+      });
+    } catch (error) {
+      console.error('Failed to update user role:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update user role",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: number) => {
+    if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) return;
+
+    try {
+      await adminApi.deleteUser(userId);
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      toast({
+        title: "Deleted",
+        description: "User deleted successfully",
+      });
+    } catch (error) {
+      console.error('Failed to delete user:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete user",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteProduct = async (productId: string) => {
+    if (!confirm('Are you sure you want to delete this product?')) return;
+
+    setDeletingId(productId);
+    try {
+      await adminApi.deleteProduct(productId);
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      toast({
+        title: "Deleted",
+        description: "Product deleted successfully",
+      });
+    } catch (error) {
+      console.error('Failed to delete product:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete product",
+        variant: "destructive",
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const filteredUsers = users.filter(u =>
+    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const filteredProducts = products.filter(p =>
+    p.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  if (user?.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <Shield className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h1>
+            <p className="text-gray-600">You don't have permission to access this page.</p>
+          </div>
+        </div>
+        <Footer />
+        <MobileBottomNav />
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+        <Footer />
+        <MobileBottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <AdminHeader />
-      
-      <div className="flex pt-16">
-        {/* Mobile sidebar backdrop */}
-        {sidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
-          />
-        )}
+      <Header />
 
-        {/* Sidebar */}
-        <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-md transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}>
-          <div className="p-4 border-b flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-800">Admin Panel</h2>
-            <button 
-              className="lg:hidden"
-              onClick={() => setSidebarOpen(false)}
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          <nav className="p-4">
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-gray-600 uppercase mb-3">Main Home</h3>
-              <ul className="space-y-1">
-                {sidebarItems.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <li key={item.id}>
-                      <button
-                        onClick={() => {
-                          setActiveTab(item.id);
-                          setSidebarOpen(false);
-                        }}
-                        className={`w-full flex items-center px-3 py-2 rounded-lg text-left transition-colors ${
-                          activeTab === item.id
-                            ? 'bg-primary/10 text-primary font-medium'
-                            : 'text-gray-600 hover:bg-gray-100'
-                        }`}
-                      >
-                        <Icon className="w-4 h-4 mr-3" />
-                        <span>{item.name}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          </nav>
-        </aside>
+      <div className="container mx-auto px-4 py-8 pt-24">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-gray-600 mt-1">Manage users, products, and platform settings</p>
+        </div>
 
-        {/* Main Content */}
-        <main className="flex-1 p-4 lg:p-6">
-          {/* Mobile menu button */}
+        {/* Tab Navigation */}
+        <div className="flex gap-2 mb-6 border-b border-gray-200">
           <button
-            className="lg:hidden fixed bottom-4 right-4 z-50 p-3 bg-primary text-white rounded-full shadow-lg"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setActiveTab('stats')}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === 'stats' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
           >
-            <Menu className="w-6 h-6" />
+            <TrendingUp className="w-4 h-4 inline mr-2" />
+            Overview
           </button>
+          <button
+            onClick={() => setActiveTab('users')}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === 'users' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <Users className="w-4 h-4 inline mr-2" />
+            Users ({users.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`px-4 py-2 font-medium transition-colors ${activeTab === 'products' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            <Package className="w-4 h-4 inline mr-2" />
+            Products ({products.length})
+          </button>
+        </div>
 
-          {/* Header */}
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-800">Dashboard</h1>
-          </div>
-
-          {/* Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            {/* Total Orders */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600">Total Orders</h3>
-                  <p className="text-xl font-bold text-gray-800">{statsData.totalOrders}</p>
-                </div>
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <ShoppingCart className="w-4 h-4 text-blue-600" />
-                </div>
-              </div>
-              <div className="pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-600">Total Amount</p>
-                <p className="text-md font-semibold text-gray-800">${statsData.totalAmount.toFixed(2)}</p>
-              </div>
-            </motion.div>
-
-            {/* Delivered Orders */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600">Delivered Orders</h3>
-                  <p className="text-xl font-bold text-gray-800">{statsData.deliveredOrders}</p>
-                </div>
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <Package className="w-4 h-4 text-green-600" />
-                </div>
-              </div>
-              <div className="pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-600">Delivered Amount</p>
-                <p className="text-md font-semibold text-gray-800">${statsData.deliveredAmount.toFixed(2)}</p>
-              </div>
-            </motion.div>
-
-            {/* Cancelled Orders */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600">Cancelled Orders</h3>
-                  <p className="text-xl font-bold text-gray-800">{statsData.cancelledOrders}</p>
-                </div>
-                <div className="p-2 bg-red-100 rounded-lg">
-                  <ShoppingCart className="w-4 h-4 text-red-600" />
-                </div>
-              </div>
-              <div className="pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-600">Pending Amount</p>
-                <p className="text-md font-semibold text-gray-800">${statsData.pendingAmount.toFixed(2)}</p>
-              </div>
-            </motion.div>
-
-            {/* Canceled Orders Amount */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-600">Canceled Amount</h3>
-                  <p className="text-xl font-bold text-gray-800">${statsData.cancelledAmount.toFixed(2)}</p>
-                </div>
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Tag className="w-4 h-4 text-purple-600" />
-                </div>
-              </div>
-              <div className="pt-3 border-t border-gray-100">
-                <p className="text-xs text-gray-600">Total canceled value</p>
-                <p className="text-md font-semibold text-gray-800">${statsData.cancelledAmount.toFixed(2)}</p>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Revenue Section with Chart */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {/* Earnings Revenue with Chart */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-            >
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">Earnings revenue</h3>
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <p className="text-xl font-bold text-gray-800">${revenueData.earnings.toLocaleString()}</p>
-                  <p className={`text-sm flex items-center ${revenueData.earningsChange < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {revenueData.earningsChange < 0 ? (
-                      <TrendingDown className="w-4 h-4 mr-1" />
-                    ) : (
-                      <TrendingUp className="w-4 h-4 mr-1" />
-                    )}
-                    {Math.abs(revenueData.earningsChange)}%
-                  </p>
-                </div>
-              </div>
-              <RevenueChart />
-            </motion.div>
-
-            {/* Other Revenue */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white rounded-xl p-4 shadow-sm border border-gray-100"
-            >
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Other Revenue</h3>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xl font-bold text-gray-800">${revenueData.other.toLocaleString()}</p>
-                  <p className={`text-sm flex items-center ${revenueData.otherChange < 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {revenueData.otherChange < 0 ? (
-                      <TrendingDown className="w-4 h-4 mr-1" />
-                    ) : (
-                      <TrendingUp className="w-4 h-4 mr-1" />
-                    )}
-                    {Math.abs(revenueData.otherChange)}%
-                  </p>
-                </div>
-                <div className="w-16 h-16 bg-gradient-to-br from-green-100 to-green-200 rounded-full flex items-center justify-center">
-                  <Package className="w-6 h-6 text-green-600" />
-                </div>
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Recent Orders Table */}
+        {/* Stats View */}
+        {activeTab === 'stats' && stats && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"
           >
-            <div className="p-4 border-b border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-800">Recent Orders</h3>
+            <div className="bg-white rounded-xl p-6 shadow-soft">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Total Users</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.total_users}</p>
+                </div>
+                <Users className="w-10 h-10 text-blue-500" />
+              </div>
             </div>
-            
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">OrderNo</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-100">
-                  {recentOrders.map((order) => (
-                    <tr key={order.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">{order.orderNo}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{order.customer}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{order.phone}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${order.total.toFixed(2)}</td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          order.status === 'Delivered' 
-                            ? 'bg-green-100 text-green-800'
-                            : order.status === 'Cancelled'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {order.status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">{order.orderDate}</td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <div className="bg-white rounded-xl p-6 shadow-soft">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Total Products</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.total_products}</p>
+                </div>
+                <Package className="w-10 h-10 text-green-500" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-soft">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Active Products</p>
+                  <p className="text-3xl font-bold text-green-600">{stats.active_products}</p>
+                </div>
+                <ShoppingBag className="w-10 h-10 text-purple-500" />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl p-6 shadow-soft">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">Sold Products</p>
+                  <p className="text-3xl font-bold text-gray-900">{stats.sold_products}</p>
+                </div>
+                <TrendingUp className="w-10 h-10 text-orange-500" />
+              </div>
             </div>
           </motion.div>
-        </main>
+        )}
+
+        {/* Users View */}
+        {activeTab === 'users' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="mb-4">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search users..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-soft overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">User</th>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Email</th>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Role</th>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Status</th>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Joined</th>
+                      <th className="text-right px-6 py-3 text-sm font-medium text-gray-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredUsers.map((u) => (
+                      <tr key={u.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-gray-900">{u.name}</div>
+                        </td>
+                        <td className="px-6 py-4 text-gray-600">{u.email}</td>
+                        <td className="px-6 py-4">
+                          <select
+                            value={u.role}
+                            onChange={(e) => handleUpdateRole(u.id, e.target.value)}
+                            className="text-sm border border-gray-300 rounded px-2 py-1"
+                          >
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 text-xs rounded-full ${u.is_active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {u.is_active ? 'Active' : 'Suspended'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-500 text-sm">
+                          {new Date(u.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleToggleUserStatus(u.id, u.is_active)}
+                              disabled={updatingUserId === u.id}
+                              className="p-1.5 text-gray-500 hover:text-blue-600 transition-colors disabled:opacity-50"
+                              title={u.is_active ? 'Suspend' : 'Activate'}
+                            >
+                              {updatingUserId === u.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : u.is_active ? (
+                                <UserX className="w-4 h-4" />
+                              ) : (
+                                <UserCheck className="w-4 h-4" />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteUser(u.id)}
+                              className="p-1.5 text-gray-500 hover:text-red-600 transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {/* Products View */}
+        {activeTab === 'products' && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <div className="mb-4">
+              <div className="relative max-w-sm">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl shadow-soft overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Product</th>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Price</th>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Status</th>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Seller ID</th>
+                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-500">Created</th>
+                      <th className="text-right px-6 py-3 text-sm font-medium text-gray-500">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {filteredProducts.map((p) => (
+                      <tr key={p.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4">
+                          <div className="font-medium text-gray-900">{p.title}</div>
+                        </td>
+                        <td className="px-6 py-4 text-gray-600">
+                          GHS {p.price.toLocaleString()}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 text-xs rounded-full ${p.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                            }`}>
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-gray-500">#{p.seller_id}</td>
+                        <td className="px-6 py-4 text-gray-500 text-sm">
+                          {new Date(p.created_at).toLocaleDateString()}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleDeleteProduct(p.id)}
+                            disabled={deletingId === p.id}
+                            className="p-1.5 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50"
+                            title="Delete"
+                          >
+                            {deletingId === p.id ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Trash2 className="w-4 h-4" />
+                            )}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+        )}
       </div>
+
+      <Footer />
+      <MobileBottomNav />
     </div>
   );
 };
