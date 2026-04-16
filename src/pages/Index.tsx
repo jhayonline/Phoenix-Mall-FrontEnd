@@ -1,204 +1,107 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import {
+  ArrowRight,
+  TrendingUp,
+  ChevronRight,
+  Shield,
+  Truck,
+  HeadphonesIcon,
+  Award
+} from 'lucide-react';
 import Header from '@/components/layout/Header';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import HeroSection from '@/components/sections/HeroSection';
 import CategoriesSection from '@/components/sections/CategoriesSection';
 import ProductGrid from '@/components/sections/ProductGrid';
 import Footer from '@/components/layout/Footer';
-import { 
-  TrendingUp, 
-  Shield, 
-  Truck, 
-  HeadphonesIcon,
-  Star,
-  Clock,
-  Award,
-  Sparkles,
-  ChevronRight,
-  ArrowRight
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { productsApi, imagesApi } from '@/lib/api';
+import type { ProductResponseData } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
-// Mock product data to pass to ProductGrid
-const mockProducts = [
-  
-  {
-    id: 1,
-    name: "Stylish Backpack",
-    price: 130,
-    originalPrice: 160,
-    rating: 4.7,
-    reviews: 119,
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRxMR2gUh2fadsgCT2gYnGWben1nBiS-H832w&s",
-    category: "Fashion",
-    badge: "Trending",
-    description: "Durable backpack with multiple compartments for everyday use.",
-    location: "Accra, Ghana",
-    condition: "Brand New",
-    isLiked: true,
-    discount: 18,
-    seller: "Urban Gear",
-    inStock: true,
-  },
-  {
-    id: 2,
-    name: "4K Drone Camera",
-    price: 590,
-    originalPrice: 720,
-    rating: 4.8,
-    reviews: 84,
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTb35QtsAaL3k3nfVNk2tolZk7QifvoRBgd_w&s",
-    category: "Electronics",
-    badge: "Hot",
-    description: "Professional drone with 4K camera and GPS stabilization.",
-    location: "Cape Coast, Ghana",
-    condition: "Brand New",
-    isLiked: false,
-    discount: 18,
-    seller: "DroneZone",
-    inStock: true,
-  },
-  {
-    id: 3,
-    name: "Deluxe Yoga Mat",
-    price: 70,
-    originalPrice: 95,
-    rating: 4.7,
-    reviews: 132,
-    image: "https://megango.com/media/catalog/product/cache/e328e8185e7eb650e829953bde1cea67/t/p/tpe-deluxe-yoga-mat-125cm-x-61cm-x-14mm.jpg",
-    category: "Sports",
-    badge: "Bestseller",
-    description: "Thick non-slip yoga mat with carrying strap.",
-    location: "Accra, Ghana",
-    condition: "Brand New",
-    isLiked: false,
-    discount: 26,
-    seller: "FitLife GH",
-    inStock: true,
-  },
-  {
-    id: 4,
-    name: "Modern Floor Lamp",
-    price: 190,
-    originalPrice: 240,
-    rating: 4.6,
-    reviews: 92,
-    image: "https://media.istockphoto.com/id/1474563913/photo/modern-floor-lamp.jpg?s=612x612&w=0&k=20&c=IjRRD-yyIxfXLhy5TDg9MIDPi9y5yHvSGSRyFxL8P58=",
-    category: "Home Decor",
-    badge: "New",
-    description: "Elegant floor lamp with adjustable lighting settings.",
-    location: "Kumasi, Ghana",
-    condition: "Brand New",
-    isLiked: false,
-    discount: 21,
-    seller: "BrightLiving",
-    inStock: true,
-  },
-  {
-    id: 5,
-    name: "Portable Bluetooth Speaker",
-    price: 125,
-    originalPrice: 160,
-    rating: 4.8,
-    reviews: 176,
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeubwweyazZoF76slKEzChR939yaW3s9U3nw&s",
-    category: "Electronics",
-    badge: "Hot Deal",
-    description: "Waterproof speaker with powerful bass and 12-hour playtime.",
-    location: "Takoradi, Ghana",
-    condition: "Brand New",
-    isLiked: true,
-    discount: 22,
-    seller: "AudioMax",
-    inStock: true,
-  },
-  {
-    id: 6,
-    name: "Electric Kettle",
-    price: 65,
-    originalPrice: 90,
-    rating: 4.5,
-    reviews: 150,
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOZZ4gwPF5guSTtREVDP5xTmvvBJAVCOS3mg&s",
-    category: "Appliances",
-    badge: "Hot",
-    description: "1.5L stainless steel electric kettle with auto shut-off.",
-    location: "Kumasi, Ghana",
-    condition: "Brand New",
-    isLiked: true,
-    discount: 28,
-    seller: "KitchenPro",
-    inStock: true,
-  },
-  {
-    id: 7,
-    name: "Artisan Ceramic Vase",
-    price: 95,
-    originalPrice: 130,
-    rating: 4.8,
-    reviews: 54,
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRVXafS_T7SGppIipGr3M9GYtBgJ3THvUm8rg&s",
-    category: "Home Decor",
-    badge: "New Arrival",
-    description: "Handcrafted ceramic vase with unique glaze finish.",
-    location: "Tamale, Ghana",
-    condition: "Brand New",
-    isLiked: false,
-    discount: 27,
-    seller: "Artisan Hub",
-    inStock: true,
-  },
-  {
-    id: 8,
-    name: "Adjustable Standing Desk",
-    price: 450,
-    originalPrice: 520,
-    rating: 4.9,
-    reviews: 82,
-    image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRZjw2rIS5FgZgu_BgtoNxKBRKU6GQs8h3BEw&s",
-    category: "Furniture",
-    badge: "Premium",
-    description: "Height-adjustable desk with sturdy frame and modern design.",
-    location: "Accra, Ghana",
-    condition: "Brand New",
-    isLiked: true,
-    discount: 13,
-    seller: "FurniWorld",
-    inStock: true,
-  }
-];
+interface ProductWithDetails extends ProductResponseData {
+  primaryImage?: string;
+  rating?: number;
+  reviews?: number;
+  originalPrice?: number;
+  discount?: number;
+}
 
 const Index = () => {
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<string>('4'); // Default to 3-column view
+  const [featuredProducts, setFeaturedProducts] = useState<ProductWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<string>('4');
+  const { toast } = useToast();
 
-  // Featured categories for quick navigation
-  const featuredCategories = [
-    { id: 'electronics', name: 'Electronics', icon: TrendingUp, count: 145 },
-    { id: 'fashion', name: 'Fashion', icon: Sparkles, count: 289 },
-    { id: 'home', name: 'Home & Living', icon: Award, count: 167 },
-    { id: 'beauty', name: 'Beauty', icon: Star, count: 98 },
-    { id: 'sports', name: 'Sports', icon: TrendingUp, count: 134 },
-    { id: 'books', name: 'Books', icon: Clock, count: 76 },
-  ];
+  // Load featured products on mount
+  useEffect(() => {
+    loadFeaturedProducts();
+  }, []);
+
+  const loadFeaturedProducts = async () => {
+    setLoading(true);
+    try {
+      // Get newest products for featured section
+      const response = await productsApi.getProducts({ limit: 8, sort: 'newest' });
+
+      if (response.success && response.data) {
+        const productsWithDetails = await Promise.all(
+          response.data.map(async (product) => {
+            let primaryImage: string | undefined;
+
+            try {
+              const imagesResponse = await imagesApi.getImages(product.pid);
+              if (imagesResponse.success && imagesResponse.data.length > 0) {
+                const primaryImg = imagesResponse.data.find(img => img.is_primary);
+                primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+              }
+            } catch (error) {
+              console.error('Failed to load images for product:', product.pid);
+            }
+
+            return {
+              ...product,
+              primaryImage,
+              rating: 4.5,
+              reviews: Math.floor(Math.random() * 200),
+            };
+          })
+        );
+
+        setFeaturedProducts(productsWithDetails);
+      } else {
+        setFeaturedProducts([]);
+      }
+    } catch (error) {
+      console.error('Failed to load featured products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load products",
+        variant: "destructive",
+      });
+      setFeaturedProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Trust badges
   const trustBadges = [
     { icon: Shield, title: 'Secure Payments', description: '100% secure payment processing' },
-    { icon: Truck, title: 'Free Shipping', description: 'Free delivery on orders over $50' },
+    { icon: Truck, title: 'Free Shipping', description: 'Free delivery on orders over GHS 500' },
     { icon: HeadphonesIcon, title: '24/7 Support', description: 'Round-the-clock customer service' },
     { icon: Award, title: 'Quality Guarantee', description: '30-day money-back guarantee' },
   ];
 
   // Featured brands
   const featuredBrands = [
-    { name: 'Nike', logo: 'https://logos-world.net/wp-content/uploads/2020/04/Nike-Logo.png', products: 89 },
     { name: 'Apple', logo: 'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png', products: 67 },
     { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 54 },
-    { name: 'Adidas', logo: 'https://cdn.freebiesupply.com/logos/large/2x/adidas-4-logo-png-transparent.png', products: 78 },
-    { name: 'Sony', logo: 'https://cdn.freebiesupply.com/logos/large/2x/sony-2-logo-black-and-white.png', products: 45 },
-    { name: 'Dyson', logo: 'https://wp.logos-download.com/wp-content/uploads/2016/11/Dyson_logo_logotype.png?dl=', products: 32 },
+    { name: 'iPhone', logo: 'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png', products: 45 },
+    { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 32 },
+    { name: 'Tecno', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 28 },
+    { name: 'Infinix', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 24 },
   ];
 
   return (
@@ -262,11 +165,11 @@ const Index = () => {
               </p>
             </motion.div>
 
-            {/* Updated ProductGrid with required props */}
-            <ProductGrid 
-              products={mockProducts} 
-              viewMode={viewMode} 
-              onViewModeChange={setViewMode} 
+            <ProductGrid
+              products={featuredProducts}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              loading={loading}
             />
           </div>
         </section>
@@ -342,7 +245,7 @@ const Index = () => {
                   Stay <span className="text-gradient">Updated</span>
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Subscribe to our newsletter and be the first to know about new products, 
+                  Subscribe to our newsletter and be the first to know about new products,
                   exclusive deals, and special promotions
                 </p>
 
@@ -359,7 +262,7 @@ const Index = () => {
                 </div>
 
                 <p className="text-sm text-muted-foreground mt-4">
-                  By subscribing, you agree to our Privacy Policy and consent to receive 
+                  By subscribing, you agree to our Privacy Policy and consent to receive
                   updates from our company.
                 </p>
               </motion.div>

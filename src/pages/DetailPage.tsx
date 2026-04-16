@@ -331,13 +331,6 @@ const DetailPage: React.FC = () => {
 
       {/* Breadcrumb */}
       <div className="container mx-auto px-4 py-4 pt-24">
-        <nav className="flex items-center space-x-2 text-sm text-gray-500 mb-6">
-          <button onClick={() => navigate('/')} className="hover:text-gray-900">HOME</button>
-          <span>/</span>
-          <button onClick={() => navigate('/shop')} className="hover:text-gray-900">THE SHOP</button>
-          <span>/</span>
-          <span className="text-gray-900 line-clamp-1">{product.title}</span>
-        </nav>
       </div>
 
       {/* Rest of your JSX remains the same */}

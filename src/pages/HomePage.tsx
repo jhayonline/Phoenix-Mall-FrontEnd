@@ -1,6 +1,5 @@
-// src/pages/HomePage.tsx
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   TrendingUp,
   Shield,
@@ -12,15 +11,7 @@ import {
   Sparkles,
   ChevronRight,
   ArrowRight,
-  Zap,
-  Check,
-  ThumbsUp,
-  Users,
-  ShoppingBag,
   Search,
-  Filter,
-  Grid,
-  List
 } from 'lucide-react';
 
 import Header from '@/components/layout/Header';
@@ -33,14 +24,29 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
+import { productsApi, imagesApi } from '@/lib/api';
+import type { ProductResponseData } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
+
+interface ProductWithDetails extends ProductResponseData {
+  primaryImage?: string;
+  rating?: number;
+  reviews?: number;
+  originalPrice?: number;
+  discount?: number;
+  seller?: string;
+}
 
 const HomePage: React.FC = () => {
+  const [featuredProducts, setFeaturedProducts] = useState<ProductWithDetails[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isScrolled, setIsScrolled] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const isMobile = useIsMobile();
   const searchRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   // Handle scroll effect for header
   useEffect(() => {
@@ -64,32 +70,84 @@ const HomePage: React.FC = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Load featured products
+  useEffect(() => {
+    loadFeaturedProducts();
+  }, []);
+
+  const loadFeaturedProducts = async () => {
+    setLoading(true);
+    try {
+      const response = await productsApi.getProducts({ limit: 8, sort: 'newest' });
+
+      if (response.success && response.data) {
+        const productsWithDetails = await Promise.all(
+          response.data.map(async (product) => {
+            let primaryImage: string | undefined;
+
+            try {
+              const imagesResponse = await imagesApi.getImages(product.pid);
+              if (imagesResponse.success && imagesResponse.data.length > 0) {
+                const primaryImg = imagesResponse.data.find(img => img.is_primary);
+                primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+              }
+            } catch (error) {
+              console.error('Failed to load images for product:', product.pid);
+            }
+
+            return {
+              ...product,
+              primaryImage,
+              rating: 4.5,
+              reviews: Math.floor(Math.random() * 200),
+            };
+          })
+        );
+
+        setFeaturedProducts(productsWithDetails);
+      } else {
+        // If no products, set empty array
+        setFeaturedProducts([]);
+      }
+    } catch (error) {
+      console.error('Failed to load featured products:', error);
+      setFeaturedProducts([]);
+      toast({
+        title: "Error",
+        description: "Failed to load products",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Featured categories for quick navigation
   const featuredCategories = [
     { id: 'electronics', name: 'Electronics', icon: TrendingUp, count: 145 },
     { id: 'fashion', name: 'Fashion', icon: Sparkles, count: 289 },
-    { id: 'home', name: 'Home & Living', icon: Award, count: 167 },
-    { id: 'beauty', name: 'Beauty', icon: Star, count: 98 },
-    { id: 'sports', name: 'Sports', icon: TrendingUp, count: 134 },
-    { id: 'books', name: 'Books', icon: Clock, count: 76 },
+    { id: 'home-living', name: 'Home & Living', icon: Award, count: 167 },
+    { id: 'phones', name: 'Phones', icon: Star, count: 98 },
+    { id: 'vehicles', name: 'Vehicles', icon: TrendingUp, count: 134 },
+    { id: 'okada-spares', name: 'Okada Spares', icon: Clock, count: 76 },
   ];
 
   // Trust badges
   const trustBadges = [
     { icon: Shield, title: 'Secure Payments', description: '100% secure payment processing' },
-    { icon: Truck, title: 'Free Shipping', description: 'Free delivery on orders over $50' },
+    { icon: Truck, title: 'Free Shipping', description: 'Free delivery on orders over GHS 500' },
     { icon: HeadphonesIcon, title: '24/7 Support', description: 'Round-the-clock customer service' },
     { icon: Award, title: 'Quality Guarantee', description: '30-day money-back guarantee' },
   ];
 
   // Featured brands
   const featuredBrands = [
-    { name: 'Nike', logo: 'https://logos-world.net/wp-content/uploads/2020/04/Nike-Logo.png', products: 89 },
     { name: 'Apple', logo: 'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png', products: 67 },
     { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 54 },
-    { name: 'Adidas', logo: 'https://cdn.freebiesupply.com/logos/large/2x/adidas-4-logo-png-transparent.png', products: 78 },
-    { name: 'Sony', logo: 'https://cdn.freebiesupply.com/logos/large/2x/sony-2-logo-black-and-white.png', products: 45 },
-    { name: 'Dyson', logo: 'https://wp.logos-download.com/wp-content/uploads/2016/11/Dyson_logo_logotype.png?dl=', products: 32 },
+    { name: 'iPhone', logo: 'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png', products: 45 },
+    { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 32 },
+    { name: 'Tecno', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 28 },
+    { name: 'Infinix', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 24 },
   ];
 
   // Testimonials
@@ -235,12 +293,9 @@ const HomePage: React.FC = () => {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     whileHover={{ y: -5, scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => setSelectedCategory(category.id)}
+                    onClick={() => window.location.href = `/shop?category=${category.id}`}
                     className={cn(
-                      "p-3 md:p-4 rounded-xl text-center transition-all duration-300 flex flex-col items-center",
-                      selectedCategory === category.id
-                        ? 'bg-primary text-primary-foreground shadow-glow'
-                        : 'bg-card text-foreground shadow-soft hover:shadow-medium'
+                      "p-3 md:p-4 rounded-xl text-center transition-all duration-300 flex flex-col items-center bg-card text-foreground shadow-soft hover:shadow-medium"
                     )}
                   >
                     <div className="flex justify-center mb-2 md:mb-3">
@@ -280,7 +335,12 @@ const HomePage: React.FC = () => {
               </p>
             </motion.div>
 
-            <ProductGrid />
+            <ProductGrid
+              products={featuredProducts}
+              viewMode="3"
+              onViewModeChange={() => { }}
+              loading={loading}
+            />
           </div>
         </section>
 

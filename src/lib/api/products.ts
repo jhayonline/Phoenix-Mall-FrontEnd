@@ -9,12 +9,30 @@ import {
 } from './types';
 
 export const productsApi = {
-  async getProducts(_filters?: Record<string, unknown>): Promise<ProductsResponse> {
-    const response = await backendRequest<PaginatedProductsResponse>('/products/list');
+  async getProducts(filters?: Record<string, unknown>): Promise<ProductsResponse> {
+    const queryParams = new URLSearchParams();
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, String(value));
+        }
+      });
+    }
+    const queryString = queryParams.toString();
+    const endpoint = `/products/list${queryString ? `?${queryString}` : ''}`;
+
+    const response = await backendRequest<PaginatedProductsResponse>(endpoint);
+
     return {
       success: true,
       data: response.data.items,
-      message: 'Success'
+      message: 'Success',
+      pagination: {
+        total: response.data.total,
+        page: response.data.page,
+        per_page: response.data.per_page,
+        total_pages: response.data.total_pages,
+      }
     };
   },
 

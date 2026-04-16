@@ -151,10 +151,24 @@ export interface ListingsResponse {
   data: ProductResponseData[];
 }
 
+export interface PaginatedProductsResponse {
+  items: ProductResponseData[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
 export interface ProductsResponse {
   success: boolean;
   message: string;
   data: ProductResponseData[];
+  pagination?: {
+    total: number;
+    page: number;
+    per_page: number;
+    total_pages: number;
+  };
 }
 
 export interface ProductResponse {

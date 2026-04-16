@@ -261,7 +261,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
                 </button>
 
                 {/* Status Badge */}
-                {product.status !== 'active' && (
+                {product.status?.toLowerCase() !== 'active' && (
                   <span className={`absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded ${viewMode === '1' ? 'text-xs px-1.5 py-0.5' : ''
                     }`}>
                     {product.status === 'sold' ? 'SOLD' : 'INACTIVE'}

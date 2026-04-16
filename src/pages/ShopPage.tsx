@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   Search,
-  Filter,
   X,
   SlidersHorizontal,
-  ArrowUpDown
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
@@ -25,6 +26,13 @@ interface ProductWithDetails extends ProductResponseData {
   seller?: string;
 }
 
+interface PaginationInfo {
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
 const ShopPage = () => {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [categories, setCategories] = useState<CategoryResponseData[]>([]);
@@ -34,6 +42,12 @@ const ShopPage = () => {
   const [sortBy, setSortBy] = useState('default');
   const [viewMode, setViewMode] = useState('2');
   const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    total: 0,
+    page: 1,
+    per_page: 20,
+    total_pages: 1,
+  });
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -108,7 +122,13 @@ const ShopPage = () => {
       }
 
       const response = await productsApi.getProducts(params);
+
       if (response.success && response.data) {
+        // Update pagination info
+        if (response.pagination) {
+          setPagination(response.pagination);
+        }
+
         // Enhance products with images
         const productsWithDetails = await Promise.all(
           response.data.map(async (product) => {
@@ -159,6 +179,13 @@ const ShopPage = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     setCurrentPage(1);
+  };
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= pagination.total_pages) {
+      setCurrentPage(page);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -301,12 +328,76 @@ const ShopPage = () => {
             </div>
 
             {/* Main Content Area - Product Grid */}
-            <ProductGrid
-              products={products}
-              viewMode={viewMode}
-              onViewModeChange={setViewMode}
-              loading={loading}
-            />
+            <div className="flex-1">
+              <ProductGrid
+                products={products}
+                viewMode={viewMode}
+                onViewModeChange={setViewMode}
+                loading={loading}
+              />
+
+              {/* Pagination Controls */}
+              {pagination.total_pages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-8">
+                  <button
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="flex items-center gap-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                    Previous
+                  </button>
+
+                  <div className="flex gap-1">
+                    {(() => {
+                      const pages = [];
+                      const maxVisible = 5;
+                      let startPage = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+                      const endPage = Math.min(pagination.total_pages, startPage + maxVisible - 1);
+
+                      if (endPage - startPage + 1 < maxVisible) {
+                        startPage = Math.max(1, endPage - maxVisible + 1);
+                      }
+
+                      for (let i = startPage; i <= endPage; i++) {
+                        pages.push(i);
+                      }
+
+                      return pages.map(page => (
+                        <button
+                          key={page}
+                          onClick={() => goToPage(page)}
+                          className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === page
+                              ? 'bg-gray-900 text-white'
+                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            }`}
+                        >
+                          {page}
+                        </button>
+                      ));
+                    })()}
+                  </div>
+
+                  <button
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === pagination.total_pages}
+                    className="flex items-center gap-1 px-3 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Results info */}
+              {pagination.total > 0 && (
+                <div className="text-center text-sm text-gray-500 mt-4">
+                  Showing {((currentPage - 1) * pagination.per_page) + 1} to{' '}
+                  {Math.min(currentPage * pagination.per_page, pagination.total)} of{' '}
+                  {pagination.total} products
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
