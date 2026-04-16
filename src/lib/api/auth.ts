@@ -40,6 +40,10 @@ export const authApi = {
 
     if (token) {
       localStorage.setItem('access_token', token);
+      // Store role separately since /auth/current doesn't return it
+      if (data.role) {
+        localStorage.setItem('user_role', data.role);
+      }
     }
 
     return {
@@ -63,11 +67,15 @@ export const authApi = {
 
   async logout(): Promise<{ success: boolean; message: string; data: null }> {
     localStorage.removeItem('access_token');
+    localStorage.removeItem('user_role');
     return { success: true, message: 'Logged out', data: null };
   },
 
   async getCurrentUser(): Promise<CurrentUserResponse> {
     const response = await backendRequest<CurrentUserResponseData>('/auth/current');
+
+    // Get role from localStorage if available
+    const savedRole = localStorage.getItem('user_role');
 
     return {
       success: true,
@@ -77,7 +85,7 @@ export const authApi = {
         email: response.data.email,
         first_name: response.data.name?.split(' ')[0] || '',
         last_name: response.data.name?.split(' ')[1] || '',
-        role: 'user',
+        role: savedRole || 'user',
         is_verified: false,
         created_at: new Date().toISOString()
       }
