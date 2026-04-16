@@ -21,6 +21,7 @@ import WishlistPage from "./pages/WishlistPage";
 import CategoriesManagement from "./pages/admin/CategoriesManagement";
 import SellerDashboard from "./pages/SellerDashboard";
 import EditProduct from "./pages/EditProduct";
+import MyListings from "./pages/MyListings";
 
 // Admin
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/seller/dashboard" element={<SellerDashboard />} />
               <Route path="/edit-product/:pid" element={<EditProduct />} />
+              <Route path="/my-listings" element={<MyListings />} />
 
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/categories" element={<CategoriesManagement />} />

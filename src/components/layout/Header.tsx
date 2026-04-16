@@ -4,7 +4,7 @@ import {
   Search, Heart, User, Menu, X, LogIn, UserPlus,
   MessageSquare, Bell, Megaphone,
   LogOut, Settings, Store,
-  Home, ShoppingCart, Grid, Info, Mail, Plus
+  Home, ShoppingCart, Grid, Info, Mail, Plus, Package
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -71,6 +71,7 @@ const Header: React.FC = () => {
 
   const profileMenuItems = [
     { name: 'My Profile', icon: <User className="w-4 h-4" />, action: () => navigate('/profile') },
+    { name: 'My Listings', icon: <Package className="w-4 h-4" />, action: () => navigate('/my-listings') },
     { name: 'Seller Dashboard', icon: <Store className="w-4 h-4" />, action: () => navigate('/seller/dashboard') },
     { name: 'My Listings', icon: <Store className="w-4 h-4" />, action: () => navigate('/profile/listings') },
     { name: 'My Wishlist', icon: <Heart className="w-4 h-4" />, action: () => navigate('/wishlist') },
