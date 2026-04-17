@@ -31,7 +31,7 @@ interface ProductWithDetails extends ProductResponseData {
 const Index = () => {
   const [featuredProducts, setFeaturedProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<string>('4');
+  const [viewMode, setViewMode] = useState<string>('3');
   const { toast } = useToast();
 
   // Load featured products on mount
