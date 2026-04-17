@@ -236,7 +236,7 @@ const Header: React.FC = () => {
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full transition-all duration-200 cursor-pointer group hover:bg-gradient-to-r hover:from-primary hover:to-purple-600 hidden md:block"
-                      onClick={() => navigate('/messages')}
+                      onClick={() => navigate('/messaging')}
                     >
                       <MessageSquare className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       <motion.span

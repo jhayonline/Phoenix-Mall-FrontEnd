@@ -42,7 +42,7 @@ const DetailPage: React.FC = () => {
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
   const [showZoom, setShowZoom] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [relatedProducts, setRelatedProducts] = useState<ProductResponseData[]>([]);
+  const [relatedProducts, setRelatedProducts] = useState<ProductWithDetails[]>([]);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -112,7 +112,30 @@ const DetailPage: React.FC = () => {
       });
       if (response.success && response.data) {
         const filtered = response.data.filter(p => p.pid !== pid);
-        setRelatedProducts(filtered.slice(0, 6));
+
+        // Fetch images for each related product
+        const productsWithImages = await Promise.all(
+          filtered.slice(0, 6).map(async (product) => {
+            let primaryImage: string | undefined;
+            try {
+              const imagesResponse = await imagesApi.getImages(product.pid);
+              if (imagesResponse.success && imagesResponse.data.length > 0) {
+                const primaryImg = imagesResponse.data.find(img => img.is_primary);
+                primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+              }
+            } catch (error) {
+              console.error('Failed to load images for related product:', product.pid);
+            }
+            return {
+              ...product,
+              primaryImage,
+              rating: 4.5,
+              reviews: 0,
+            };
+          })
+        );
+
+        setRelatedProducts(productsWithImages);
       }
     } catch (error) {
       console.error('Failed to load related products:', error);
@@ -432,12 +455,7 @@ const DetailPage: React.FC = () => {
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Products</h2>
             <ProductGrid
-              products={relatedProducts.map(p => ({
-                ...p,
-                primaryImage: undefined,
-                rating: 4.5,
-                reviews: 0,
-              }))}
+              products={relatedProducts}
               viewMode="3"
               onViewModeChange={() => { }}
               loading={false}
