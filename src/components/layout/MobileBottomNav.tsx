@@ -1,11 +1,43 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Home, Search, ShoppingBag, User, ShoppingCart } from 'lucide-react';
+import { Home, Search, Heart, User, ShoppingCart } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { wishlistApi } from '@/lib/api';
+import { useAuth } from '@/contexts/AuthContext';
 
 const MobileBottomNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useAuth();
+  const [wishlistCount, setWishlistCount] = useState(0);
+
+  // Load wishlist count
+  useEffect(() => {
+    const loadWishlistCount = async () => {
+      if (!user) {
+        setWishlistCount(0);
+        return;
+      }
+      try {
+        const response = await wishlistApi.getWishlist();
+        if (response.success && response.data) {
+          setWishlistCount(response.data.length);
+        }
+      } catch (error) {
+        console.error('Failed to load wishlist count:', error);
+      }
+    };
+
+    loadWishlistCount();
+
+    // Listen for wishlist updates
+    const handleWishlistUpdate = () => {
+      loadWishlistCount();
+    };
+
+    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
+    return () => window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+  }, [user]);
 
   const tabs = [
     {
@@ -21,10 +53,10 @@ const MobileBottomNav: React.FC = () => {
       badge: null
     },
     {
-      name: 'Cart',
-      icon: ShoppingBag,
-      path: '/shopping-bag',
-      badge: '0'
+      name: 'Wishlist',
+      icon: Heart,
+      path: '/wishlist',
+      badge: wishlistCount > 0 ? wishlistCount.toString() : null
     },
     {
       name: 'Profile',
@@ -67,11 +99,10 @@ const MobileBottomNav: React.FC = () => {
               <motion.button
                 key={tab.name}
                 onClick={() => navigate(tab.path)}
-                className={`relative flex flex-col items-center p-2 rounded-xl transition-all duration-300 ${
-                  active
+                className={`relative flex flex-col items-center p-2 rounded-xl transition-all duration-300 ${active
                     ? 'bg-white/40 text-red-600'
                     : 'text-gray-600 hover:text-red-500'
-                }`}
+                  }`}
                 whileTap={{ scale: 0.92 }}
               >
                 <div className="relative">
@@ -80,7 +111,7 @@ const MobileBottomNav: React.FC = () => {
                     <motion.span
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
-                      className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-medium text-[10px] shadow-sm"
+                      className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[16px] h-4 flex items-center justify-center font-medium text-[10px] shadow-sm px-1"
                     >
                       {tab.badge}
                     </motion.span>

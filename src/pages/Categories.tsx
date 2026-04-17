@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 
 const categories = [
   {
@@ -32,6 +33,7 @@ const categories = [
     image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=400&fit=crop&crop=center",
     IconComponent: Laptop,
     color: "from-blue-500 to-cyan-500",
+    productCount: 1245
   },
   {
     id: 2,
@@ -45,6 +47,7 @@ const categories = [
     image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop&crop=center",
     IconComponent: Shirt,
     color: "from-pink-500 to-rose-500",
+    productCount: 3421
   },
   {
     id: 3,
@@ -58,6 +61,7 @@ const categories = [
     image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=400&fit=crop&crop=center",
     IconComponent: Car,
     color: "from-red-500 to-pink-500",
+    productCount: 892
   },
   {
     id: 4,
@@ -71,84 +75,91 @@ const categories = [
     image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
     IconComponent: Home,
     color: "from-green-500 to-emerald-500",
+    productCount: 2156
   },
   {
     id: 5,
     name: "Mobile Phones",
     slug: "mobile-phones",
-    parent_id: 1, // Electronics
-    level: 1,
+    parent_id: 1,
+    level: 2,
     display_order: 5,
     is_active: true,
     description: "Mobile Phones, Tablets",
     image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop&crop=center",
     IconComponent: Smartphone,
     color: "from-purple-500 to-indigo-500",
+    productCount: 856
   },
   {
     id: 6,
     name: "Furniture",
     slug: "furniture",
-    parent_id: 1, // Electronics (as per your DB)
-    level: 1,
+    parent_id: 1,
+    level: 2,
     display_order: 6,
     is_active: true,
     description: "Home & Office Furniture",
     image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
     IconComponent: Sofa,
     color: "from-amber-500 to-orange-500",
+    productCount: 567
   },
   {
     id: 7,
     name: "Home Appliances",
     slug: "home-appliances",
-    parent_id: 2, // Fashion (as per DB)
-    level: 1,
+    parent_id: 2,
+    level: 2,
     display_order: 7,
     is_active: true,
     description: "Kitchen & Home Appliances",
     image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
     IconComponent: Home,
     color: "from-green-500 to-emerald-500",
+    productCount: 723
   },
   {
     id: 8,
     name: "Jewelries",
     slug: "jewelries",
-    parent_id: 2, // Fashion
-    level: 1,
+    parent_id: 2,
+    level: 2,
     display_order: 8,
     is_active: true,
     description: "Rings, Necklaces & More",
     image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop&crop=center",
     IconComponent: Gem,
     color: "from-violet-500 to-purple-500",
+    productCount: 342
   },
   {
     id: 9,
     name: "Property",
     slug: "property",
-    parent_id: 3, // Vehicles
-    level: 1,
+    parent_id: 3,
+    level: 2,
     display_order: 9,
     is_active: true,
     description: "Houses & Real Estate",
     image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop&crop=center",
     IconComponent: Building,
     color: "from-slate-500 to-gray-500",
+    productCount: 234
   },
   {
     id: 10,
     name: "Services",
     slug: "services",
-    parent_id: 3, // Vehicles
-    level: 1,
+    parent_id: 3,
+    level: 2,
     display_order: 10,
     is_active: true,
     description: "Professional Services",
     image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=400&fit=crop&crop=center",
     IconComponent: Wrench,
     color: "from-teal-500 to-cyan-500",
+    productCount: 156
   },
   {
     id: 11,
@@ -162,6 +173,7 @@ const categories = [
     image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop&crop=center",
     IconComponent: Utensils,
     color: "from-lime-500 to-green-500",
+    productCount: 678
   },
   {
     id: 12,
@@ -175,6 +187,7 @@ const categories = [
     image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=400&fit=crop&crop=center",
     IconComponent: Baby,
     color: "from-yellow-400 to-amber-400",
+    productCount: 445
   },
   {
     id: 13,
@@ -188,6 +201,7 @@ const categories = [
     image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&crop=center",
     IconComponent: Sparkles,
     color: "from-fuchsia-500 to-pink-500",
+    productCount: 891
   },
 ];
 
@@ -206,11 +220,8 @@ const Categories: React.FC = () => {
 
   const handleCategoryClick = (categoryName: string) => {
     setSelectedCategory(categoryName.toLowerCase());
-    // Scroll to products section
-    const productsSection = document.getElementById('products-section');
-    if (productsSection) {
-      productsSection.scrollIntoView({ behavior: 'smooth' });
-    }
+    // Navigate to shop page with category filter
+    navigate(`/shop?category=${categoryName.toLowerCase()}`);
   };
 
   const containerVariants = {
@@ -245,16 +256,11 @@ const Categories: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-
       <Header />
 
       <section className="relative pt-24 pb-16 md:pt-32 md:pb-24 overflow-hidden">
-
-        <div className="container mx-auto px-4 py-4">
-        </div>
-
         {/* Main Content */}
-        <div className="container mx-auto px-4 pb-12 py-4 pt-16">
+        <div className="container mx-auto px-4 pb-12">
           {/* Header Section */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -280,7 +286,7 @@ const Categories: React.FC = () => {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, margin: "-50px" }}
-            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 mb-16"
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6"
           >
             {categories.map((category) => {
               const IconComponent = category.IconComponent;
@@ -306,7 +312,6 @@ const Categories: React.FC = () => {
                   <div className="relative mb-4">
                     {/* Main Circle */}
                     <div className="w-20 h-20 sm:w-24 sm:h-24 md:w-28 md:h-28 rounded-full overflow-hidden relative bg-gray-200 dark:bg-slate-700 shadow-lg group-hover:shadow-xl transition-all duration-300">
-
                       {/* Loading State */}
                       {!isImageLoaded && (
                         <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-20 animate-pulse rounded-full`} />
@@ -350,7 +355,7 @@ const Categories: React.FC = () => {
 
                   {/* Product Count */}
                   <p className="text-xs text-gray-500 dark:text-slate-400">
-                    {category.productCount} products
+                    {category.productCount.toLocaleString()} products
                   </p>
 
                   {/* Category Description - Show on Hover */}
@@ -371,10 +376,27 @@ const Categories: React.FC = () => {
               );
             })}
           </motion.div>
-        </div>
 
-        <Footer />
+          {/* Bottom CTA */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="text-center mt-16"
+          >
+            <div className="inline-flex items-center gap-3 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm px-6 py-3 rounded-full border border-slate-200 dark:border-slate-700 shadow-lg">
+              <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full animate-pulse"></div>
+              <span className="text-slate-600 dark:text-slate-300 font-medium">
+                {categories.length} categories available
+              </span>
+            </div>
+          </motion.div>
+        </div>
       </section>
+
+      <Footer />
+      <MobileBottomNav />
     </div>
   );
 };
