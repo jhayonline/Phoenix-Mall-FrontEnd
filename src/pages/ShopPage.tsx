@@ -4,7 +4,22 @@ import {
   SlidersHorizontal,
   ArrowUpDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ChevronRight as ChevronRightIcon,
+  Laptop,
+  Smartphone,
+  Sofa,
+  Home,
+  Shirt,
+  Gem,
+  Building,
+  Car,
+  Wrench,
+  Utensils,
+  Baby,
+  Sparkles,
+  Tv,
+  Briefcase,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
@@ -34,9 +49,32 @@ interface PaginationInfo {
   total_pages: number;
 }
 
+interface CategoryWithSubs extends CategoryResponseData {
+  subcategories?: CategoryResponseData[];
+  deeperSubs?: CategoryResponseData[];
+  icon?: React.ReactNode;
+}
+
+const iconMap: Record<string, React.ReactNode> = {
+  'Electronics': <Laptop className="w-5 h-5" />,
+  'Fashion': <Shirt className="w-5 h-5" />,
+  'Vehicles': <Car className="w-5 h-5" />,
+  'Home & Living': <Home className="w-5 h-5" />,
+  'Mobile Phones': <Smartphone className="w-5 h-5" />,
+  'Furniture': <Sofa className="w-5 h-5" />,
+  'Home Appliances': <Tv className="w-5 h-5" />,
+  'Jewelries': <Gem className="w-5 h-5" />,
+  'Property': <Building className="w-5 h-5" />,
+  'Services': <Briefcase className="w-5 h-5" />,
+  'Food & Agriculture': <Utensils className="w-5 h-5" />,
+  'Babies & Kids': <Baby className="w-5 h-5" />,
+  'Beauty & Personal Care': <Sparkles className="w-5 h-5" />,
+};
+
 const ShopPage = () => {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
-  const [categories, setCategories] = useState<CategoryResponseData[]>([]);
+  const [allCategories, setAllCategories] = useState<CategoryResponseData[]>([]);
+  const [categoriesWithSubs, setCategoriesWithSubs] = useState<CategoryWithSubs[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState([0, 10000]);
@@ -52,6 +90,8 @@ const ShopPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hoveredCategory, setHoveredCategory] = useState<CategoryWithSubs | null>(null);
+  const [hoveredSubCategory, setHoveredSubCategory] = useState<CategoryResponseData | null>(null);
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -70,14 +110,26 @@ const ShopPage = () => {
     if (searchFromUrl) {
       setSearchQuery(searchFromUrl);
     }
+    const categoryFromUrl = searchParams.get('category');
+    if (categoryFromUrl) {
+      setSelectedCategories([categoryFromUrl]);
+    }
   }, []);
 
   const loadCategories = async () => {
     try {
       const response = await categoriesApi.getAllCategories();
       if (response.success && response.data) {
-        const topLevelCategories = response.data.filter(cat => cat.level === 1);
-        setCategories(topLevelCategories);
+        setAllCategories(response.data);
+
+        // Build hierarchical category structure
+        const level1Categories = response.data.filter(cat => cat.level === 1);
+        const categoriesWithChildren = level1Categories.map(cat => ({
+          ...cat,
+          subcategories: response.data.filter(sub => sub.parent_id === cat.id && sub.level === 2),
+          icon: iconMap[cat.name],
+        }));
+        setCategoriesWithSubs(categoriesWithChildren);
       }
     } catch (error) {
       console.error('Failed to load categories:', error);
@@ -87,6 +139,11 @@ const ShopPage = () => {
         variant: "destructive",
       });
     }
+  };
+
+  // Get deeper subcategories (level 3) for a given subcategory
+  const getDeeperSubcategories = (subCategoryId: string) => {
+    return allCategories.filter(cat => cat.parent_id === subCategoryId && cat.level === 3);
   };
 
   const loadProducts = async () => {
@@ -112,11 +169,11 @@ const ShopPage = () => {
       }
 
       if (selectedCategories.length > 0) {
-        const selectedCategoryObjects = categories.filter(cat =>
-          selectedCategories.includes(cat.name)
+        const selectedCategory = allCategories.find(cat =>
+          cat.name.toLowerCase() === selectedCategories[0].toLowerCase()
         );
-        if (selectedCategoryObjects.length > 0) {
-          params.category = selectedCategoryObjects[0].slug;
+        if (selectedCategory) {
+          params.category = selectedCategory.slug;
         }
       }
 
@@ -171,13 +228,10 @@ const ShopPage = () => {
     }
   };
 
-  const toggleCategory = (categoryName: string) => {
-    setSelectedCategories(prev =>
-      prev.includes(categoryName)
-        ? prev.filter(c => c !== categoryName)
-        : [...prev, categoryName]
-    );
+  const handleCategoryClick = (categoryName: string) => {
+    setSelectedCategories([categoryName]);
     setCurrentPage(1);
+    setSearchParams({ category: categoryName.toLowerCase() });
   };
 
   const handleSearch = (query: string) => {
@@ -204,7 +258,15 @@ const ShopPage = () => {
     }).format(amount);
   };
 
-  const categoryNames = categories.map(cat => cat.name);
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
 
   const sortOptions = [
     { value: 'default', label: 'Default' },
@@ -219,7 +281,7 @@ const ShopPage = () => {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
         </div>
         <Footer />
         <MobileBottomNav />
@@ -266,42 +328,146 @@ const ShopPage = () => {
 
         {/* Main Content */}
         <div className="container mx-auto px-3 sm:px-4 py-4 lg:py-6">
-          <div className="flex gap-4 lg:gap-6">
+          <div className="flex gap-6 lg:gap-8">
             {/* Desktop Sidebar */}
-            <div className="hidden lg:block w-64 flex-shrink-0">
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-24">
-                {/* Search */}
-                <SearchBar
-                  placeholder="Search products..."
-                  onSearch={handleSearch}
-                  initialValue={searchQuery}
-                  className="mb-6"
-                />
-
-                {/* Categories */}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">
-                    Categories
-                  </h3>
-                  <div className="space-y-2">
-                    {categoryNames.map((category) => (
-                      <button
-                        key={category}
-                        onClick={() => toggleCategory(category)}
-                        className={`block w-full text-left text-sm py-1 hover:text-gray-900 transition-colors ${selectedCategories.includes(category) ? 'text-gray-900 font-medium' : 'text-gray-500'
-                          }`}
-                      >
-                        {category}
-                      </button>
-                    ))}
-                  </div>
+            <div className="hidden lg:block w-72 flex-shrink-0">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
+                {/* Search Bar */}
+                <div className="p-4 border-b border-gray-100">
+                  <SearchBar
+                    placeholder="Search in categories..."
+                    onSearch={handleSearch}
+                    initialValue={searchQuery}
+                    className="w-full"
+                  />
                 </div>
 
-                {/* Price Range */}
-                <div className="mb-6">
-                  <h3 className="font-semibold text-gray-900 mb-3 text-sm uppercase tracking-wide">
-                    Price Range
+                {/* Categories Header */}
+                <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-red-50 to-red-100">
+                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                    <span className="w-1 h-5 bg-red-500 rounded-full"></span>
+                    All Categories
                   </h3>
+                </div>
+
+                {/* Categories List */}
+                <div className="py-2">
+                  {categoriesWithSubs.map((category) => (
+                    <div
+                      key={category.id}
+                      className="relative"
+                      onMouseEnter={() => setHoveredCategory(category)}
+                      onMouseLeave={() => {
+                        setHoveredCategory(null);
+                        setHoveredSubCategory(null);
+                      }}
+                    >
+                      <button
+                        onClick={() => handleCategoryClick(category.name)}
+                        className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-all duration-200 group ${selectedCategories.includes(category.name)
+                            ? 'bg-red-50 border-r-2 border-red-500'
+                            : ''
+                          }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`text-gray-400 group-hover:text-red-500 transition-colors ${selectedCategories.includes(category.name) ? 'text-red-500' : ''
+                            }`}>
+                            {category.icon}
+                          </div>
+                          <span className={`text-sm font-medium ${selectedCategories.includes(category.name)
+                              ? 'text-red-600'
+                              : 'text-gray-700 group-hover:text-gray-900'
+                            }`}>
+                            {category.name}
+                          </span>
+                        </div>
+                        {category.subcategories && category.subcategories.length > 0 && (
+                          <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
+                        )}
+                      </button>
+
+                      {/* Subcategories Sidebar - Appears on hover */}
+                      <AnimatePresence>
+                        {hoveredCategory?.id === category.id && category.subcategories && category.subcategories.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute left-full top-0 ml-1 w-64 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden"
+                          >
+                            <div className="py-2">
+                              <div className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-100">
+                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                  {category.name}
+                                </span>
+                              </div>
+                              {category.subcategories.map((sub) => {
+                                const deeperSubs = getDeeperSubcategories(sub.id);
+                                return (
+                                  <div
+                                    key={sub.id}
+                                    className="relative"
+                                    onMouseEnter={() => setHoveredSubCategory(sub)}
+                                    onMouseLeave={() => setHoveredSubCategory(null)}
+                                  >
+                                    <button
+                                      onClick={() => handleCategoryClick(sub.name)}
+                                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors group flex items-center justify-between"
+                                    >
+                                      <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                                        {sub.name}
+                                      </span>
+                                      {deeperSubs.length > 0 && (
+                                        <ChevronRightIcon className="w-3 h-3 text-gray-300" />
+                                      )}
+                                    </button>
+
+                                    {/* Level 3 Subcategories (iPhone, Samsung, etc.) */}
+                                    <AnimatePresence>
+                                      {hoveredSubCategory?.id === sub.id && deeperSubs.length > 0 && (
+                                        <motion.div
+                                          initial={{ opacity: 0, x: -10 }}
+                                          animate={{ opacity: 1, x: 0 }}
+                                          exit={{ opacity: 0, x: -10 }}
+                                          transition={{ duration: 0.2 }}
+                                          className="absolute left-full top-0 ml-1 w-64 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden"
+                                        >
+                                          <div className="py-2">
+                                            <div className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-100">
+                                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                                                {sub.name}
+                                              </span>
+                                            </div>
+                                            {deeperSubs.map((deepSub) => (
+                                              <button
+                                                key={deepSub.id}
+                                                onClick={() => handleCategoryClick(deepSub.name)}
+                                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors group flex items-center justify-between"
+                                              >
+                                                <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                                                  {deepSub.name}
+                                                </span>
+                                              </button>
+                                            ))}
+                                          </div>
+                                        </motion.div>
+                                      )}
+                                    </AnimatePresence>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Price Range Section */}
+                <div className="p-4 border-t border-gray-100 bg-gray-50">
+                  <h4 className="font-semibold text-gray-900 mb-3 text-sm">Price Range</h4>
                   <div className="space-y-3">
                     <div className="flex gap-2">
                       <input
@@ -309,17 +475,17 @@ const ShopPage = () => {
                         placeholder="Min"
                         value={priceRange[0]}
                         onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                       />
                       <input
                         type="number"
                         placeholder="Max"
                         value={priceRange[1]}
                         onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
-                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                       />
                     </div>
-                    <p className="text-sm text-gray-500 font-medium">
+                    <p className="text-xs text-gray-500">
                       {formatCurrency(priceRange[0])} - {formatCurrency(priceRange[1])}
                     </p>
                   </div>
@@ -368,8 +534,8 @@ const ShopPage = () => {
                           key={page}
                           onClick={() => goToPage(page)}
                           className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === page
-                            ? 'bg-gray-900 text-white'
-                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                              ? 'bg-red-600 text-white'
+                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                             }`}
                         >
                           {page}
@@ -394,7 +560,7 @@ const ShopPage = () => {
                 <div className="text-center text-sm text-gray-500 mt-4">
                   Showing {((currentPage - 1) * pagination.per_page) + 1} to{' '}
                   {Math.min(currentPage * pagination.per_page, pagination.total)} of{' '}
-                  {pagination.total} products
+                  {pagination.total.toLocaleString()} products
                 </div>
               )}
             </div>
@@ -420,76 +586,52 @@ const ShopPage = () => {
                 className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 lg:hidden flex flex-col"
               >
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                  <h3 className="font-semibold text-lg">Filters</h3>
+                  <h3 className="font-semibold text-lg">Categories</h3>
                   <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-gray-100 rounded-lg">
                     <X className="w-5 h-5" />
                   </button>
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                  {/* Search */}
                   <SearchBar
                     placeholder="Search products..."
                     onSearch={handleSearch}
                     initialValue={searchQuery}
+                    className="mb-4"
                   />
-
-                  {/* Categories */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Categories</h4>
-                    <div className="space-y-2 max-h-48 overflow-y-auto">
-                      {categoryNames.map((category) => (
-                        <label key={category} className="flex items-center gap-3">
-                          <input
-                            type="checkbox"
-                            checked={selectedCategories.includes(category)}
-                            onChange={() => toggleCategory(category)}
-                            className="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
-                          />
-                          <span className="text-sm text-gray-700">{category}</span>
-                        </label>
-                      ))}
+                  {categoriesWithSubs.map((category) => (
+                    <div key={category.id}>
+                      <button
+                        onClick={() => {
+                          handleCategoryClick(category.name);
+                          setShowFilters(false);
+                        }}
+                        className={`w-full text-left py-2 flex items-center justify-between ${selectedCategories.includes(category.name) ? 'text-red-600 font-medium' : 'text-gray-700'
+                          }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {category.icon}
+                          <span>{category.name}</span>
+                        </div>
+                      </button>
+                      {category.subcategories && (
+                        <div className="ml-6 mt-1 space-y-1">
+                          {category.subcategories.map((sub) => (
+                            <button
+                              key={sub.id}
+                              onClick={() => {
+                                handleCategoryClick(sub.name);
+                                setShowFilters(false);
+                              }}
+                              className="block w-full text-left py-1.5 text-sm text-gray-500 hover:text-gray-700"
+                            >
+                              {sub.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-                  </div>
-
-                  {/* Price Range */}
-                  <div>
-                    <h4 className="font-medium text-gray-900 mb-3">Price Range</h4>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={priceRange[0]}
-                        onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={priceRange[1]}
-                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
-                        className="w-24 px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 border-t border-gray-200 flex gap-3">
-                  <button
-                    onClick={() => {
-                      setSelectedCategories([]);
-                      setPriceRange([0, 10000]);
-                    }}
-                    className="flex-1 py-3 text-gray-600 border border-gray-200 rounded-lg font-medium hover:bg-gray-50"
-                  >
-                    Clear All
-                  </button>
-                  <button
-                    onClick={() => setShowFilters(false)}
-                    className="flex-1 py-3 bg-gray-900 text-white rounded-lg font-medium hover:bg-gray-800"
-                  >
-                    Apply Filters
-                  </button>
+                  ))}
                 </div>
               </motion.div>
             </>
@@ -529,7 +671,7 @@ const ShopPage = () => {
                         setSortBy(option.value);
                         setShowSort(false);
                       }}
-                      className={`w-full text-left py-3 px-2 rounded-lg transition-colors ${sortBy === option.value ? 'bg-gray-100 font-medium' : 'hover:bg-gray-50'
+                      className={`w-full text-left py-3 px-2 rounded-lg transition-colors ${sortBy === option.value ? 'bg-red-50 text-red-600 font-medium' : 'hover:bg-gray-50'
                         }`}
                     >
                       {option.label}
