@@ -10,7 +10,7 @@ import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import ShopPage from "./pages/ShopPage";
 import DetailPage from "./pages/DetailPage";
-import Messaging from "./pages/Messaging";
+import Messages from "./pages/Messaging";
 import Notifications from "./pages/Notifications";
 import Contact from "./pages/Contact";
 import Categories from "./pages/Categories";
@@ -46,7 +46,7 @@ const App = () => (
               <Route path="/register" element={<Register />} />
               <Route path="/shop" element={<ShopPage />} />
               <Route path="/product/:pid" element={<DetailPage />} />
-              <Route path="/messaging" element={<Messaging />} />
+              <Route path="/messaging" element={<Messages />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/categories" element={<Categories />} />
