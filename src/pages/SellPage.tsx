@@ -18,6 +18,9 @@ const SellPage: React.FC = () => {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
+  const [parentCategories, setParentCategories] = useState<any[]>([]);
+  const [selectedParentId, setSelectedParentId] = useState<string>('');
+  const [subCategories, setSubCategories] = useState<any[]>([]);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -44,12 +47,41 @@ const SellPage: React.FC = () => {
     try {
       const response = await categoriesApi.getAllCategories();
       if (response.success && response.data) {
-        // Get level 2 categories (subcategories)
-        const subCategories = response.data.filter(cat => cat.level === 2);
-        setCategories(subCategories);
+        // Get level 1 categories for parent dropdown
+        const level1Categories = response.data.filter(cat => cat.level === 1);
+        setParentCategories(level1Categories);
+
+        // Get all categories for later filtering
+        setCategories(response.data);
       }
     } catch (error) {
       console.error('Failed to load categories:', error);
+    }
+  };
+
+  // When parent category is selected, load its subcategories (level 2 and 3)
+  const handleParentChange = (parentId: string) => {
+    setSelectedParentId(parentId);
+    setFormData({ ...formData, category_id: '' });
+
+    // Get level 2 categories under this parent
+    const level2Categories = categories.filter(
+      cat => cat.parent_id === parentId && cat.level === 2
+    );
+    setSubCategories(level2Categories);
+  };
+
+  // When a level 2 category is selected, load its level 3 subcategories
+  const handleSubCategoryChange = (subCatId: string) => {
+    setFormData({ ...formData, category_id: subCatId });
+
+    // Check if there are level 3 categories under this subcategory
+    const level3Categories = categories.filter(
+      cat => cat.parent_id === subCatId && cat.level === 3
+    );
+
+    if (level3Categories.length > 0) {
+      setSubCategories(level3Categories);
     }
   };
 
@@ -122,6 +154,12 @@ const SellPage: React.FC = () => {
       setLoading(false);
       setUploadingImages(false);
     }
+  };
+
+  // Helper to get category name by ID
+  const getCategoryName = (id: string) => {
+    const cat = categories.find(c => c.id === id);
+    return cat?.name || '';
   };
 
   return (
@@ -200,22 +238,48 @@ const SellPage: React.FC = () => {
                 />
               </div>
 
-              {/* Category */}
+              {/* Category Selection - Hierarchical */}
               <div>
                 <label className="block text-sm font-medium mb-2">Category *</label>
+
+                {/* Parent Category (Level 1) */}
                 <select
-                  value={formData.category_id}
-                  onChange={(e) => setFormData({ ...formData, category_id: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  value={selectedParentId}
+                  onChange={(e) => handleParentChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 mb-3"
                   required
                 >
-                  <option value="">Select a category</option>
-                  {categories.map((cat) => (
+                  <option value="">Select main category</option>
+                  {parentCategories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
                     </option>
                   ))}
                 </select>
+
+                {/* Sub Category (Level 2 or 3) */}
+                {subCategories.length > 0 && (
+                  <select
+                    value={formData.category_id}
+                    onChange={(e) => handleSubCategoryChange(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
+                    required
+                  >
+                    <option value="">Select subcategory</option>
+                    {subCategories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {/* Show selected category path */}
+                {formData.category_id && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Selected: {getCategoryName(selectedParentId)} → {getCategoryName(formData.category_id)}
+                  </p>
+                )}
               </div>
 
               {/* Images */}
