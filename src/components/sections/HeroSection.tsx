@@ -17,7 +17,7 @@ const HeroSection: React.FC = () => {
   const slides = [
     {
       title: "Discover Your Style",
-      subtitle: "Premium Collection 2024",
+      subtitle: "Premium Collection 2026",
       description: "Curated products that define modern elegance and exceptional quality.",
       cta: "Shop Now",
       accent: "New Arrivals"

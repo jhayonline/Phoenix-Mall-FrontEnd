@@ -5,9 +5,9 @@ import {
   TrendingUp,
   ChevronRight,
   Shield,
-  Truck,
+  MapPin,
   HeadphonesIcon,
-  Award
+  MessageCircle
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
@@ -88,10 +88,26 @@ const Index = () => {
 
   // Trust badges
   const trustBadges = [
-    { icon: Shield, title: 'Secure Payments', description: '100% secure payment processing' },
-    { icon: Truck, title: 'Free Shipping', description: 'Free delivery on orders over GHS 500' },
-    { icon: HeadphonesIcon, title: '24/7 Support', description: 'Round-the-clock customer service' },
-    { icon: Award, title: 'Quality Guarantee', description: '30-day money-back guarantee' },
+    {
+      icon: MapPin,
+      title: 'Local Meetups',
+      description: 'Connect with sellers in Accra, Kumasi, and across Ghana'
+    },
+    {
+      icon: MessageCircle,
+      title: 'Direct Chat',
+      description: 'Communicate directly with sellers via messaging'
+    },
+    {
+      icon: Shield,
+      title: 'Safe Trading Tips',
+      description: 'Follow our safety guidelines for secure transactions'
+    },
+    {
+      icon: HeadphonesIcon,
+      title: 'Seller Support',
+      description: 'We help resolve disputes between buyers and sellers'
+    },
   ];
 
   // Featured brands
