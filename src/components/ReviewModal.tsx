@@ -1,4 +1,3 @@
-// src/components/ReviewModal.tsx
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, X } from 'lucide-react';
@@ -134,8 +133,8 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                         >
                           <Star
                             className={`w-10 h-10 transition-all ${star <= (hoverRating || rating)
-                                ? 'text-yellow-400 fill-yellow-400'
-                                : 'text-gray-300'
+                              ? 'text-yellow-400 fill-yellow-400'
+                              : 'text-gray-300'
                               }`}
                           />
                         </button>

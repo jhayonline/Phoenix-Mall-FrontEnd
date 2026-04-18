@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Plus, X, Image as ImageIcon, Upload, Loader2 } from 'lucide-react';
+import {
+  Plus, X, Image as ImageIcon, Loader2,
+  ChevronRight, ChevronLeft, Check, FolderTree,
+  Laptop, Smartphone, Sofa, Home, Shirt, Gem, Building,
+  Car, Utensils, Baby, Sparkles, Tv, Briefcase
+} from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
@@ -12,15 +17,43 @@ import { productsApi, categoriesApi, imagesApi } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  parent_id: string | null;
+  level: number;
+  display_order: number;
+  is_active: boolean;
+  description: string | null;
+}
+
+const iconMap: Record<string, React.ReactNode> = {
+  'Electronics': <Laptop className="w-5 h-5" />,
+  'Fashion': <Shirt className="w-5 h-5" />,
+  'Vehicles': <Car className="w-5 h-5" />,
+  'Home & Living': <Home className="w-5 h-5" />,
+  'Mobile Phones': <Smartphone className="w-5 h-5" />,
+  'Furniture': <Sofa className="w-5 h-5" />,
+  'Home Appliances': <Tv className="w-5 h-5" />,
+  'Jewelries': <Gem className="w-5 h-5" />,
+  'Property': <Building className="w-5 h-5" />,
+  'Services': <Briefcase className="w-5 h-5" />,
+  'Food & Agriculture': <Utensils className="w-5 h-5" />,
+  'Babies & Kids': <Baby className="w-5 h-5" />,
+  'Beauty & Personal Care': <Sparkles className="w-5 h-5" />,
+};
+
 const SellPage: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [parentCategories, setParentCategories] = useState<any[]>([]);
-  const [selectedParentId, setSelectedParentId] = useState<string>('');
-  const [subCategories, setSubCategories] = useState<any[]>([]);
+  const [allCategories, setAllCategories] = useState<Category[]>([]);
+  const [currentLevelCategories, setCurrentLevelCategories] = useState<Category[]>([]);
+  const [categoryBreadcrumb, setCategoryBreadcrumb] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -47,50 +80,68 @@ const SellPage: React.FC = () => {
     try {
       const response = await categoriesApi.getAllCategories();
       if (response.success && response.data) {
-        // Get level 1 categories for parent dropdown
-        const level1Categories = response.data.filter(cat => cat.level === 1);
-        setParentCategories(level1Categories);
-
-        // Get all categories for later filtering
-        setCategories(response.data);
+        setAllCategories(response.data);
       }
     } catch (error) {
       console.error('Failed to load categories:', error);
     }
   };
 
-  // When parent category is selected, load its subcategories (level 2 and 3)
-  const handleParentChange = (parentId: string) => {
-    setSelectedParentId(parentId);
-    setFormData({ ...formData, category_id: '' });
-
-    // Get level 2 categories under this parent
-    const level2Categories = categories.filter(
-      cat => cat.parent_id === parentId && cat.level === 2
-    );
-    setSubCategories(level2Categories);
+  const openCategoryModal = () => {
+    const level1Categories = allCategories.filter(cat => cat.level === 1);
+    setCurrentLevelCategories(level1Categories);
+    setCategoryBreadcrumb([]);
+    setShowCategoryModal(true);
   };
 
-  // When a level 2 category is selected, load its level 3 subcategories
-  const handleSubCategoryChange = (subCatId: string) => {
-    setFormData({ ...formData, category_id: subCatId });
+  const handleCategorySelect = (category: Category) => {
+    const hasChildren = allCategories.some(cat => cat.parent_id === category.id);
 
-    // Check if there are level 3 categories under this subcategory
-    const level3Categories = categories.filter(
-      cat => cat.parent_id === subCatId && cat.level === 3
-    );
-
-    if (level3Categories.length > 0) {
-      setSubCategories(level3Categories);
+    if (hasChildren) {
+      const nextLevelCategories = allCategories.filter(cat => cat.parent_id === category.id);
+      setCurrentLevelCategories(nextLevelCategories);
+      setCategoryBreadcrumb([...categoryBreadcrumb, category]);
+    } else {
+      setSelectedCategory(category);
+      setFormData({ ...formData, category_id: category.id });
+      setShowCategoryModal(false);
+      toast({
+        title: "Category Selected",
+        description: `${categoryBreadcrumb.map(c => c.name).join(' → ')}${categoryBreadcrumb.length ? ' → ' : ''}${category.name}`,
+      });
     }
+  };
+
+  const handleBack = () => {
+    if (categoryBreadcrumb.length === 0) {
+      const level1Categories = allCategories.filter(cat => cat.level === 1);
+      setCurrentLevelCategories(level1Categories);
+    } else {
+      const newBreadcrumb = [...categoryBreadcrumb];
+      newBreadcrumb.pop();
+      setCategoryBreadcrumb(newBreadcrumb);
+
+      if (newBreadcrumb.length === 0) {
+        const level1Categories = allCategories.filter(cat => cat.level === 1);
+        setCurrentLevelCategories(level1Categories);
+      } else {
+        const parentCategory = newBreadcrumb[newBreadcrumb.length - 1];
+        const siblingCategories = allCategories.filter(cat => cat.parent_id === parentCategory.id);
+        setCurrentLevelCategories(siblingCategories);
+      }
+    }
+  };
+
+  const handleReset = () => {
+    const level1Categories = allCategories.filter(cat => cat.level === 1);
+    setCurrentLevelCategories(level1Categories);
+    setCategoryBreadcrumb([]);
   };
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     const newImages = [...selectedImages, ...files].slice(0, 5);
     setSelectedImages(newImages);
-
-    // Create preview URLs
     const newPreviews = newImages.map(file => URL.createObjectURL(file));
     setImagePreviews(newPreviews);
   };
@@ -98,8 +149,6 @@ const SellPage: React.FC = () => {
   const removeImage = (index: number) => {
     const newImages = selectedImages.filter((_, i) => i !== index);
     setSelectedImages(newImages);
-
-    // Revoke object URL to avoid memory leaks
     URL.revokeObjectURL(imagePreviews[index]);
     const newPreviews = imagePreviews.filter((_, i) => i !== index);
     setImagePreviews(newPreviews);
@@ -107,10 +156,19 @@ const SellPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedCategory) {
+      toast({
+        title: "Category Required",
+        description: "Please select a category for your product",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Create product
       const productResponse = await productsApi.createProduct({
         title: formData.title,
         description: formData.description,
@@ -125,7 +183,6 @@ const SellPage: React.FC = () => {
       if (productResponse.success && productResponse.data) {
         const productPid = productResponse.data.pid;
 
-        // Upload images
         if (selectedImages.length > 0) {
           setUploadingImages(true);
           for (const image of selectedImages) {
@@ -156,10 +213,14 @@ const SellPage: React.FC = () => {
     }
   };
 
-  // Helper to get category name by ID
-  const getCategoryName = (id: string) => {
-    const cat = categories.find(c => c.id === id);
-    return cat?.name || '';
+  const getCategoryPath = () => {
+    if (!selectedCategory) return '';
+    const path = [...categoryBreadcrumb, selectedCategory];
+    return path.map(c => c.name).join(' → ');
+  };
+
+  const getCategoryIcon = (categoryName: string) => {
+    return iconMap[categoryName] || <FolderTree className="w-5 h-5" />;
   };
 
   return (
@@ -170,9 +231,9 @@ const SellPage: React.FC = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-2xl shadow-soft p-6"
+            className="bg-white rounded-2xl shadow-soft p-6 md:p-8"
           >
-            <h1 className="text-2xl font-bold mb-6">Sell an Item</h1>
+            <h1 className="text-2xl font-bold mb-6 text-center">Sell an Item</h1>
 
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Title */}
@@ -198,33 +259,35 @@ const SellPage: React.FC = () => {
                 />
               </div>
 
-              {/* Price */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Price (GHS) *</label>
-                <Input
-                  type="number"
-                  step="0.01"
-                  value={formData.price}
-                  onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                  placeholder="0.00"
-                  required
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Price */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price (GHS) *</label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    placeholder="0.00"
+                    required
+                  />
+                </div>
 
-              {/* Condition */}
-              <div>
-                <label className="block text-sm font-medium mb-2">Condition *</label>
-                <select
-                  value={formData.condition}
-                  onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
-                  required
-                >
-                  <option value="new">Brand New</option>
-                  <option value="like_new">Like New</option>
-                  <option value="used">Used - Good</option>
-                  <option value="refurbished">Refurbished</option>
-                </select>
+                {/* Condition */}
+                <div>
+                  <label className="block text-sm font-medium mb-2">Condition *</label>
+                  <select
+                    value={formData.condition}
+                    onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
+                    required
+                  >
+                    <option value="new">Brand New</option>
+                    <option value="like_new">Like New</option>
+                    <option value="used">Used - Good</option>
+                    <option value="refurbished">Refurbished</option>
+                  </select>
+                </div>
               </div>
 
               {/* Location */}
@@ -238,54 +301,55 @@ const SellPage: React.FC = () => {
                 />
               </div>
 
-              {/* Category Selection - Hierarchical */}
+              {/* Category Selection - Modal Trigger */}
               <div>
                 <label className="block text-sm font-medium mb-2">Category *</label>
-
-                {/* Parent Category (Level 1) */}
-                <select
-                  value={selectedParentId}
-                  onChange={(e) => handleParentChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 mb-3"
-                  required
+                <div
+                  onClick={openCategoryModal}
+                  className="w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 cursor-pointer hover:border-red-500 hover:bg-red-50 transition-all group"
                 >
-                  <option value="">Select main category</option>
-                  {parentCategories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-
-                {/* Sub Category (Level 2 or 3) */}
-                {subCategories.length > 0 && (
-                  <select
-                    value={formData.category_id}
-                    onChange={(e) => handleSubCategoryChange(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900"
-                    required
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      {selectedCategory ? (
+                        getCategoryIcon(selectedCategory.name)
+                      ) : (
+                        <FolderTree className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+                      )}
+                      <div>
+                        {selectedCategory ? (
+                          <>
+                            <p className="text-sm font-medium text-gray-900">
+                              {selectedCategory.name}
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                              {getCategoryPath()}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-sm text-gray-500">
+                            Click to select a category
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors" />
+                  </div>
+                </div>
+                {selectedCategory && (
+                  <button
+                    type="button"
+                    onClick={openCategoryModal}
+                    className="text-xs text-red-600 mt-2 hover:text-red-700"
                   >
-                    <option value="">Select subcategory</option>
-                    {subCategories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {/* Show selected category path */}
-                {formData.category_id && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Selected: {getCategoryName(selectedParentId)} → {getCategoryName(formData.category_id)}
-                  </p>
+                    Change category
+                  </button>
                 )}
               </div>
 
               {/* Images */}
               <div>
                 <label className="block text-sm font-medium mb-2">Images (Max 5)</label>
-                <div className="grid grid-cols-4 gap-3 mb-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-3">
                   {imagePreviews.map((preview, index) => (
                     <div key={index} className="relative aspect-square rounded-lg overflow-hidden border border-gray-200">
                       <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-full object-cover" />
@@ -299,7 +363,7 @@ const SellPage: React.FC = () => {
                     </div>
                   ))}
                   {selectedImages.length < 5 && (
-                    <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                    <label className="aspect-square rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:border-red-400 transition-colors">
                       <ImageIcon className="w-6 h-6 text-gray-400" />
                       <span className="text-xs text-gray-500 mt-1">Add</span>
                       <input
@@ -323,7 +387,7 @@ const SellPage: React.FC = () => {
                     type="checkbox"
                     checked={formData.whatsapp_contact}
                     onChange={(e) => setFormData({ ...formData, whatsapp_contact: e.target.checked })}
-                    className="w-4 h-4"
+                    className="w-4 h-4 text-red-600 rounded"
                   />
                   <span className="text-sm">Enable WhatsApp contact</span>
                 </label>
@@ -332,7 +396,7 @@ const SellPage: React.FC = () => {
                     type="checkbox"
                     checked={formData.phone_contact}
                     onChange={(e) => setFormData({ ...formData, phone_contact: e.target.checked })}
-                    className="w-4 h-4"
+                    className="w-4 h-4 text-red-600 rounded"
                   />
                   <span className="text-sm">Enable phone call contact</span>
                 </label>
@@ -342,7 +406,7 @@ const SellPage: React.FC = () => {
               <Button
                 type="submit"
                 disabled={loading || uploadingImages}
-                className="w-full bg-gray-900 hover:bg-gray-800"
+                className="w-full bg-red-600 hover:bg-red-700 text-white py-3"
               >
                 {(loading || uploadingImages) ? (
                   <>
@@ -360,6 +424,131 @@ const SellPage: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* Category Selection Modal - Using same centering as ReviewModal */}
+      <AnimatePresence>
+        {showCategoryModal && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => setShowCategoryModal(false)}
+            />
+
+            {/* Modal Container - Centered (same as ReviewModal) */}
+            <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="pointer-events-auto w-full max-w-md mx-4"
+              >
+                <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                  {/* Modal Header */}
+                  <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-red-50 to-red-100">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {categoryBreadcrumb.length > 0 && (
+                          <button
+                            onClick={handleBack}
+                            className="p-1 hover:bg-red-200 rounded-full transition-colors"
+                          >
+                            <ChevronLeft className="w-5 h-5 text-red-600" />
+                          </button>
+                        )}
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {categoryBreadcrumb.length === 0 ? 'Select Category' : categoryBreadcrumb[categoryBreadcrumb.length - 1].name}
+                        </h3>
+                      </div>
+                      <button
+                        onClick={() => setShowCategoryModal(false)}
+                        className="p-1 hover:bg-red-200 rounded-full transition-colors"
+                      >
+                        <X className="w-5 h-5 text-gray-500" />
+                      </button>
+                    </div>
+
+                    {/* Breadcrumb */}
+                    {categoryBreadcrumb.length > 0 && (
+                      <div className="flex items-center gap-2 mt-3 text-sm text-gray-600 overflow-x-auto pb-1">
+                        {categoryBreadcrumb.slice(0, -1).map((cat, idx) => (
+                          <React.Fragment key={cat.id}>
+                            <span className="text-gray-500 whitespace-nowrap">{cat.name}</span>
+                            <ChevronRight className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          </React.Fragment>
+                        ))}
+                        <span className="text-red-600 font-medium whitespace-nowrap">
+                          {categoryBreadcrumb[categoryBreadcrumb.length - 1].name}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Modal Body - Categories List */}
+                  <div className="max-h-[60vh] overflow-y-auto">
+                    {currentLevelCategories.length === 0 ? (
+                      <div className="p-8 text-center text-gray-500">
+                        No categories found
+                      </div>
+                    ) : (
+                      <div className="divide-y divide-gray-100">
+                        {currentLevelCategories.map((category) => {
+                          const hasChildren = allCategories.some(cat => cat.parent_id === category.id);
+                          return (
+                            <button
+                              key={category.id}
+                              onClick={() => handleCategorySelect(category)}
+                              className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors group text-left"
+                            >
+                              <div className="flex items-center gap-3 flex-1">
+                                <div className="text-gray-400 group-hover:text-red-500 transition-colors">
+                                  {getCategoryIcon(category.name)}
+                                </div>
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900 group-hover:text-red-600 transition-colors">
+                                    {category.name}
+                                  </p>
+                                  {category.description && (
+                                    <p className="text-xs text-gray-500 mt-0.5">
+                                      {category.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              {hasChildren ? (
+                                <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-red-500 transition-colors flex-shrink-0 ml-2" />
+                              ) : (
+                                <Check className="w-5 h-5 text-green-500 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-2" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
+                    <button
+                      onClick={handleReset}
+                      className="text-sm text-red-600 hover:text-red-700"
+                    >
+                      Start over
+                    </button>
+                    <p className="text-xs text-gray-500">
+                      {categoryBreadcrumb.length} level{categoryBreadcrumb.length !== 1 ? 's' : ''} deep
+                    </p>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
       <Footer />
       <MobileBottomNav />
     </div>

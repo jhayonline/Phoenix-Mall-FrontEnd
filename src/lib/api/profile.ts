@@ -28,7 +28,7 @@ export const profileApi = {
         is_active: response.data.is_active,
         email_verified: response.data.email_verified,
         role: 'user',
-        created_at: response.data.created_at,  // Add this line
+        created_at: response.data.created_at,
       }
     };
   },
