@@ -88,6 +88,25 @@ const Profile: React.FC = () => {
     }
   };
 
+  const formatJoinDate = (dateString: string | undefined) => {
+    if (!dateString) return 'Recently';
+
+    try {
+      const date = new Date(dateString);
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Recently';
+      }
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return 'Recently';
+    }
+  };
+
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -261,7 +280,7 @@ const Profile: React.FC = () => {
                   )}
                   <div className="flex items-center text-sm">
                     <Calendar className="w-4 h-4 mr-2 text-gray-500" />
-                    <span>Joined {new Date(profile.created_at).toLocaleDateString()}</span>
+                    <span>Joined {formatJoinDate(profile.created_at)}</span>
                   </div>
                 </div>
               </motion.div>

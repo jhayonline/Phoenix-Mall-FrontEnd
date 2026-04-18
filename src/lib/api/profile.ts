@@ -19,14 +19,16 @@ export const profileApi = {
         id: response.data.pid,
         email: response.data.email,
         first_name: response.data.name.split(' ')[0] || '',
-        last_name: response.data.name.split(' ')[1] || '',
+        last_name: response.data.name.split(' ').slice(1).join(' ') || '',
         phone: response.data.phone_number,
         avatar_url: response.data.avatar_url,
         location: response.data.location,
         whatsapp_enabled: response.data.whatsapp_enabled,
         phone_enabled: response.data.phone_enabled,
         is_active: response.data.is_active,
-        email_verified: response.data.email_verified
+        email_verified: response.data.email_verified,
+        role: 'user',
+        created_at: response.data.created_at,  // Add this line
       }
     };
   },
