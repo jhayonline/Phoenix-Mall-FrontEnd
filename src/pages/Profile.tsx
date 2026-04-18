@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Mail,
   Phone,
@@ -11,7 +11,9 @@ import {
   Camera,
   Heart,
   Package,
-  Eye
+  Eye,
+  ZoomIn,
+  XCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +33,7 @@ const Profile: React.FC = () => {
   const navigate = useNavigate();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
   const [editData, setEditData] = useState({
     first_name: '',
     last_name: '',
@@ -85,7 +88,6 @@ const Profile: React.FC = () => {
     }
   };
 
-  // Update the handleAvatarChange function
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -129,12 +131,19 @@ const Profile: React.FC = () => {
     }
   };
 
+  const getAvatarUrl = () => {
+    if (!profile?.avatar_url) return null;
+    return profile.avatar_url.startsWith('http')
+      ? profile.avatar_url
+      : `http://localhost:5150${profile.avatar_url}`;
+  };
+
   if (isLoading) {
     return (
       <>
         <Header />
         <div className="min-h-screen flex items-center justify-center pt-16">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
         </div>
         <Footer />
         <MobileBottomNav />
@@ -159,6 +168,7 @@ const Profile: React.FC = () => {
   }
 
   const fullName = `${profile.first_name} ${profile.last_name}`.trim();
+  const avatarUrl = getAvatarUrl();
 
   return (
     <>
@@ -187,10 +197,14 @@ const Profile: React.FC = () => {
                 {/* Avatar Section */}
                 <div className="text-center mb-6">
                   <div className="relative inline-block mb-4">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-white text-2xl font-bold mx-auto overflow-hidden">
-                      {profile.avatar_url ? (
+                    {/* Clickable Avatar */}
+                    <div
+                      className="w-24 h-24 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-white text-2xl font-bold mx-auto overflow-hidden cursor-pointer ring-2 ring-offset-2 ring-red-500 hover:ring-4 transition-all"
+                      onClick={() => avatarUrl && setShowImageModal(true)}
+                    >
+                      {avatarUrl ? (
                         <img
-                          src={profile.avatar_url.startsWith('http') ? profile.avatar_url : `http://localhost:5150${profile.avatar_url}`}
+                          src={avatarUrl}
                           alt="Profile"
                           className="w-full h-full object-cover"
                           onError={(e) => {
@@ -204,7 +218,9 @@ const Profile: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-gray-900 text-white p-2 rounded-full cursor-pointer hover:bg-gray-800 transition-colors">
+
+                    {/* Camera Button for Upload */}
+                    <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-gray-900 text-white p-2 rounded-full cursor-pointer hover:bg-gray-800 transition-colors ring-2 ring-white">
                       <Camera className="w-4 h-4" />
                       <input
                         id="avatar-upload"
@@ -402,6 +418,50 @@ const Profile: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Image Preview Modal */}
+      <AnimatePresence>
+        {showImageModal && avatarUrl && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+              onClick={() => setShowImageModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                className="relative max-w-4xl max-h-[90vh] mx-4"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <img
+                  src={avatarUrl}
+                  alt="Profile"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+
+                {/* Close Button */}
+                <button
+                  onClick={() => setShowImageModal(false)}
+                  className="absolute top-4 right-4 p-2 bg-black/50 text-white rounded-full hover:bg-black/70 transition-colors"
+                >
+                  <XCircle className="w-6 h-6" />
+                </button>
+
+                {/* Zoom Hint */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 text-white px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                  <ZoomIn className="w-4 h-4" />
+                  <span>Click outside to close</span>
+                </div>
+              </motion.div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <Footer />
       <MobileBottomNav />
     </>
