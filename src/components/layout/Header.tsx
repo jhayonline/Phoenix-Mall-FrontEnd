@@ -123,9 +123,14 @@ const Header: React.FC = () => {
               className="flex items-center space-x-2 cursor-pointer"
               onClick={() => navigate('/')}
             >
-              <span className="text-xl font-bold font-heading bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                PhoeniX Mall
+              <span className="text-xl font-bold font-heading text-[#FF0000]">
+                PhoeniX
               </span>
+              <img
+                src="/phoenix-logo.svg"
+                alt="Phoenix Mall Logo"
+                className="w-7 h-7"
+              />
             </motion.div>
 
             {/* Desktop Navigation */}
@@ -458,6 +463,11 @@ const Header: React.FC = () => {
                         <span className="text-xl font-bold font-heading bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                           PhoeniX Mall
                         </span>
+                        <img
+                          src="/phoenix-logo.svg"
+                          alt="Phoenix Mall Logo"
+                          className="w-8 h-8"
+                        />
                       </motion.div>
 
                       <motion.button
