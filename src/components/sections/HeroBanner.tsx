@@ -11,15 +11,15 @@ const HeroBanner: React.FC = () => {
       cta: "Shop Now"
     },
     {
-      url: 'https://www.fashiontrendsetter.com/v2/wp-content/uploads/2019/09/Bibhu-Mohapatra-Spring-Summer-2020-Feat.jpg',
-      title: "Elegant Accessories", 
+      url: 'https://img.freepik.com/premium-photo/stylish-sale-banner-featuring-megaphone-announcing-fashion-event-adorned-with-elegant-clothing-accessories_693425-68090.jpg?semt=ais_hybrid&w=740&q=80',
+      title: "Elegant Accessories",
       subtitle: "Elevate your style",
       cta: "Explore"
     },
     {
       url: 'https://www.shutterstock.com/image-vector/set-mockup-realistic-devices-smartphone-260nw-1229073931.jpg',
       title: "Exclusive Offers",
-      subtitle: "Limited time only", 
+      subtitle: "Limited time only",
       cta: "See More"
     }
   ];
@@ -52,10 +52,10 @@ const HeroBanner: React.FC = () => {
                 className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-black/20 to-transparent"></div>
-              
+
               <div className="absolute inset-0 flex items-center">
                 <div className="px-4 sm:px-6 md:px-8 lg:px-12 text-white">
-                  <motion.h2 
+                  <motion.h2
                     key={`title-${currentIndex}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -64,8 +64,8 @@ const HeroBanner: React.FC = () => {
                   >
                     {banners[currentIndex].title}
                   </motion.h2>
-                  
-                  <motion.p 
+
+                  <motion.p
                     key={`subtitle-${currentIndex}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -74,7 +74,7 @@ const HeroBanner: React.FC = () => {
                   >
                     {banners[currentIndex].subtitle}
                   </motion.p>
-                  
+
                   <motion.button
                     key={`cta-${currentIndex}`}
                     initial={{ opacity: 0, x: -20 }}
@@ -95,11 +95,10 @@ const HeroBanner: React.FC = () => {
               <button
                 key={index}
                 onClick={() => setCurrentIndex(index)}
-                className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${
-                  index === currentIndex
+                className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full transition-all ${index === currentIndex
                     ? 'bg-white w-4 sm:w-6'
                     : 'bg-white/60 hover:bg-white/80'
-                }`}
+                  }`}
               />
             ))}
           </div>
