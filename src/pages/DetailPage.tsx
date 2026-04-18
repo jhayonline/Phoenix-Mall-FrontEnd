@@ -11,12 +11,16 @@ import {
   Phone,
   Shield,
   Share2,
-  Check
+  Check,
+  Eye,
+  PenSquare
 } from 'lucide-react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import ProductGrid from '@/components/sections/ProductGrid';
+import ReviewModal from '@/components/ReviewModal';
 import { productsApi, imagesApi, favoritesApi } from '@/lib/api';
 import type { ProductResponseData, ProductImage } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
@@ -29,6 +33,9 @@ interface ProductWithDetails extends ProductResponseData {
     name: string;
     phone?: string;
   };
+  wishlist_count?: number;
+  average_rating?: number;
+  total_reviews?: number;
 }
 
 const DetailPage: React.FC = () => {
@@ -43,8 +50,19 @@ const DetailPage: React.FC = () => {
   const [showZoom, setShowZoom] = useState(false);
   const [copied, setCopied] = useState(false);
   const [relatedProducts, setRelatedProducts] = useState<ProductWithDetails[]>([]);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [showReviewModal, setShowReviewModal] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
+
+  const hasViewedProduct = (productId: string): boolean => {
+    const viewed = sessionStorage.getItem(`viewed_${productId}`);
+    return viewed === 'true';
+  };
+
+  const markProductViewed = (productId: string) => {
+    sessionStorage.setItem(`viewed_${productId}`, 'true');
+  };
 
   const loadProduct = useCallback(async () => {
     setLoading(true);
@@ -52,6 +70,19 @@ const DetailPage: React.FC = () => {
       const response = await productsApi.getProduct(pid!);
       if (response.success && response.data) {
         const productData = response.data;
+
+        if (!hasViewedProduct(pid!)) {
+          await productsApi.trackView(pid!);
+          markProductViewed(pid!);
+          // Refresh product data to get updated view count
+          const updatedResponse = await productsApi.getProduct(pid!);
+          if (updatedResponse.success && updatedResponse.data) {
+            productData.views_count = updatedResponse.data.views_count;
+            productData.wishlist_count = updatedResponse.data.wishlist_count;
+            productData.average_rating = updatedResponse.data.average_rating;
+            productData.total_reviews = updatedResponse.data.total_reviews;
+          }
+        }
 
         let primaryImage: string | undefined;
         let allImages: ProductImage[] | undefined;
@@ -126,11 +157,12 @@ const DetailPage: React.FC = () => {
             } catch (error) {
               console.error('Failed to load images for related product:', product.pid);
             }
+
             return {
               ...product,
               primaryImage,
-              rating: 4.5,
-              reviews: 0,
+              rating: product.average_rating || 0,
+              reviews: product.total_reviews || 0,
             };
           })
         );
@@ -141,6 +173,18 @@ const DetailPage: React.FC = () => {
       console.error('Failed to load related products:', error);
     }
   }, [pid]);
+
+  const handleReviewSubmitted = async () => {
+    // Refresh product data to get updated ratings
+    const response = await productsApi.getProduct(pid!);
+    if (response.success && response.data) {
+      setProduct(prev => prev ? {
+        ...prev,
+        average_rating: response.data.average_rating,
+        total_reviews: response.data.total_reviews,
+      } : prev);
+    }
+  };
 
   useEffect(() => {
     if (pid) {
@@ -207,6 +251,25 @@ const DetailPage: React.FC = () => {
     }
   };
 
+  const shareProduct = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      toast({
+        title: "Link Copied!",
+        description: "Product link copied to clipboard. Share it with friends!",
+      });
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to copy link",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleImageClick = (index: number) => {
     setSelectedImageIndex(index);
   };
@@ -248,16 +311,53 @@ const DetailPage: React.FC = () => {
     }).format(amount);
   };
 
-  const renderStars = (rating: number = 4.5) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-4 h-4 ${i < Math.floor(rating)
-          ? "text-yellow-400 fill-yellow-400"
-          : "text-gray-300"
-          }`}
-      />
-    ));
+  const formatNumber = (num: number) => {
+    if (!num) return '0';
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(1) + 'K';
+    }
+    return num.toString();
+  };
+
+  const renderStars = (ratingValue: number, count?: number) => {
+    const fullStars = Math.floor(ratingValue);
+    const hasHalfStar = ratingValue % 1 >= 0.5;
+
+    return (
+      <div className="flex items-center gap-1">
+        <div className="flex items-center">
+          {[...Array(5)].map((_, i) => (
+            <Star
+              key={i}
+              className={`w-4 h-4 ${i < fullStars
+                ? "text-yellow-400 fill-yellow-400"
+                : i === fullStars && hasHalfStar
+                  ? "text-yellow-400 fill-yellow-400 opacity-50"
+                  : "text-gray-300"
+                }`}
+            />
+          ))}
+        </div>
+        {ratingValue > 0 && (
+          <>
+            <span className="text-sm font-medium text-gray-700 ml-1">
+              {ratingValue.toFixed(1)}
+            </span>
+            {count && count > 0 && (
+              <span className="text-xs text-gray-500">
+                ({formatNumber(count)} reviews)
+              </span>
+            )}
+          </>
+        )}
+        {ratingValue === 0 && (
+          <span className="text-xs text-gray-500 ml-1">No reviews yet</span>
+        )}
+      </div>
+    );
   };
 
   if (loading) {
@@ -265,9 +365,10 @@ const DetailPage: React.FC = () => {
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
         </div>
         <Footer />
+        <MobileBottomNav />
       </div>
     );
   }
@@ -281,27 +382,29 @@ const DetailPage: React.FC = () => {
           <p className="text-gray-600 mb-8">The product you're looking for doesn't exist or has been removed.</p>
           <button
             onClick={() => navigate('/shop')}
-            className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition-colors"
+            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
           >
             Continue Shopping
           </button>
         </div>
         <Footer />
+        <MobileBottomNav />
       </div>
     );
   }
 
   const imageList = product.allImages?.map(img => img.image_url) || [product.primaryImage || ''];
   const hasImages = imageList.length > 0 && imageList[0];
+  const viewsCount = product.views_count || 0;
+  const wishlistCount = (product as any).wishlist_count || 0;
+  const averageRating = (product as any).average_rating || 0;
+  const totalReviews = (product as any).total_reviews || 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <div className="container mx-auto px-4 py-4 pt-24">
-      </div>
-
-      <div className="container mx-auto px-4 pb-12">
+      <div className="container mx-auto px-4 pt-24 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
           {/* Product Images */}
           <div className="relative">
@@ -361,7 +464,7 @@ const DetailPage: React.FC = () => {
                       key={index}
                       onClick={() => handleImageClick(index)}
                       className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${selectedImageIndex === index
-                        ? 'border-gray-900 ring-2 ring-gray-300'
+                        ? 'border-red-500 ring-2 ring-red-200'
                         : 'border-gray-200 hover:border-gray-400'
                         }`}
                     >
@@ -377,16 +480,26 @@ const DetailPage: React.FC = () => {
           <div>
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{product.title}</h1>
 
-            <div className="flex items-center gap-3 mb-6">
-              <span className="text-3xl font-bold text-gray-900">{formatCurrency(product.price)}</span>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl font-bold text-red-600">{formatCurrency(product.price)}</span>
               {product.condition && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded">{product.condition}</span>
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded capitalize">{product.condition}</span>
               )}
             </div>
 
-            <div className="flex items-center gap-2 mb-6">
-              <div className="flex items-center">{renderStars(4.5)}</div>
-              <span className="text-sm text-gray-600">(Coming soon)</span>
+            {/* Stats Row - Views, Wishlist, Rating from backend */}
+            <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200 flex-wrap">
+              <div className="flex items-center gap-1 text-gray-500">
+                <Eye className="w-4 h-4" />
+                <span className="text-sm">{formatNumber(viewsCount)} views</span>
+              </div>
+              <div className="flex items-center gap-1 text-gray-500">
+                <Heart className="w-4 h-4" />
+                <span className="text-sm">{formatNumber(wishlistCount)} saved</span>
+              </div>
+              <div className="flex items-center gap-1">
+                {renderStars(averageRating, totalReviews)}
+              </div>
             </div>
 
             <p className="text-gray-700 mb-6 leading-relaxed">{product.description || 'No description available.'}</p>
@@ -409,10 +522,24 @@ const DetailPage: React.FC = () => {
                 <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
                 {isLiked ? 'Saved to Wishlist' : 'Add to Wishlist'}
               </button>
-              <button className="p-3 rounded-lg border border-gray-300 text-gray-600 hover:border-gray-400 transition-colors">
-                <Share2 className="w-5 h-5" />
+              <button
+                onClick={shareProduct}
+                className="p-3 rounded-lg border border-gray-300 text-gray-600 hover:border-gray-400 transition-colors relative"
+              >
+                {shareCopied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className="w-5 h-5" />}
               </button>
             </div>
+
+            {/* Write a Review Button */}
+            {user && (
+              <button
+                onClick={() => setShowReviewModal(true)}
+                className="w-full mb-8 py-2 px-4 rounded-lg border border-gray-300 text-gray-700 hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+              >
+                <PenSquare className="w-4 h-4" />
+                Write a Review
+              </button>
+            )}
 
             <div className="border-t border-gray-200 pt-6 mb-8">
               <h3 className="font-semibold text-gray-900 mb-4">Contact Seller</h3>
@@ -464,7 +591,17 @@ const DetailPage: React.FC = () => {
         )}
       </div>
 
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={showReviewModal}
+        onClose={() => setShowReviewModal(false)}
+        productId={pid!}
+        productName={product.title}
+        onReviewSubmitted={handleReviewSubmitted}
+      />
+
       <Footer />
+      <MobileBottomNav />
     </div>
   );
 };

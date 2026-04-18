@@ -45,6 +45,12 @@ export const productsApi = {
     };
   },
 
+  async trackView(pid: string): Promise<void> {
+    await backendRequest<void>(`/products/${pid}/track-view`, {
+      method: 'POST',
+    });
+  },
+
   async createProduct(productData: CreateProductData): Promise<ProductResponse> {
     const response = await backendRequest<ProductResponseData>('/products/create', {
       method: 'POST',

@@ -7,7 +7,6 @@ import type { ProductResponseData } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 
-// Extended product type for frontend use
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
   rating?: number;
@@ -108,17 +107,30 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
     }).format(amount);
   };
 
-  const renderStars = (rating: number = 4.5) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <Star
-        key={i}
-        className={`w-3 h-3 ${i < Math.floor(rating)
-          ? "text-yellow-400 fill-yellow-400"
-          : "text-gray-300"
-          }`}
-      />
-    ));
+  const renderStars = (rating: number = 0) => {
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    return (
+      <div className="flex items-center">
+        {[...Array(5)].map((_, i) => (
+          <Star
+            key={i}
+            className={`w-3 h-3 ${i < fullStars
+              ? "text-yellow-400 fill-yellow-400"
+              : i === fullStars && hasHalfStar
+                ? "text-yellow-400 fill-yellow-400 opacity-50"
+                : "text-gray-300"
+              }`}
+          />
+        ))}
+        {rating > 0 && (
+          <span className="text-xs text-gray-500 ml-1">{rating.toFixed(1)}</span>
+        )}
+      </div>
+    );
   };
+
 
   const getGridCols = () => {
     switch (viewMode) {
@@ -238,10 +250,10 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
                 )}
 
                 <div className="flex items-center gap-2 mb-2">
-                  <div className="flex items-center">
-                    {renderStars(4.5)}
-                  </div>
-                  <span className="text-xs text-gray-500">(Coming soon)</span>
+                  {renderStars(product.rating || 0)}
+                  {product.reviews && product.reviews > 0 && (
+                    <span className="text-xs text-gray-500">({product.reviews})</span>
+                  )}
                 </div>
 
                 {product.location && (
