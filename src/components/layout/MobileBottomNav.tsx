@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Home, Search, Heart, User, ShoppingCart } from 'lucide-react';
+import { Home, Search, Heart, User, ShoppingCart, Plus } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { wishlistApi } from '@/lib/api';
 import { useAuth } from '@/contexts/AuthContext';
@@ -52,6 +52,12 @@ const MobileBottomNav: React.FC = () => {
       path: '/shop',
       badge: null
     },
+    ...(user ? [{
+      name: 'Sell',
+      icon: Plus,
+      path: '/sell',
+      badge: null
+    }] : []),
     {
       name: 'Wishlist',
       icon: Heart,

@@ -369,8 +369,8 @@ const ShopPage = () => {
                       <button
                         onClick={() => handleCategoryClick(category.name)}
                         className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-all duration-200 group ${selectedCategories.includes(category.name)
-                            ? 'bg-red-50 border-r-2 border-red-500'
-                            : ''
+                          ? 'bg-red-50 border-r-2 border-red-500'
+                          : ''
                           }`}
                       >
                         <div className="flex items-center gap-3">
@@ -379,8 +379,8 @@ const ShopPage = () => {
                             {category.icon}
                           </div>
                           <span className={`text-sm font-medium ${selectedCategories.includes(category.name)
-                              ? 'text-red-600'
-                              : 'text-gray-700 group-hover:text-gray-900'
+                            ? 'text-red-600'
+                            : 'text-gray-700 group-hover:text-gray-900'
                             }`}>
                             {category.name}
                           </span>
@@ -499,8 +499,8 @@ const ShopPage = () => {
                           key={page}
                           onClick={() => goToPage(page)}
                           className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === page
-                              ? 'bg-red-600 text-white'
-                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                             }`}
                         >
                           {page}
