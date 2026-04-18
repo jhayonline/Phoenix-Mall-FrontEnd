@@ -13,7 +13,6 @@ import DetailPage from "./pages/DetailPage";
 import Messages from "./pages/Messaging";
 import Notifications from "./pages/Notifications";
 import Contact from "./pages/Contact";
-import Categories from "./pages/Categories";
 import Profile from "./pages/Profile";
 import SellPage from "./pages/SellPage";
 import WishlistPage from "./pages/WishlistPage";
@@ -48,7 +47,6 @@ const App = () => (
               <Route path="/messaging" element={<Messages />} />
               <Route path="/notifications" element={<Notifications />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/categories" element={<Categories />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/sell" element={<SellPage />} />
               <Route path="/wishlist" element={<WishlistPage />} />

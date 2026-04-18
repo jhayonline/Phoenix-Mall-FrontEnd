@@ -60,7 +60,6 @@ const Header: React.FC = () => {
   const navigationItems = [
     { name: 'Home', path: '/', icon: <Home className="w-4 h-4" /> },
     { name: 'Shop', path: '/shop', icon: <ShoppingCart className="w-4 h-4" /> },
-    { name: 'Categories', path: '/categories', icon: <Grid className="w-4 h-4" /> },
     { name: 'Contact', path: '/contact', icon: <Mail className="w-4 h-4" /> }
   ];
 

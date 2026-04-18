@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   X,
   SlidersHorizontal,
@@ -6,19 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronRight as ChevronRightIcon,
-  Laptop,
-  Smartphone,
-  Sofa,
-  Home,
-  Shirt,
-  Gem,
-  Building,
-  Car,
-  Utensils,
-  Baby,
-  Sparkles,
-  Tv,
-  Briefcase,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Header from '@/components/layout/Header';
@@ -31,6 +18,8 @@ import type { ProductResponseData, CategoryResponseData } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import SearchBar from '@/components/SearchBar';
 import { useSearchParams } from 'react-router-dom';
+import { iconMap } from '@/lib/iconMap';
+import { Package } from 'lucide-react';
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -54,22 +43,6 @@ interface CategoryWithSubs extends CategoryResponseData {
   icon?: React.ReactNode;
 }
 
-const iconMap: Record<string, React.ReactNode> = {
-  'Electronics': <Laptop className="w-5 h-5" />,
-  'Fashion': <Shirt className="w-5 h-5" />,
-  'Vehicles': <Car className="w-5 h-5" />,
-  'Home & Living': <Home className="w-5 h-5" />,
-  'Mobile Phones': <Smartphone className="w-5 h-5" />,
-  'Furniture': <Sofa className="w-5 h-5" />,
-  'Home Appliances': <Tv className="w-5 h-5" />,
-  'Jewelries': <Gem className="w-5 h-5" />,
-  'Property': <Building className="w-5 h-5" />,
-  'Services': <Briefcase className="w-5 h-5" />,
-  'Food & Agriculture': <Utensils className="w-5 h-5" />,
-  'Babies & Kids': <Baby className="w-5 h-5" />,
-  'Beauty & Personal Care': <Sparkles className="w-5 h-5" />,
-};
-
 const ShopPage = () => {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [allCategories, setAllCategories] = useState<CategoryResponseData[]>([]);
@@ -90,7 +63,10 @@ const ShopPage = () => {
   const [showSort, setShowSort] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [hoveredCategory, setHoveredCategory] = useState<CategoryWithSubs | null>(null);
-  const [hoveredSubCategory, setHoveredSubCategory] = useState<CategoryResponseData | null>(null);
+  const [isHoveringSecondary, setIsHoveringSecondary] = useState(false);
+  const hoverContainerRef = useRef<HTMLDivElement>(null);
+  const secondaryRef = useRef<HTMLDivElement>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -115,19 +91,38 @@ const ShopPage = () => {
     }
   }, []);
 
+  // Handle click outside to close sidebars
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      const isInMainSidebar = hoverContainerRef.current?.contains(target);
+      const isInSecondarySidebar = secondaryRef.current?.contains(target);
+
+      if (!isInMainSidebar && !isInSecondarySidebar) {
+        setHoveredCategory(null);
+        setIsHoveringSecondary(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const loadCategories = async () => {
     try {
       const response = await categoriesApi.getAllCategories();
       if (response.success && response.data) {
         setAllCategories(response.data);
 
-        // Build hierarchical category structure
         const level1Categories = response.data.filter(cat => cat.level === 1);
-        const categoriesWithChildren = level1Categories.map(cat => ({
-          ...cat,
-          subcategories: response.data.filter(sub => sub.parent_id === cat.id && sub.level === 2),
-          icon: iconMap[cat.name],
-        }));
+        const categoriesWithChildren = level1Categories.map(cat => {
+          const IconComponent = iconMap[cat.name] || Package;
+          return {
+            ...cat,
+            subcategories: response.data.filter(sub => sub.parent_id === cat.id && sub.level === 2),
+            icon: <IconComponent className="w-5 h-5" />,
+          };
+        });
         setCategoriesWithSubs(categoriesWithChildren);
       }
     } catch (error) {
@@ -138,11 +133,6 @@ const ShopPage = () => {
         variant: "destructive",
       });
     }
-  };
-
-  // Get deeper subcategories (level 3) for a given subcategory
-  const getDeeperSubcategories = (subCategoryId: string) => {
-    return allCategories.filter(cat => cat.parent_id === subCategoryId && cat.level === 3);
   };
 
   const loadProducts = async () => {
@@ -231,6 +221,8 @@ const ShopPage = () => {
     setSelectedCategories([categoryName]);
     setCurrentPage(1);
     setSearchParams({ category: categoryName.toLowerCase() });
+    setHoveredCategory(null);
+    setIsHoveringSecondary(false);
   };
 
   const handleSearch = (query: string) => {
@@ -248,6 +240,33 @@ const ShopPage = () => {
       setCurrentPage(page);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+  };
+
+  const handleCategoryMouseEnter = (category: CategoryWithSubs) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setHoveredCategory(category);
+  };
+
+  const handleCategoryMouseLeave = () => {
+    if (!isHoveringSecondary) {
+      hoverTimeoutRef.current = setTimeout(() => {
+        setHoveredCategory(null);
+      }, 150);
+    }
+  };
+
+  const handleSecondaryMouseEnter = () => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    setIsHoveringSecondary(true);
+  };
+
+  const handleSecondaryMouseLeave = () => {
+    setIsHoveringSecondary(false);
+    setTimeout(() => {
+      if (!isHoveringSecondary) {
+        setHoveredCategory(null);
+      }
+    }, 150);
   };
 
   const formatCurrency = (amount: number) => {
@@ -297,7 +316,6 @@ const ShopPage = () => {
       <div className="pt-16">
         <HeroBanner />
 
-        {/* Mobile Search Bar */}
         <div className="lg:hidden sticky top-16 z-40 bg-white border-b border-gray-200 p-3">
           <SearchBar
             placeholder="Search products..."
@@ -306,7 +324,6 @@ const ShopPage = () => {
           />
         </div>
 
-        {/* Mobile Filter/Sort Buttons */}
         <div className="lg:hidden flex items-center justify-between p-3 bg-white border-b border-gray-200">
           <button
             onClick={() => setShowFilters(true)}
@@ -325,13 +342,15 @@ const ShopPage = () => {
           </button>
         </div>
 
-        {/* Main Content */}
         <div className="container mx-auto px-3 sm:px-4 py-4 lg:py-6">
-          <div className="flex gap-6 lg:gap-8">
+          <div className="flex gap-0 relative">
             {/* Desktop Sidebar */}
-            <div className="hidden lg:block w-72 flex-shrink-0">
+            <div
+              ref={hoverContainerRef}
+              className="hidden lg:block w-72 flex-shrink-0"
+              onMouseLeave={handleCategoryMouseLeave}
+            >
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
-                {/* Search Bar */}
                 <div className="p-4 border-b border-gray-100">
                   <SearchBar
                     placeholder="Search in categories..."
@@ -341,31 +360,17 @@ const ShopPage = () => {
                   />
                 </div>
 
-                {/* Categories Header */}
-                <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-red-50 to-red-100">
-                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                    <span className="w-1 h-5 bg-red-500 rounded-full"></span>
-                    All Categories
-                  </h3>
-                </div>
-
-                {/* Categories List */}
                 <div className="py-2">
                   {categoriesWithSubs.map((category) => (
                     <div
                       key={category.id}
-                      className="relative"
-                      onMouseEnter={() => setHoveredCategory(category)}
-                      onMouseLeave={() => {
-                        setHoveredCategory(null);
-                        setHoveredSubCategory(null);
-                      }}
+                      onMouseEnter={() => handleCategoryMouseEnter(category)}
                     >
                       <button
                         onClick={() => handleCategoryClick(category.name)}
                         className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-all duration-200 group ${selectedCategories.includes(category.name)
-                          ? 'bg-red-50 border-r-2 border-red-500'
-                          : ''
+                            ? 'bg-red-50 border-r-2 border-red-500'
+                            : ''
                           }`}
                       >
                         <div className="flex items-center gap-3">
@@ -374,8 +379,8 @@ const ShopPage = () => {
                             {category.icon}
                           </div>
                           <span className={`text-sm font-medium ${selectedCategories.includes(category.name)
-                            ? 'text-red-600'
-                            : 'text-gray-700 group-hover:text-gray-900'
+                              ? 'text-red-600'
+                              : 'text-gray-700 group-hover:text-gray-900'
                             }`}>
                             {category.name}
                           </span>
@@ -384,87 +389,10 @@ const ShopPage = () => {
                           <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
                         )}
                       </button>
-
-                      {/* Subcategories Sidebar - Appears on hover */}
-                      <AnimatePresence>
-                        {hoveredCategory?.id === category.id && category.subcategories && category.subcategories.length > 0 && (
-                          <motion.div
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            exit={{ opacity: 0, x: -10 }}
-                            transition={{ duration: 0.2 }}
-                            className="absolute left-full top-0 ml-1 w-64 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden"
-                          >
-                            <div className="py-2">
-                              <div className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-100">
-                                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                  {category.name}
-                                </span>
-                              </div>
-                              {category.subcategories.map((sub) => {
-                                const deeperSubs = getDeeperSubcategories(sub.id);
-                                return (
-                                  <div
-                                    key={sub.id}
-                                    className="relative"
-                                    onMouseEnter={() => setHoveredSubCategory(sub)}
-                                    onMouseLeave={() => setHoveredSubCategory(null)}
-                                  >
-                                    <button
-                                      onClick={() => handleCategoryClick(sub.name)}
-                                      className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors group flex items-center justify-between"
-                                    >
-                                      <span className="text-sm text-gray-600 group-hover:text-gray-900">
-                                        {sub.name}
-                                      </span>
-                                      {deeperSubs.length > 0 && (
-                                        <ChevronRightIcon className="w-3 h-3 text-gray-300" />
-                                      )}
-                                    </button>
-
-                                    {/* Level 3 Subcategories (iPhone, Samsung, etc.) */}
-                                    <AnimatePresence>
-                                      {hoveredSubCategory?.id === sub.id && deeperSubs.length > 0 && (
-                                        <motion.div
-                                          initial={{ opacity: 0, x: -10 }}
-                                          animate={{ opacity: 1, x: 0 }}
-                                          exit={{ opacity: 0, x: -10 }}
-                                          transition={{ duration: 0.2 }}
-                                          className="absolute left-full top-0 ml-1 w-64 bg-white rounded-xl shadow-lg border border-gray-100 z-50 overflow-hidden"
-                                        >
-                                          <div className="py-2">
-                                            <div className="px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-100">
-                                              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                                                {sub.name}
-                                              </span>
-                                            </div>
-                                            {deeperSubs.map((deepSub) => (
-                                              <button
-                                                key={deepSub.id}
-                                                onClick={() => handleCategoryClick(deepSub.name)}
-                                                className="w-full text-left px-4 py-2.5 hover:bg-gray-50 transition-colors group flex items-center justify-between"
-                                              >
-                                                <span className="text-sm text-gray-600 group-hover:text-gray-900">
-                                                  {deepSub.name}
-                                                </span>
-                                              </button>
-                                            ))}
-                                          </div>
-                                        </motion.div>
-                                      )}
-                                    </AnimatePresence>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
                     </div>
                   ))}
                 </div>
 
-                {/* Price Range Section */}
                 <div className="p-4 border-t border-gray-100 bg-gray-50">
                   <h4 className="font-semibold text-gray-900 mb-3 text-sm">Price Range</h4>
                   <div className="space-y-3">
@@ -492,6 +420,45 @@ const ShopPage = () => {
               </div>
             </div>
 
+            {/* Secondary Sidebar - Subcategories (Level 2 only) */}
+            <AnimatePresence>
+              {hoveredCategory && hoveredCategory.subcategories && hoveredCategory.subcategories.length > 0 && (
+                <motion.div
+                  ref={secondaryRef}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.15 }}
+                  className="hidden lg:block w-64 flex-shrink-0 bg-white rounded-r-xl shadow-sm border border-l-0 border-gray-100 overflow-hidden sticky top-24"
+                  onMouseEnter={handleSecondaryMouseEnter}
+                  onMouseLeave={handleSecondaryMouseLeave}
+                >
+                  <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
+                    <h3 className="font-semibold text-gray-900">
+                      {hoveredCategory.name}
+                    </h3>
+                  </div>
+                  <div className="py-2 max-h-[calc(100vh-200px)] overflow-y-auto">
+                    {hoveredCategory.subcategories.map((sub) => {
+                      const IconComponent = iconMap[sub.name] || Package;
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => handleCategoryClick(sub.name)}
+                          className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors group text-left"
+                        >
+                          <IconComponent className="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors" />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                            {sub.name}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Main Content Area - Product Grid */}
             <div className="flex-1">
               <ProductGrid
@@ -501,7 +468,6 @@ const ShopPage = () => {
                 loading={loading}
               />
 
-              {/* Pagination Controls */}
               {pagination.total_pages > 1 && (
                 <div className="flex justify-center items-center gap-2 mt-8">
                   <button
@@ -533,8 +499,8 @@ const ShopPage = () => {
                           key={page}
                           onClick={() => goToPage(page)}
                           className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === page
-                            ? 'bg-red-600 text-white'
-                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                              ? 'bg-red-600 text-white'
+                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                             }`}
                         >
                           {page}
@@ -554,7 +520,6 @@ const ShopPage = () => {
                 </div>
               )}
 
-              {/* Results info */}
               {pagination.total > 0 && (
                 <div className="text-center text-sm text-gray-500 mt-4">
                   Showing {((currentPage - 1) * pagination.per_page) + 1} to{' '}
