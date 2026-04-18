@@ -3,8 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, User, Menu, X, LogIn, UserPlus,
   MessageSquare, Bell, Megaphone,
-  LogOut, Settings, Store,
-  Home, ShoppingCart, Grid, Info, Mail, Plus, Package
+  LogOut, Store,
+  Home, ShoppingCart, Grid, Mail, Plus, Package
 } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -216,12 +216,12 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-3">
                 {user ? (
                   <>
-                    {/* SELL BUTTON - Plus icon for posting products */}
+                    {/* SELL BUTTON - Changed to red gradient */}
                     <motion.div
                       variants={iconVariants}
                       whileHover="hover"
                       whileTap="tap"
-                      className="relative p-2 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-md hover:shadow-lg transition-all cursor-pointer hidden md:block"
+                      className="relative p-2 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:shadow-lg transition-all cursor-pointer hidden md:block"
                       onClick={() => navigate('/sell')}
                     >
                       <Plus className="w-5 h-5" />
@@ -492,7 +492,7 @@ const Header: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Sell button in mobile menu */}
+                    {/* Sell button in mobile menu - Changed to red */}
                     {user && (
                       <div className="pt-4 border-t border-border/50">
                         <motion.button
@@ -502,7 +502,7 @@ const Header: React.FC = () => {
                             navigate('/sell');
                             setIsMobileMenuOpen(false);
                           }}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 text-white rounded-lg font-medium"
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium"
                         >
                           <Plus className="w-5 h-5" />
                           <span>Sell an Item</span>
