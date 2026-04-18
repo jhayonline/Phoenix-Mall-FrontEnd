@@ -90,4 +90,32 @@ export const profileApi = {
       message: 'Success'
     };
   },
+
+  async uploadAvatar(file: File): Promise<{ success: boolean; data: { avatar_url: string }; message: string }> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+
+    const token = localStorage.getItem('access_token');
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5150/api';
+
+    const response = await fetch(`${API_BASE_URL}/profile/avatar`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || error.description || 'Upload failed');
+    }
+
+    const data = await response.json();
+    return {
+      success: true,
+      data,
+      message: 'Avatar uploaded successfully'
+    };
+  },
 };

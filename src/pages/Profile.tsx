@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
-  User,
   Mail,
   Phone,
   MapPin,
@@ -10,14 +9,12 @@ import {
   Save,
   X,
   Camera,
-  Settings,
   Heart,
   Package,
   Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -88,16 +85,46 @@ const Profile: React.FC = () => {
     }
   };
 
+  // Update the handleAvatarChange function
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // In a real app, you would upload the file to a storage service first
-      // For now, we'll just use a placeholder URL
-      const avatarUrl = URL.createObjectURL(file);
+      // Check file size (max 2MB)
+      if (file.size > 2 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please upload an image smaller than 2MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload an image file",
+          variant: "destructive",
+        });
+        return;
+      }
+
       try {
-        await updateProfile({ avatar_url: avatarUrl });
-      } catch (error) {
-        // Error handling is done in the context
+        const response = await profileApi.uploadAvatar(file);
+        if (response.success && response.data.avatar_url) {
+          // Update profile with new avatar URL
+          await updateProfile({ avatar_url: response.data.avatar_url });
+          toast({
+            title: "Success",
+            description: "Profile picture updated successfully",
+          });
+        }
+      } catch (error: any) {
+        toast({
+          title: "Upload failed",
+          description: error.message || "Something went wrong",
+          variant: "destructive",
+        });
       }
     }
   };
@@ -160,15 +187,21 @@ const Profile: React.FC = () => {
                 {/* Avatar Section */}
                 <div className="text-center mb-6">
                   <div className="relative inline-block mb-4">
-                    <div className="w-24 h-24 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center text-white text-2xl font-bold mx-auto">
+                    <div className="w-24 h-24 rounded-full bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center text-white text-2xl font-bold mx-auto overflow-hidden">
                       {profile.avatar_url ? (
                         <img
-                          src={profile.avatar_url}
+                          src={profile.avatar_url.startsWith('http') ? profile.avatar_url : `http://localhost:5150${profile.avatar_url}`}
                           alt="Profile"
-                          className="w-full h-full rounded-full object-cover"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}&background=ef4444&color=fff&size=96`;
+                          }}
                         />
                       ) : (
-                        <span>{profile.first_name?.charAt(0) || profile.email?.charAt(0)}</span>
+                        <span className="text-2xl font-bold">
+                          {profile.first_name?.charAt(0) || profile.email?.charAt(0)}
+                        </span>
                       )}
                     </div>
                     <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-gray-900 text-white p-2 rounded-full cursor-pointer hover:bg-gray-800 transition-colors">
@@ -184,7 +217,7 @@ const Profile: React.FC = () => {
                   </div>
                   <h2 className="text-xl font-semibold">{fullName || 'User'}</h2>
                   <p className="text-gray-600">{profile.email}</p>
-                  <p className="text-sm text-blue-600 mt-1 capitalize">{profile.role}</p>
+                  <p className="text-sm text-red-600 mt-1 capitalize">{profile.role}</p>
                   {profile.email_verified ? (
                     <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Verified</span>
                   ) : (
