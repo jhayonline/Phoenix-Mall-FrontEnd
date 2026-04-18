@@ -71,9 +71,7 @@ const Header: React.FC = () => {
     { name: 'My Profile', icon: <User className="w-4 h-4" />, action: () => navigate('/profile') },
     { name: 'My Listings', icon: <Package className="w-4 h-4" />, action: () => navigate('/my-listings') },
     { name: 'Seller Dashboard', icon: <Store className="w-4 h-4" />, action: () => navigate('/seller/dashboard') },
-    { name: 'My Listings', icon: <Store className="w-4 h-4" />, action: () => navigate('/profile/listings') },
     { name: 'My Wishlist', icon: <Heart className="w-4 h-4" />, action: () => navigate('/wishlist') },
-    { name: 'Settings', icon: <Settings className="w-4 h-4" />, action: () => navigate('/settings') },
     { name: 'Logout', icon: <LogOut className="w-4 h-4" />, action: () => logout() },
   ];
 
