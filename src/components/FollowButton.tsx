@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/use-auth';
 
 interface FollowButtonProps {
   userId: number;
+  userPid?: string;
   username?: string;
   onFollowChange?: (isFollowing: boolean) => void;
   variant?: 'default' | 'outline' | 'compact';
@@ -14,6 +15,7 @@ interface FollowButtonProps {
 
 const FollowButton: React.FC<FollowButtonProps> = ({
   userId,
+  userPid,
   username,
   onFollowChange,
   variant = 'default'
@@ -23,11 +25,19 @@ const FollowButton: React.FC<FollowButtonProps> = ({
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Compare by pid if available, otherwise fall back to id string comparison
+  const isOwnProfile = userPid
+    ? user?.id === userPid
+    : user?.id === userId.toString();
+
   useEffect(() => {
-    if (user && user.id !== userId.toString()) {
+    if (user && !isOwnProfile) {
       checkFollowStatus();
     }
   }, [userId, user]);
+
+  // After all hooks — safe early return
+  if (!user || isOwnProfile) return null;
 
   const checkFollowStatus = async () => {
     try {

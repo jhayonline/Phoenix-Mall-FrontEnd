@@ -30,10 +30,6 @@ import FollowButton from '@/components/FollowButton';
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
   allImages?: ProductImage[];
-  seller?: {
-    name: string;
-    phone?: string;
-  };
   wishlist_count?: number;
   average_rating?: number;
   total_reviews?: number;
@@ -53,6 +49,7 @@ const DetailPage: React.FC = () => {
   const [relatedProducts, setRelatedProducts] = useState<ProductWithDetails[]>([]);
   const [shareCopied, setShareCopied] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
+  const [seller, setSeller] = useState<any | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -72,13 +69,10 @@ const DetailPage: React.FC = () => {
       if (response.success && response.data) {
         let productData = response.data;
 
-        // Track view (non-critical, wrap in try-catch)
         if (!hasViewedProduct(pid!)) {
           try {
             await productsApi.trackView(pid!);
             markProductViewed(pid!);
-
-            // Refresh product data to get updated view count
             const updatedResponse = await productsApi.getProduct(pid!);
             if (updatedResponse.success && updatedResponse.data) {
               productData = {
@@ -89,7 +83,7 @@ const DetailPage: React.FC = () => {
                 total_reviews: (updatedResponse.data as any).total_reviews,
               };
             }
-          } catch (trackError) {
+          } catch {
             //
           }
         }
@@ -103,20 +97,23 @@ const DetailPage: React.FC = () => {
             const primaryImg = allImages.find(img => img.is_primary);
             primaryImage = primaryImg?.image_url || allImages[0]?.image_url;
           }
-        } catch (error) {
+        } catch {
           //
         }
 
-        const sellerInfo = {
-          name: `Seller ${productData.seller_id}`,
-          phone: '+233 XX XXX XXXX',
-        };
+        // Fetch seller info — must be before setProduct, no reference leak
+        try {
+          const sellerRes = await productsApi.getSeller(productData.seller_id);
+          setSeller(sellerRes.data);
+        } catch {
+          //
+        }
 
+        // No seller field on product — it's in its own state now
         setProduct({
           ...productData,
           primaryImage,
           allImages,
-          seller: sellerInfo,
         });
 
         if (productData.category_id) {
@@ -243,18 +240,6 @@ const DetailPage: React.FC = () => {
         title: "Error",
         description: "Something went wrong",
         variant: "destructive",
-      });
-    }
-  };
-
-  const copyPhoneNumber = () => {
-    if (product?.seller?.phone) {
-      navigator.clipboard.writeText(product.seller.phone);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-      toast({
-        title: "Copied!",
-        description: "Phone number copied to clipboard",
       });
     }
   };
@@ -550,32 +535,89 @@ const DetailPage: React.FC = () => {
             )}
 
             <div className="border-t border-gray-200 pt-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-4">Contact Seller</h3>
+              <h3 className="font-semibold text-gray-900 mb-4">Seller</h3>
 
-              {product.seller_id && user?.id !== product.seller_id.toString() && (
-                <div className="mb-4">
-                  <FollowButton
-                    userId={product.seller_id}
-                    variant="outline"
-                  />
+              {seller && (
+                <div
+                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors mb-4"
+                  onClick={() => seller.username && navigate(`/user/${seller.username}`)}
+                >
+                  {/* Avatar */}
+                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                    {seller.avatar_url ? (
+                      <img
+                        src={seller.avatar_url.startsWith('http')
+                          ? seller.avatar_url
+                          : `${(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5150/api').replace('/api', '')}${seller.avatar_url}`}
+                        alt={seller.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=ef4444&color=fff&size=48`;
+                        }}
+                      />
+                    ) : (
+                      <span className="text-white font-bold text-lg">{seller.name.charAt(0)}</span>
+                    )}
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900">{seller.name}</p>
+                    {seller.username && (
+                      <p className="text-sm text-gray-500">@{seller.username}</p>
+                    )}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                      <span>{seller.product_count} listings</span>
+                      <span>{seller.follower_count} followers</span>
+                    </div>
+                  </div>
+
+                  {/* Follow button — only for other users */}
+                  {user && user.id !== seller.id?.toString() && (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <FollowButton
+                        userId={seller.id}
+                        userPid={seller.pid}
+                        username={seller.username || seller.name}
+                        variant="outline"
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {seller?.location && (
+                <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                  <MapPin className="w-4 h-4" />
+                  <span>{seller.location}</span>
                 </div>
               )}
 
               <div className="flex gap-3">
-                <button
-                  onClick={() => window.open(`https://wa.me/${product.seller?.phone}`, '_blank')}
-                  className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  WhatsApp
-                </button>
-                <button
-                  onClick={copyPhoneNumber}
-                  className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
-                >
-                  <Phone className="w-4 h-4" />
-                  {copied ? <Check className="w-4 h-4" /> : 'Call'}
-                </button>
+                {product.whatsapp_contact && seller?.whatsapp_enabled && (
+                  <button
+                    onClick={() => window.open(`https://wa.me/${seller.phone_number?.replace(/\D/g, '')}`, '_blank')}
+                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    WhatsApp
+                  </button>
+                )}
+                {product.phone_contact && seller?.phone_enabled && seller?.phone_number && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(seller.phone_number);
+                      setCopied(true);
+                      setTimeout(() => setCopied(false), 2000);
+                      toast({ title: "Copied!", description: "Phone number copied to clipboard" });
+                    }}
+                    className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Phone className="w-4 h-4" />
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : 'Call'}
+                  </button>
+                )}
               </div>
             </div>
 

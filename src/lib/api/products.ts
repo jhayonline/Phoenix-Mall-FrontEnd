@@ -36,6 +36,11 @@ export const productsApi = {
     };
   },
 
+  async getSeller(sellerId: number): Promise<{ success: boolean; data: any }> {
+    const response = await backendRequest<any>(`/products/seller/${sellerId}`);
+    return { success: true, data: response.data };
+  },
+
   async getProduct(pid: string): Promise<ProductResponse> {
     const response = await backendRequest<ProductResponseData>(`/products/get/${pid}`);
     return {

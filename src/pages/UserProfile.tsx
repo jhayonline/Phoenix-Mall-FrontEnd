@@ -242,6 +242,7 @@ const UserProfile: React.FC = () => {
                   </div>
                   <FollowButton
                     userId={profile.id}
+                    userPid={profile.pid}
                     username={profile.username || profile.name}
                     onFollowChange={handleFollowChange}
                   />
