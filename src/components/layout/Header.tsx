@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Heart, User, Menu, X, LogIn, UserPlus,
-  MessageSquare, Bell, Megaphone,
+  MessageSquare, Bell,
   LogOut, Store,
   Home, ShoppingCart, Grid, Mail, Plus, Package
 } from 'lucide-react';
@@ -18,6 +18,7 @@ const Header: React.FC = () => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
   const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -51,7 +52,7 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
   }, [user]);
 
-  // Load unread message count
+  // Load unread message count for messaging icon
   useEffect(() => {
     const loadUnreadCount = async () => {
       if (!user) {
@@ -70,10 +71,8 @@ const Header: React.FC = () => {
 
     loadUnreadCount();
 
-    // Poll for unread count every 10 seconds
     const interval = setInterval(loadUnreadCount, 10000);
 
-    // Also listen for custom event when messages are read
     const handleMessagesRead = () => {
       loadUnreadCount();
     };
@@ -82,6 +81,37 @@ const Header: React.FC = () => {
 
     return () => {
       clearInterval(interval);
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
+  }, [user]);
+
+  // Load unread notification count (from conversations + future notifications)
+  useEffect(() => {
+    const loadUnreadNotificationCount = async () => {
+      if (!user) {
+        setUnreadNotificationCount(0);
+        return;
+      }
+      try {
+        const response = await chatApi.getConversations();
+        if (response.success && response.data) {
+          const total = response.data.reduce((sum, conv) => sum + conv.unread_count, 0);
+          setUnreadNotificationCount(total);
+        }
+      } catch (error) {
+        console.error('Failed to load unread notification count:', error);
+      }
+    };
+
+    loadUnreadNotificationCount();
+
+    const handleMessagesRead = () => {
+      loadUnreadNotificationCount();
+    };
+
+    window.addEventListener('messagesRead', handleMessagesRead);
+
+    return () => {
       window.removeEventListener('messagesRead', handleMessagesRead);
     };
   }, [user]);
@@ -255,7 +285,7 @@ const Header: React.FC = () => {
               <div className="flex items-center space-x-3">
                 {user ? (
                   <>
-                    {/* SELL BUTTON - Changed to red gradient */}
+                    {/* SELL BUTTON - Red gradient */}
                     <motion.div
                       variants={iconVariants}
                       whileHover="hover"
@@ -287,34 +317,25 @@ const Header: React.FC = () => {
                       )}
                     </motion.div>
 
-                    {/* Notifications */}
+                    {/* Notifications with real unread count */}
                     <motion.div
                       variants={iconVariants}
                       whileHover="hover"
                       whileTap="tap"
-                      className="relative p-2 rounded-full hover:bg-accent cursor-pointer group hidden md:block"
+                      className="relative p-2 rounded-full transition-all duration-200 cursor-pointer group hover:bg-gradient-to-r hover:from-primary hover:to-purple-600 hidden md:block"
                       onClick={() => navigate('/notifications')}
                     >
                       <Bell className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
-                      <motion.span
-                        variants={badgeVariants}
-                        initial="initial"
-                        animate="animate"
-                        className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-medium"
-                      >
-                        5
-                      </motion.span>
-                    </motion.div>
-
-                    {/* Ads */}
-                    <motion.div
-                      variants={iconVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      className="p-2 rounded-full hover:bg-accent cursor-pointer group hidden md:block"
-                      onClick={() => navigate('/ads')}
-                    >
-                      <Megaphone className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
+                      {unreadNotificationCount > 0 && (
+                        <motion.span
+                          variants={badgeVariants}
+                          initial="initial"
+                          animate="animate"
+                          className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
+                        >
+                          {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                        </motion.span>
+                      )}
                     </motion.div>
 
                     {/* Wishlist Button */}

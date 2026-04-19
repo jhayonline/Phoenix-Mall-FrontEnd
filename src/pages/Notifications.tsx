@@ -4,206 +4,122 @@ import {
   Bell,
   Check,
   X,
-  Settings,
-  Filter,
-  ShoppingBag,
-  TrendingUp,
-  Star,
   MessageSquare,
   Heart,
   UserPlus,
-  AlertCircle,
-  CreditCard,
-  Truck,
-  Package,
-  Calendar,
-  Clock
+  Clock,
+  Eye
 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Header from '@/components/layout/Header';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
 import Footer from '@/components/layout/Footer';
-
-// Notification types
-type NotificationType =
-  | 'order'
-  | 'promotion'
-  | 'message'
-  | 'like'
-  | 'follow'
-  | 'alert'
-  | 'payment'
-  | 'shipping'
-  | 'restock'
-  | 'event';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { chatApi, type Conversation } from '@/lib/api/chat';
 
 interface Notification {
   id: string;
-  type: NotificationType;
+  type: 'message' | 'like' | 'follow';
   title: string;
   description: string;
-  timestamp: Date;
+  timestamp: string;
   isRead: boolean;
-  image?: string;
   link?: string;
+  data?: {
+    conversation_id?: string;
+    user_id?: number;
+    user_name?: string;
+  };
 }
 
 const Notifications = () => {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [filter, setFilter] = useState<NotificationType | 'all'>('all');
-  const [showSettings, setShowSettings] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  // Generate sample notifications
+  // Load notifications from API
   useEffect(() => {
-    const sampleNotifications: Notification[] = [
-      {
-        id: '1',
-        type: 'order',
-        title: 'Order Confirmed',
-        description: 'Your order #12345 has been confirmed and is being processed.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
-        isRead: false,
-        image: 'https://images.unsplash.com/photo-1606811977443-5b93cf48c6a9?w=100&h=100&fit=crop'
-      },
-      {
-        id: '2',
-        type: 'promotion',
-        title: 'Special Offer Just For You',
-        description: 'Get 20% off on your next purchase with code SUMMER20.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-        isRead: false,
-        image: 'https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=100&h=100&fit=crop'
-      },
-      {
-        id: '3',
-        type: 'message',
-        title: 'New Message from Sarah',
-        description: 'Sarah: "Hi! I\'m interested in the camera you\'re selling"',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
-        isRead: false,
-        image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face'
-      },
-      {
-        id: '4',
-        type: 'like',
-        title: 'Your Item Got Liked',
-        description: 'Mike liked your product "Vintage Camera".',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-        isRead: true,
-        image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face'
-      },
-      {
-        id: '5',
-        type: 'shipping',
-        title: 'Order Shipped',
-        description: 'Your order #12345 has been shipped. Track your package.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5), // 5 hours ago
-        isRead: true,
-        image: 'https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?w=100&h=100&fit=crop'
-      },
-      {
-        id: '6',
-        type: 'follow',
-        title: 'New Follower',
-        description: 'Emily Davis started following you.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 10), // 10 hours ago
-        isRead: true,
-        image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face'
-      },
-      {
-        id: '7',
-        type: 'payment',
-        title: 'Payment Received',
-        description: 'Your payment of $129.99 for order #12345 was successful.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-        isRead: true,
-        image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=100&h=100&fit=crop'
-      },
-      {
-        id: '8',
-        type: 'restock',
-        title: 'Back in Stock',
-        description: 'The product "Wireless Headphones" you wanted is back in stock.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 days ago
-        isRead: true,
-        image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=100&h=100&fit=crop'
-      },
-      {
-        id: '9',
-        type: 'event',
-        title: 'Upcoming Sale Event',
-        description: 'Flash sale starting this Friday! Up to 50% off on electronics.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72), // 3 days ago
-        isRead: true,
-        image: 'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=100&h=100&fit=crop'
-      },
-      {
-        id: '10',
-        type: 'alert',
-        title: 'Security Alert',
-        description: 'New login from a new device. Was this you?',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 96), // 4 days ago
-        isRead: true,
-        image: 'https://images.unsplash.com/photo-1611606063065-ee7946f0787a?w=100&h=100&fit=crop'
-      }
-    ];
+    loadNotifications();
 
-    setNotifications(sampleNotifications);
-    setUnreadCount(sampleNotifications.filter(n => !n.isRead).length);
+    // Mark as viewed when page loads
+    markNotificationsAsViewed();
   }, []);
 
-  // Filter notifications based on selected filter
-  const filteredNotifications = filter === 'all'
-    ? notifications
-    : notifications.filter(n => n.type === filter);
+  const loadNotifications = async () => {
+    try {
+      // Load conversations to check for unread messages
+      const convResponse = await chatApi.getConversations();
+      if (convResponse.success && convResponse.data) {
+        const unreadConversations = convResponse.data.filter(conv => conv.unread_count > 0);
 
-  // Mark a notification as read
+        // Create notifications from unread messages
+        const messageNotifications: Notification[] = unreadConversations.map(conv => ({
+          id: `msg-${conv.id}`,
+          type: 'message',
+          title: `New message from ${conv.other_user_name}`,
+          description: conv.last_message,
+          timestamp: conv.last_message_time,
+          isRead: false,
+          link: `/messages?conv=${conv.id}`,
+          data: {
+            conversation_id: conv.id,
+            user_id: conv.other_user_id,
+            user_name: conv.other_user_name,
+          }
+        }));
+
+        setNotifications(messageNotifications);
+        setUnreadCount(messageNotifications.length);
+      }
+
+      // TODO: Add likes and follows from API when implemented
+
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const markNotificationsAsViewed = async () => {
+    // This will be handled when user opens the page
+    // In a real implementation, you'd call an API to mark as viewed
+  };
+
   const markAsRead = (id: string) => {
     setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, isRead: true } : n)
     );
-    setUnreadCount(prev => prev - 1);
+    setUnreadCount(prev => Math.max(0, prev - 1));
   };
 
-  // Mark all notifications as read
   const markAllAsRead = () => {
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
     setUnreadCount(0);
   };
 
-  // Delete a notification
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    if (!notifications.find(n => n.id === id)?.isRead) {
-      setUnreadCount(prev => prev - 1);
+  const handleNotificationClick = (notification: Notification) => {
+    markAsRead(notification.id);
+
+    if (notification.link) {
+      navigate(notification.link);
+    } else if (notification.type === 'message' && notification.data?.conversation_id) {
+      navigate(`/messages?conv=${notification.data.conversation_id}`);
+    } else if (notification.type === 'like' || notification.type === 'follow') {
+      // Navigate to profile when implemented
+      toast({
+        title: "Coming Soon",
+        description: "Profile pages will be available soon",
+      });
     }
   };
 
-  // Clear all notifications
-  const clearAllNotifications = () => {
-    setNotifications([]);
-    setUnreadCount(0);
-  };
-
-  // Get notification icon based on type
-  const getNotificationIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'order': return <ShoppingBag className="w-5 h-5 text-blue-500" />;
-      case 'promotion': return <TrendingUp className="w-5 h-5 text-purple-500" />;
-      case 'message': return <MessageSquare className="w-5 h-5 text-green-500" />;
-      case 'like': return <Heart className="w-5 h-5 text-red-500" />;
-      case 'follow': return <UserPlus className="w-5 h-5 text-blue-500" />;
-      case 'alert': return <AlertCircle className="w-5 h-5 text-yellow-500" />;
-      case 'payment': return <CreditCard className="w-5 h-5 text-green-500" />;
-      case 'shipping': return <Truck className="w-5 h-5 text-indigo-500" />;
-      case 'restock': return <Package className="w-5 h-5 text-orange-500" />;
-      case 'event': return <Calendar className="w-5 h-5 text-pink-500" />;
-      default: return <Bell className="w-5 h-5 text-gray-500" />;
-    }
-  };
-
-  // Format timestamp to relative time
-  const formatTime = (date: Date) => {
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / (1000 * 60));
@@ -214,20 +130,34 @@ const Notifications = () => {
     if (diffMins < 60) return `${diffMins} min ago`;
     if (diffHours < 24) return `${diffHours} hr ago`;
     if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-
     return date.toLocaleDateString();
   };
 
-  // Filter options
-  const filterOptions: { value: NotificationType | 'all', label: string, icon: React.ReactNode }[] = [
-    { value: 'all', label: 'All', icon: <Bell className="w-4 h-4" /> },
-    { value: 'order', label: 'Orders', icon: <ShoppingBag className="w-4 h-4" /> },
-    { value: 'promotion', label: 'Promotions', icon: <TrendingUp className="w-4 h-4" /> },
-    { value: 'message', label: 'Messages', icon: <MessageSquare className="w-4 h-4" /> },
-    { value: 'like', label: 'Likes', icon: <Heart className="w-4 h-4" /> },
-    { value: 'follow', label: 'Follows', icon: <UserPlus className="w-4 h-4" /> },
-    { value: 'alert', label: 'Alerts', icon: <AlertCircle className="w-4 h-4" /> },
-  ];
+  const getNotificationIcon = (type: Notification['type']) => {
+    switch (type) {
+      case 'message':
+        return <MessageSquare className="w-5 h-5 text-green-500" />;
+      case 'like':
+        return <Heart className="w-5 h-5 text-red-500" />;
+      case 'follow':
+        return <UserPlus className="w-5 h-5 text-blue-500" />;
+      default:
+        return <Bell className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <Header />
+        <div className="flex items-center justify-center h-96">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+        </div>
+        <Footer />
+        <MobileBottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -244,84 +174,41 @@ const Notifications = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <Bell className="w-8 h-8 text-blue-600" />
+                <Bell className="w-8 h-8 text-red-600" />
                 {unreadCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
+                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
                   >
-                    {unreadCount}
+                    {unreadCount > 99 ? '99+' : unreadCount}
                   </motion.span>
                 )}
               </div>
               <h1 className="text-3xl font-bold font-heading">Notifications</h1>
             </div>
 
-            <div className="flex items-center space-x-2">
+            {unreadCount > 0 && (
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={markAllAsRead}
-                disabled={unreadCount === 0}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  unreadCount === 0
-                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                    : 'bg-blue-100 text-blue-600 hover:bg-blue-200'
-                }`}
+                className="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-red-100 text-red-600 hover:bg-red-200"
               >
                 Mark all as read
               </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowSettings(!showSettings)}
-                className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <Settings className="w-5 h-5 text-gray-600" />
-              </motion.button>
-            </div>
+            )}
           </div>
-
           <p className="text-gray-600 mt-2">
-            Stay updated with your account activities
+            Stay updated with your messages and activities
           </p>
-        </motion.div>
-
-        {/* Filter Bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="mb-6 overflow-x-auto"
-        >
-          <div className="flex space-x-2 pb-2">
-            {filterOptions.map((option, index) => (
-              <motion.button
-                key={option.value}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                onClick={() => setFilter(option.value)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                  filter === option.value
-                    ? 'bg-blue-100 text-blue-600'
-                    : 'bg-white text-gray-600 hover:bg-gray-100'
-                }`}
-              >
-                {option.icon}
-                <span>{option.label}</span>
-              </motion.button>
-            ))}
-          </div>
         </motion.div>
 
         {/* Notifications List */}
         <div className="bg-white rounded-xl shadow-soft overflow-hidden">
           <AnimatePresence mode="popLayout">
-            {filteredNotifications.length > 0 ? (
-              filteredNotifications.map((notification, index) => (
+            {notifications.length > 0 ? (
+              notifications.map((notification, index) => (
                 <motion.div
                   key={notification.id}
                   layout
@@ -334,14 +221,16 @@ const Notifications = () => {
                     stiffness: 300,
                     delay: index * 0.03
                   }}
-                  className={`border-b border-gray-100 last:border-b-0 ${
-                    !notification.isRead ? 'bg-blue-50/50' : 'hover:bg-gray-50'
-                  } transition-colors duration-200`}
+                  onClick={() => handleNotificationClick(notification)}
+                  className={`border-b border-gray-100 last:border-b-0 cursor-pointer transition-all duration-200 ${!notification.isRead
+                      ? 'bg-gradient-to-r from-red-50 to-transparent border-l-4 border-l-red-500'
+                      : 'hover:bg-gray-50'
+                    }`}
                 >
                   <div className="p-4 flex items-start">
                     {/* Notification Icon */}
                     <motion.div
-                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      whileHover={{ scale: 1.1 }}
                       className="flex-shrink-0 p-2 bg-white rounded-full shadow-sm border border-gray-200 mr-4"
                     >
                       {getNotificationIcon(notification.type)}
@@ -362,52 +251,31 @@ const Notifications = () => {
                             {formatTime(notification.timestamp)}
                           </p>
                         </div>
-
-                        {/* Notification Image */}
-                        {notification.image && (
-                          <motion.img
-                            whileHover={{ scale: 1.05 }}
-                            src={notification.image}
-                            alt="Notification"
-                            className="w-12 h-12 rounded-lg object-cover ml-4"
-                          />
-                        )}
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
+                    {/* Unread indicator - eye icon for old notifications */}
                     <div className="flex items-center space-x-2 ml-4">
                       {!notification.isRead && (
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => markAsRead(notification.id)}
-                          className="p-1 text-green-500 hover:bg-green-100 rounded-full transition-colors"
-                          title="Mark as read"
-                        >
-                          <Check className="w-4 h-4" />
-                        </motion.button>
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          className="w-2 h-2 bg-red-500 rounded-full"
+                        />
                       )}
-
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
-                        onClick={() => deleteNotification(notification.id)}
-                        className="p-1 text-red-500 hover:bg-red-100 rounded-full transition-colors"
-                        title="Delete notification"
-                      >
-                        <X className="w-4 h-4" />
-                      </motion.button>
+                      {notification.isRead && (
+                        <Eye className="w-4 h-4 text-gray-400" />
+                      )}
                     </div>
                   </div>
 
-                  {/* Unread Indicator */}
+                  {/* Highlight bar for unread notifications */}
                   {!notification.isRead && (
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: '100%' }}
                       transition={{ duration: 0.5 }}
-                      className="h-0.5 bg-gradient-to-r from-blue-400 to-purple-400"
+                      className="h-0.5 bg-gradient-to-r from-red-400 to-red-600"
                     />
                   )}
                 </motion.div>
@@ -424,96 +292,12 @@ const Notifications = () => {
                 </div>
                 <h3 className="text-lg font-medium text-gray-700 mb-2">No notifications</h3>
                 <p className="text-gray-500 max-w-md">
-                  {filter === 'all'
-                    ? "You're all caught up! No new notifications at the moment."
-                    : `No ${filter} notifications to show.`}
+                  You're all caught up! New messages and activities will appear here.
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Settings Panel */}
-        <AnimatePresence>
-          {showSettings && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
-                onClick={() => setShowSettings(false)}
-              />
-
-              <motion.div
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="fixed bottom-4 right-4 w-full max-w-sm bg-white rounded-xl shadow-large p-6 z-50"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-gray-900">Notification Settings</h3>
-                  <button
-                    onClick={() => setShowSettings(false)}
-                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="space-y-4">
-                  {[
-                    { label: 'Order Updates', defaultChecked: true },
-                    { label: 'Promotions', defaultChecked: true },
-                    { label: 'Messages', defaultChecked: true },
-                    { label: 'Likes & Follows', defaultChecked: true },
-                    { label: 'Security Alerts', defaultChecked: true },
-                    { label: 'Product Restocks', defaultChecked: false },
-                    { label: 'Event Reminders', defaultChecked: false },
-                  ].map((setting, index) => (
-                    <motion.div
-                      key={setting.label}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-gray-700">{setting.label}</span>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          defaultChecked={setting.defaultChecked}
-                          className="sr-only peer"
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </label>
-                    </motion.div>
-                  ))}
-                </div>
-
-                <div className="flex justify-end mt-6 space-x-3">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowSettings(false)}
-                    className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium transition-colors hover:bg-gray-200"
-                  >
-                    Cancel
-                  </motion.button>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowSettings(false)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium transition-colors hover:bg-blue-700"
-                  >
-                    Save Changes
-                  </motion.button>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
       </main>
 
       <Footer />
