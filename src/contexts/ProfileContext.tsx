@@ -4,18 +4,21 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthContext';
 
 interface UserProfile {
-  id: string;
+  pid: string;
+  name: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  phone: string | null;
+  username: string | null;
+  bio: string | null;
+  role: string | null;
+  phone_number: string | null;
   avatar_url: string | null;
   location: string | null;
   whatsapp_enabled: boolean;
   phone_enabled: boolean;
-  is_active: boolean;
+  is_active: boolean | null;
   email_verified: boolean;
+  follower_count: number;
+  following_count: number;
   created_at: string;
 }
 
@@ -48,26 +51,28 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setIsLoading(false);
       return;
     }
-
     try {
       setIsLoading(true);
       const response = await profileApi.getProfile();
-
       if (response.success && response.data) {
+        const d = response.data;
         setProfile({
-          id: response.data.id,
-          email: response.data.email,
-          first_name: response.data.first_name,
-          last_name: response.data.last_name,
-          role: response.data.role,
-          phone: response.data.phone,
-          avatar_url: response.data.avatar_url,
-          location: response.data.location,
-          whatsapp_enabled: response.data.whatsapp_enabled,
-          phone_enabled: response.data.phone_enabled,
-          is_active: response.data.is_active,
-          email_verified: response.data.email_verified,
-          created_at: response.data.created_at,  // Make sure this line exists
+          pid: d.pid,
+          name: d.name,
+          email: d.email,
+          username: d.username ?? null,
+          bio: d.bio ?? null,
+          role: d.role ?? null,
+          phone_number: d.phone_number ?? null,
+          avatar_url: d.avatar_url ?? null,
+          location: d.location ?? null,
+          whatsapp_enabled: d.whatsapp_enabled ?? false,
+          phone_enabled: d.phone_enabled ?? false,
+          is_active: d.is_active ?? null,
+          email_verified: d.email_verified ?? false,
+          follower_count: d.follower_count ?? 0,
+          following_count: d.following_count ?? 0,
+          created_at: d.created_at,
         });
       }
     } catch (error: any) {
@@ -89,7 +94,26 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
     try {
       const response = await profileApi.updateProfile(data);
       if (response.success && response.data) {
-        setProfile(prev => prev ? { ...prev, ...response.data } : response.data);
+        const d = response.data;
+        setProfile(prev => prev ? {
+          ...prev,
+          pid: d.pid ?? prev.pid,
+          name: d.name ?? prev.name,
+          email: d.email ?? prev.email,
+          username: d.username ?? prev.username,
+          bio: d.bio ?? prev.bio,
+          role: d.role ?? prev.role,
+          phone_number: d.phone_number ?? prev.phone_number,
+          avatar_url: d.avatar_url ?? prev.avatar_url,
+          location: d.location ?? prev.location,
+          whatsapp_enabled: d.whatsapp_enabled ?? prev.whatsapp_enabled,
+          phone_enabled: d.phone_enabled ?? prev.phone_enabled,
+          is_active: d.is_active ?? prev.is_active,
+          email_verified: d.email_verified ?? prev.email_verified,
+          follower_count: d.follower_count ?? prev.follower_count,
+          following_count: d.following_count ?? prev.following_count,
+          created_at: d.created_at ?? prev.created_at,
+        } : null);
         toast({
           title: "Profile Updated",
           description: "Your profile has been updated successfully",
@@ -106,12 +130,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
   };
 
   return (
-    <ProfileContext.Provider value={{
-      profile,
-      isLoading,
-      refreshProfile,
-      updateProfile,
-    }}>
+    <ProfileContext.Provider value={{ profile, isLoading, refreshProfile, updateProfile }}>
       {children}
     </ProfileContext.Provider>
   );

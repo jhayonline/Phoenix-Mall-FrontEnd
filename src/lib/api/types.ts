@@ -22,18 +22,39 @@ export interface CurrentUserResponseData {
   email: string;
 }
 
+export interface UserProfile {
+  id: number;
+  pid: string;
+  username?: string;
+  name: string;
+  email: string;
+  avatar_url?: string | null;
+  location?: string | null;
+  bio?: string | null;
+  follower_count: number;
+  following_count: number;
+  is_following: boolean;
+  product_count: number;
+  created_at: string;
+}
+
 // Profile backend responses
 export interface ProfileResponseData {
   pid: string;
   name: string;
   email: string;
+  username: string | null;
+  bio: string | null;
   phone_number: string | null;
   avatar_url: string | null;
   location: string | null;
-  whatsapp_enabled: boolean;
-  phone_enabled: boolean;
-  is_active: boolean;
+  whatsapp_enabled: boolean | null;
+  phone_enabled: boolean | null;
+  is_active: boolean | null;
   email_verified: boolean;
+  follower_count: number;
+  following_count: number;
+  role: string | null;
   created_at: string;
 }
 

@@ -1,68 +1,36 @@
 import { backendRequest } from './client';
 import {
   ListingsResponse,
-  ProfileResponse,
   ProfileResponseData,
   StatsResponse,
   StatsResponseData,
-  UpdateProfileData,
 } from './types';
 
-export const profileApi = {
-  async getProfile(): Promise<ProfileResponse> {
-    const response = await backendRequest<ProfileResponseData>('/profile/me');
+export interface ProfileApiResponse {
+  success: boolean;
+  message: string;
+  data: ProfileResponseData;
+}
 
+export const profileApi = {
+  async getProfile(): Promise<ProfileApiResponse> {
+    const response = await backendRequest<ProfileResponseData>('/profile/me');
     return {
       success: true,
       message: 'Success',
-      data: {
-        id: response.data.pid,
-        email: response.data.email,
-        first_name: response.data.name.split(' ')[0] || '',
-        last_name: response.data.name.split(' ').slice(1).join(' ') || '',
-        phone: response.data.phone_number,
-        avatar_url: response.data.avatar_url,
-        location: response.data.location,
-        whatsapp_enabled: response.data.whatsapp_enabled,
-        phone_enabled: response.data.phone_enabled,
-        is_active: response.data.is_active,
-        email_verified: response.data.email_verified,
-        role: 'user',
-        created_at: response.data.created_at,
-      }
+      data: response.data,
     };
   },
 
-  async updateProfile(profileData: UpdateProfileData): Promise<ProfileResponse> {
+  async updateProfile(data: Partial<ProfileResponseData>): Promise<ProfileApiResponse> {
     const response = await backendRequest<ProfileResponseData>('/profile/me', {
       method: 'PUT',
-      body: JSON.stringify({
-        name: profileData.first_name && profileData.last_name
-          ? `${profileData.first_name} ${profileData.last_name}`
-          : undefined,
-        phone_number: profileData.phone,
-        location: profileData.location,
-        whatsapp_enabled: profileData.whatsapp_enabled,
-        phone_enabled: profileData.phone_enabled
-      }),
+      body: JSON.stringify(data),
     });
-
     return {
       success: true,
       message: 'Profile updated',
-      data: {
-        id: response.data.pid,
-        email: response.data.email,
-        first_name: response.data.name.split(' ')[0] || '',
-        last_name: response.data.name.split(' ')[1] || '',
-        phone: response.data.phone_number,
-        avatar_url: response.data.avatar_url,
-        location: response.data.location,
-        whatsapp_enabled: response.data.whatsapp_enabled,
-        phone_enabled: response.data.phone_enabled,
-        is_active: response.data.is_active,
-        email_verified: response.data.email_verified
-      }
+      data: response.data,
     };
   },
 
@@ -71,7 +39,7 @@ export const profileApi = {
     return {
       success: true,
       data: response.data,
-      message: 'Success'
+      message: 'Success',
     };
   },
 
@@ -80,7 +48,7 @@ export const profileApi = {
     return {
       success: true,
       data: response.data,
-      message: 'Success'
+      message: 'Success',
     };
   },
 
@@ -89,14 +57,13 @@ export const profileApi = {
     return {
       success: true,
       data: response.data,
-      message: 'Success'
+      message: 'Success',
     };
   },
 
   async uploadAvatar(file: File): Promise<{ success: boolean; data: { avatar_url: string }; message: string }> {
     const formData = new FormData();
     formData.append('avatar', file);
-
     const token = localStorage.getItem('access_token');
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5150/api';
 
@@ -113,11 +80,11 @@ export const profileApi = {
       throw new Error(error.error || error.description || 'Upload failed');
     }
 
-    const data = await response.json();
+    const responseData = await response.json();
     return {
       success: true,
-      data,
-      message: 'Avatar uploaded successfully'
+      data: responseData,
+      message: 'Avatar uploaded successfully',
     };
   },
 };

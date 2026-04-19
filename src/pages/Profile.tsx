@@ -35,9 +35,10 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [editData, setEditData] = useState({
-    first_name: '',
-    last_name: '',
-    phone: '',
+    name: '',
+    username: '',
+    bio: '',
+    phone_number: '',
     location: '',
     whatsapp_enabled: false,
     phone_enabled: false,
@@ -54,9 +55,10 @@ const Profile: React.FC = () => {
   React.useEffect(() => {
     if (profile) {
       setEditData({
-        first_name: profile.first_name || '',
-        last_name: profile.last_name || '',
-        phone: profile.phone || '',
+        name: profile.name || '',
+        username: profile.username || '',
+        bio: profile.bio || '',
+        phone_number: profile.phone_number || '',
         location: profile.location || '',
         whatsapp_enabled: profile.whatsapp_enabled || false,
         phone_enabled: profile.phone_enabled || false,
@@ -186,7 +188,7 @@ const Profile: React.FC = () => {
     );
   }
 
-  const fullName = `${profile.first_name} ${profile.last_name}`.trim();
+  const fullName = profile.name || 'User';
   const avatarUrl = getAvatarUrl();
 
   return (
@@ -233,7 +235,7 @@ const Profile: React.FC = () => {
                         />
                       ) : (
                         <span className="text-2xl font-bold">
-                          {profile.first_name?.charAt(0) || profile.email?.charAt(0)}
+                          {profile.name?.charAt(0) || profile.email?.charAt(0)}
                         </span>
                       )}
                     </div>
@@ -253,6 +255,23 @@ const Profile: React.FC = () => {
                   <h2 className="text-xl font-semibold">{fullName || 'User'}</h2>
                   <p className="text-gray-600">{profile.email}</p>
                   <p className="text-sm text-red-600 mt-1 capitalize">{profile.role}</p>
+                  {profile.username ? (
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(`/user/${profile.username}`)}
+                      className="w-full mt-4"
+                    >
+                      View Public Profile
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsEditing(true)}
+                      className="w-full mt-4 border-dashed text-gray-400"
+                    >
+                      Set a username to get public profile
+                    </Button>
+                  )}
                   {profile.email_verified ? (
                     <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Verified</span>
                   ) : (
@@ -266,10 +285,10 @@ const Profile: React.FC = () => {
                     <Mail className="w-4 h-4 mr-2 text-gray-500" />
                     <span>{profile.email}</span>
                   </div>
-                  {profile.phone && (
+                  {profile.phone_number && (
                     <div className="flex items-center text-sm">
                       <Phone className="w-4 h-4 mr-2 text-gray-500" />
-                      <span>{profile.phone}</span>
+                      <span>{profile.phone_number}</span>
                     </div>
                   )}
                   {profile.location && (
@@ -371,38 +390,55 @@ const Profile: React.FC = () => {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">First Name</label>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium mb-2 block">Full Name</label>
                     <Input
-                      value={editData.first_name}
-                      onChange={(e) => setEditData({ ...editData, first_name: e.target.value })}
+                      value={editData.name}
+                      onChange={(e) => setEditData({ ...editData, name: e.target.value })}
                       disabled={!isEditing}
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium mb-2 block">Last Name</label>
+                    <label className="text-sm font-medium mb-2 block">Username</label>
                     <Input
-                      value={editData.last_name}
-                      onChange={(e) => setEditData({ ...editData, last_name: e.target.value })}
+                      value={editData.username}
+                      onChange={(e) => setEditData({ ...editData, username: e.target.value })}
                       disabled={!isEditing}
+                      placeholder="e.g. kwame_sells"
                     />
+                    {editData.username && (
+                      <p className="text-xs text-gray-400 mt-1">
+                        Public URL: /user/{editData.username}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="text-sm font-medium mb-2 block">Phone Number</label>
                     <Input
-                      value={editData.phone}
-                      onChange={(e) => setEditData({ ...editData, phone: e.target.value })}
+                      value={editData.phone_number}
+                      onChange={(e) => setEditData({ ...editData, phone_number: e.target.value })}
                       disabled={!isEditing}
-                      placeholder="Enter your phone number (e.g., 024XXXXXXX)"
+                      placeholder="024XXXXXXX"
                     />
                   </div>
-                  <div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium mb-2 block">Bio</label>
+                    <textarea
+                      value={editData.bio}
+                      onChange={(e) => setEditData({ ...editData, bio: e.target.value })}
+                      disabled={!isEditing}
+                      placeholder="Tell buyers a bit about yourself..."
+                      rows={3}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm disabled:bg-gray-50 disabled:text-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
                     <label className="text-sm font-medium mb-2 block">Location</label>
                     <Input
                       value={editData.location}
                       onChange={(e) => setEditData({ ...editData, location: e.target.value })}
                       disabled={!isEditing}
-                      placeholder="Enter your location (e.g., Accra, Kumasi)"
+                      placeholder="Accra, Kumasi..."
                     />
                   </div>
                 </div>

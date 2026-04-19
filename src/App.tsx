@@ -20,6 +20,7 @@ import CategoriesManagement from "./pages/admin/CategoriesManagement";
 import SellerDashboard from "./pages/SellerDashboard";
 import EditProduct from "./pages/EditProduct";
 import MyListings from "./pages/MyListings";
+import UserProfile from "./pages/UserProfile";
 
 // Admin
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -58,6 +59,7 @@ const App = () => (
               <Route path="/seller/dashboard" element={<SellerDashboard />} />
               <Route path="/edit-product/:pid" element={<EditProduct />} />
               <Route path="/my-listings" element={<MyListings />} />
+              <Route path="/user/:username" element={<UserProfile />} />
 
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/admin/categories" element={<CategoriesManagement />} />

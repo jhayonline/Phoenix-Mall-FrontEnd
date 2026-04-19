@@ -25,6 +25,7 @@ import { productsApi, imagesApi, favoritesApi } from '@/lib/api';
 import type { ProductResponseData, ProductImage } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/use-auth';
+import FollowButton from '@/components/FollowButton';
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -550,6 +551,16 @@ const DetailPage: React.FC = () => {
 
             <div className="border-t border-gray-200 pt-6 mb-8">
               <h3 className="font-semibold text-gray-900 mb-4">Contact Seller</h3>
+
+              {product.seller_id && user?.id !== product.seller_id.toString() && (
+                <div className="mb-4">
+                  <FollowButton
+                    userId={product.seller_id}
+                    variant="outline"
+                  />
+                </div>
+              )}
+
               <div className="flex gap-3">
                 <button
                   onClick={() => window.open(`https://wa.me/${product.seller?.phone}`, '_blank')}
