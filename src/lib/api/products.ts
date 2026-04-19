@@ -46,9 +46,14 @@ export const productsApi = {
   },
 
   async trackView(pid: string): Promise<void> {
-    await backendRequest<void>(`/products/${pid}/track-view`, {
-      method: 'POST',
-    });
+    try {
+      await backendRequest<void>(`/products/${pid}/track-view`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      // Silently fail - view tracking is non-critical
+      console.warn('Track view failed:', error);
+    }
   },
 
   async createProduct(productData: CreateProductData): Promise<ProductResponse> {

@@ -38,7 +38,7 @@ const Header: React.FC = () => {
           setWishlistCount(response.data.length);
         }
       } catch (error) {
-        console.error('Failed to load wishlist count:', error);
+        //
       }
     };
 
@@ -65,7 +65,7 @@ const Header: React.FC = () => {
           setUnreadMessageCount(response.data.total);
         }
       } catch (error) {
-        console.error('Failed to load unread message count:', error);
+        //
       }
     };
 
@@ -99,7 +99,7 @@ const Header: React.FC = () => {
           setUnreadNotificationCount(total);
         }
       } catch (error) {
-        console.error('Failed to load unread notification count:', error);
+        //
       }
     };
 

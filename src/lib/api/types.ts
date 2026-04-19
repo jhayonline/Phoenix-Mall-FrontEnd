@@ -71,6 +71,9 @@ export interface ProductResponseData {
   created_at: string | null;
   updated_at: string | null;
   images?: ProductImage[];
+  wishlist_count?: number;
+  average_rating?: number;
+  total_reviews?: number;
 }
 
 export interface PaginatedProductsResponse {

@@ -4,8 +4,14 @@ import { useNavigate } from 'react-router-dom';
 import {
   Plus, X, Image as ImageIcon, Loader2,
   ChevronRight, ChevronLeft, Check, FolderTree,
-  Laptop, Smartphone, Sofa, Home, Shirt, Gem, Building,
-  Car, Utensils, Baby, Sparkles, Tv, Briefcase
+  Car, Bike, Gamepad2, PawPrint, Briefcase, Utensils,
+  Building, Home, Laptop, Smartphone, Shirt,
+  Gem, Sparkles, Baby, Tv, Sofa, Watch, Headphones,
+  Camera, Package, Wrench, Code, Leaf, Apple, Dog, Cat,
+  Fish, Bird, Rabbit, Store, Truck, Lightbulb, Microwave,
+  ChefHat, Footprints, Diamond, Heart, SprayCan, Scissors,
+  ToyBrick, Monitor, Cpu, Mouse, Shoe, Ring, Lipstick,
+  Flower2, Droplet, Smile, Brush, Wand2, Sun, Feather
 } from 'lucide-react';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
@@ -29,19 +35,122 @@ interface Category {
 }
 
 const iconMap: Record<string, React.ReactNode> = {
-  'Electronics': <Laptop className="w-5 h-5" />,
-  'Fashion': <Shirt className="w-5 h-5" />,
-  'Vehicles': <Car className="w-5 h-5" />,
+  // Level 1 Categories
+  'Mobility': <Car className="w-5 h-5" />,
+  'Real Estate': <Building className="w-5 h-5" />,
+  'Mobile Devices': <Smartphone className="w-5 h-5" />,
+  'Computing & Electronics': <Monitor className="w-5 h-5" />,
+  'Games': <Gamepad2 className="w-5 h-5" />,
   'Home & Living': <Home className="w-5 h-5" />,
-  'Mobile Phones': <Smartphone className="w-5 h-5" />,
-  'Furniture': <Sofa className="w-5 h-5" />,
-  'Home Appliances': <Tv className="w-5 h-5" />,
-  'Jewelries': <Gem className="w-5 h-5" />,
-  'Property': <Building className="w-5 h-5" />,
+  'Fashion & Style': <Shirt className="w-5 h-5" />,
+  'Jewelry': <Gem className="w-5 h-5" />,
+  'Beauty & Personal Care': <Flower2 className="w-5 h-5" />,
+  'Baby & Kids': <Baby className="w-5 h-5" />,
   'Services': <Briefcase className="w-5 h-5" />,
-  'Food & Agriculture': <Utensils className="w-5 h-5" />,
-  'Babies & Kids': <Baby className="w-5 h-5" />,
-  'Beauty & Personal Care': <Sparkles className="w-5 h-5" />,
+  'Food & Agriculture': <Apple className="w-5 h-5" />,
+  'Pets & Animals': <PawPrint className="w-5 h-5" />,
+
+  // Level 2 - Mobility
+  'Cars': <Car className="w-5 h-5" />,
+  'Motorbikes': <Bike className="w-5 h-5" />,
+  'Bicycles': <Bike className="w-5 h-5" />,
+
+  // Level 2 - Real Estate
+  'Rentals': <Home className="w-5 h-5" />,
+  'Properties for Sale': <Building className="w-5 h-5" />,
+  'Houses': <Home className="w-5 h-5" />,
+  'Apartments': <Building className="w-5 h-5" />,
+  'Hostels': <Building className="w-5 h-5" />,
+  'Offices': <Building className="w-5 h-5" />,
+  'Shops': <Store className="w-5 h-5" />,
+  'Buildings': <Building className="w-5 h-5" />,
+
+  // Level 2 - Mobile Devices
+  'Smartphones': <Smartphone className="w-5 h-5" />,
+  'Tablets': <Smartphone className="w-5 h-5" />,
+  'Mobile Accessories': <Package className="w-5 h-5" />,
+  'Smartwatches': <Watch className="w-5 h-5" />,
+
+  // Level 2 - Computing & Electronics
+  'Laptops': <Laptop className="w-5 h-5" />,
+  'Desktop Computers': <Monitor className="w-5 h-5" />,
+  'Monitors': <Monitor className="w-5 h-5" />,
+  'Computer Components': <Cpu className="w-5 h-5" />,
+  'Computer Accessories': <Mouse className="w-5 h-5" />,
+  'System Units': <Cpu className="w-5 h-5" />,
+  'Televisions': <Tv className="w-5 h-5" />,
+  'Audio Equipment': <Headphones className="w-5 h-5" />,
+  'Headphones': <Headphones className="w-5 h-5" />,
+  'Cameras': <Camera className="w-5 h-5" />,
+
+  // Level 2 - Games
+  'Video Games': <Gamepad2 className="w-5 h-5" />,
+  'Consoles & Controllers': <Gamepad2 className="w-5 h-5" />,
+  'Board & Card Games': <Gamepad2 className="w-5 h-5" />,
+
+  // Level 2 - Home & Living
+  'Furniture': <Sofa className="w-5 h-5" />,
+  'Lighting': <Lightbulb className="w-5 h-5" />,
+  'Appliances': <Microwave className="w-5 h-5" />,
+  'Cookware': <ChefHat className="w-5 h-5" />,
+  'Kitchen Appliances': <Microwave className="w-5 h-5" />,
+  'Home Appliances': <Tv className="w-5 h-5" />,
+
+  // Level 2 - Fashion & Style
+  'Men': <Shirt className="w-5 h-5" />,
+  'Women': <Shirt className="w-5 h-5" />,
+  'Kids': <Baby className="w-5 h-5" />,
+  'Babies': <Baby className="w-5 h-5" />,
+  'Clothing': <Shirt className="w-5 h-5" />,
+  'Footwear': <Footprints className="w-5 h-5" />,
+  'Accessories': <Watch className="w-5 h-5" />,
+
+  // Level 2 - Jewelry
+  'Rings & Earrings': <Diamond className="w-5 h-5" />,
+  'Watches': <Watch className="w-5 h-5" />,
+  'Necklaces': <Heart className="w-5 h-5" />,
+  'Bracelets': <Heart className="w-5 h-5" />,
+  'Bracelets & Bangles': <Heart className="w-5 h-5" />,
+  'Cufflinks': <Gem className="w-5 h-5" />,
+  'Beads': <Heart className="w-5 h-5" />,
+  'Anklets': <Footprints className="w-5 h-5" />,
+
+  // Level 2 - Beauty & Personal Care
+  'Hair & Oral Care': <Scissors className="w-5 h-5" />,
+  'Skincare': <Droplet className="w-5 h-5" />,
+  'Fragrances': <SprayCan className="w-5 h-5" />,
+  'Makeup': <Brush className="w-5 h-5" />,
+  'Intimate Wellness': <Heart className="w-5 h-5" />,
+  'Beauty Accessories': <Scissors className="w-5 h-5" />,
+
+  // Level 2 - Baby & Kids
+  'Fashion': <Baby className="w-5 h-5" />,
+  'Games & Toys': <ToyBrick className="w-5 h-5" />,
+  'Baby Food & Nutrition': <Baby className="w-5 h-5" />,
+  'Baby Accessories': <Baby className="w-5 h-5" />,
+  'Playground & Outdoor': <ToyBrick className="w-5 h-5" />,
+
+  // Level 2 - Services
+  'Home Services': <Wrench className="w-5 h-5" />,
+  'Tech Services': <Code className="w-5 h-5" />,
+  'Repair & Maintenance': <Wrench className="w-5 h-5" />,
+  'Other Services': <Briefcase className="w-5 h-5" />,
+
+  // Level 2 - Food & Agriculture
+  'Preserved Food': <Package className="w-5 h-5" />,
+  'Fresh Food': <Apple className="w-5 h-5" />,
+  'Farm Produce': <Leaf className="w-5 h-5" />,
+  'Agricultural Supplies': <Truck className="w-5 h-5" />,
+
+  // Level 2 - Pets & Animals
+  'Pet Accessories': <PawPrint className="w-5 h-5" />,
+  'Pet Food & Feed': <Package className="w-5 h-5" />,
+  'Cats': <Cat className="w-5 h-5" />,
+  'Dogs': <Dog className="w-5 h-5" />,
+  'Fish': <Fish className="w-5 h-5" />,
+  'Birds': <Bird className="w-5 h-5" />,
+  'Rabbits': <Rabbit className="w-5 h-5" />,
+  'Other Animals': <PawPrint className="w-5 h-5" />,
 };
 
 const SellPage: React.FC = () => {
@@ -83,7 +192,7 @@ const SellPage: React.FC = () => {
         setAllCategories(response.data);
       }
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      //
     }
   };
 
@@ -189,7 +298,7 @@ const SellPage: React.FC = () => {
             try {
               await imagesApi.upload(productPid, image);
             } catch (error) {
-              console.error('Failed to upload image:', error);
+              //
             }
           }
         }
@@ -425,11 +534,10 @@ const SellPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Category Selection Modal - Using same centering as ReviewModal */}
+      {/* Category Selection Modal */}
       <AnimatePresence>
         {showCategoryModal && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -438,7 +546,6 @@ const SellPage: React.FC = () => {
               onClick={() => setShowCategoryModal(false)}
             />
 
-            {/* Modal Container - Centered (same as ReviewModal) */}
             <div className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none">
               <motion.div
                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
@@ -448,7 +555,6 @@ const SellPage: React.FC = () => {
                 className="pointer-events-auto w-full max-w-md mx-4"
               >
                 <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-                  {/* Modal Header */}
                   <div className="p-4 border-b border-gray-200 bg-gradient-to-r from-red-50 to-red-100">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
@@ -472,7 +578,6 @@ const SellPage: React.FC = () => {
                       </button>
                     </div>
 
-                    {/* Breadcrumb */}
                     {categoryBreadcrumb.length > 0 && (
                       <div className="flex items-center gap-2 mt-3 text-sm text-gray-600 overflow-x-auto pb-1">
                         {categoryBreadcrumb.slice(0, -1).map((cat, idx) => (
@@ -488,7 +593,6 @@ const SellPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Modal Body - Categories List */}
                   <div className="max-h-[60vh] overflow-y-auto">
                     {currentLevelCategories.length === 0 ? (
                       <div className="p-8 text-center text-gray-500">
@@ -531,7 +635,6 @@ const SellPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Modal Footer */}
                   <div className="p-4 border-t border-gray-200 bg-gray-50 flex justify-between items-center">
                     <button
                       onClick={handleReset}

@@ -69,18 +69,27 @@ const DetailPage: React.FC = () => {
     try {
       const response = await productsApi.getProduct(pid!);
       if (response.success && response.data) {
-        const productData = response.data;
+        let productData = response.data;
 
+        // Track view (non-critical, wrap in try-catch)
         if (!hasViewedProduct(pid!)) {
-          await productsApi.trackView(pid!);
-          markProductViewed(pid!);
-          // Refresh product data to get updated view count
-          const updatedResponse = await productsApi.getProduct(pid!);
-          if (updatedResponse.success && updatedResponse.data) {
-            productData.views_count = updatedResponse.data.views_count;
-            productData.wishlist_count = updatedResponse.data.wishlist_count;
-            productData.average_rating = updatedResponse.data.average_rating;
-            productData.total_reviews = updatedResponse.data.total_reviews;
+          try {
+            await productsApi.trackView(pid!);
+            markProductViewed(pid!);
+
+            // Refresh product data to get updated view count
+            const updatedResponse = await productsApi.getProduct(pid!);
+            if (updatedResponse.success && updatedResponse.data) {
+              productData = {
+                ...productData,
+                views_count: updatedResponse.data.views_count,
+                wishlist_count: (updatedResponse.data as any).wishlist_count,
+                average_rating: (updatedResponse.data as any).average_rating,
+                total_reviews: (updatedResponse.data as any).total_reviews,
+              };
+            }
+          } catch (trackError) {
+            //
           }
         }
 
@@ -94,7 +103,7 @@ const DetailPage: React.FC = () => {
             primaryImage = primaryImg?.image_url || allImages[0]?.image_url;
           }
         } catch (error) {
-          console.error('Failed to load images:', error);
+          //
         }
 
         const sellerInfo = {
@@ -114,7 +123,6 @@ const DetailPage: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to load product:', error);
       toast({
         title: "Error",
         description: "Failed to load product details",
@@ -131,7 +139,7 @@ const DetailPage: React.FC = () => {
       const response = await favoritesApi.check(product.pid);
       setIsLiked(response.data.favorited);
     } catch (error) {
-      console.error('Failed to check favorite status:', error);
+      //
     }
   }, [user, product]);
 
@@ -155,7 +163,7 @@ const DetailPage: React.FC = () => {
                 primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
               }
             } catch (error) {
-              console.error('Failed to load images for related product:', product.pid);
+              //
             }
 
             return {
@@ -170,7 +178,7 @@ const DetailPage: React.FC = () => {
         setRelatedProducts(productsWithImages);
       }
     } catch (error) {
-      console.error('Failed to load related products:', error);
+      //
     }
   }, [pid]);
 
@@ -230,7 +238,6 @@ const DetailPage: React.FC = () => {
         window.dispatchEvent(new Event('wishlistUpdated'));
       }
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
       toast({
         title: "Error",
         description: "Something went wrong",
