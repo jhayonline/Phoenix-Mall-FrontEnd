@@ -48,7 +48,6 @@ export const chatApi = {
 
   async getConversations(): Promise<{ success: boolean; data: Conversation[] }> {
     const response = await backendRequest<Conversation[]>('/chat/conversations');
-    // Format avatar URLs
     const formattedData = response.data.map(conv => ({
       ...conv,
       other_user_avatar: formatAvatarUrl(conv.other_user_avatar),
@@ -61,6 +60,15 @@ export const chatApi = {
 
   async getMessages(conversationId: string): Promise<{ success: boolean; data: ChatMessage[] }> {
     const response = await backendRequest<ChatMessage[]>(`/chat/messages/${conversationId}`);
+    return {
+      success: true,
+      data: response.data,
+    };
+  },
+
+  // Add method to get total unread count across all conversations
+  async getTotalUnreadCount(): Promise<{ success: boolean; data: { total: number } }> {
+    const response = await backendRequest<{ total: number }>('/chat/unread-count');
     return {
       success: true,
       data: response.data,

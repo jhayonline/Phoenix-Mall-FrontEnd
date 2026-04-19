@@ -9,7 +9,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { wishlistApi } from '@/lib/api';
+import { wishlistApi, chatApi } from '@/lib/api';
 import SearchBar from '@/components/SearchBar';
 
 const Header: React.FC = () => {
@@ -17,6 +17,7 @@ const Header: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [wishlistCount, setWishlistCount] = useState(0);
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -42,13 +43,47 @@ const Header: React.FC = () => {
 
     loadWishlistCount();
 
-    // Listen for wishlist updates
     const handleWishlistUpdate = () => {
       loadWishlistCount();
     };
 
     window.addEventListener('wishlistUpdated', handleWishlistUpdate);
     return () => window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+  }, [user]);
+
+  // Load unread message count
+  useEffect(() => {
+    const loadUnreadCount = async () => {
+      if (!user) {
+        setUnreadMessageCount(0);
+        return;
+      }
+      try {
+        const response = await chatApi.getTotalUnreadCount();
+        if (response.success && response.data) {
+          setUnreadMessageCount(response.data.total);
+        }
+      } catch (error) {
+        console.error('Failed to load unread message count:', error);
+      }
+    };
+
+    loadUnreadCount();
+
+    // Poll for unread count every 10 seconds
+    const interval = setInterval(loadUnreadCount, 10000);
+
+    // Also listen for custom event when messages are read
+    const handleMessagesRead = () => {
+      loadUnreadCount();
+    };
+
+    window.addEventListener('messagesRead', handleMessagesRead);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('messagesRead', handleMessagesRead);
+    };
   }, [user]);
 
   useEffect(() => {
@@ -231,7 +266,7 @@ const Header: React.FC = () => {
                       <Plus className="w-5 h-5" />
                     </motion.div>
 
-                    {/* Messaging */}
+                    {/* Messaging with real unread count */}
                     <motion.div
                       variants={iconVariants}
                       whileHover="hover"
@@ -240,14 +275,16 @@ const Header: React.FC = () => {
                       onClick={() => navigate('/messaging')}
                     >
                       <MessageSquare className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
-                      <motion.span
-                        variants={badgeVariants}
-                        initial="initial"
-                        animate="animate"
-                        className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-medium"
-                      >
-                        2
-                      </motion.span>
+                      {unreadMessageCount > 0 && (
+                        <motion.span
+                          variants={badgeVariants}
+                          initial="initial"
+                          animate="animate"
+                          className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
+                        >
+                          {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                        </motion.span>
+                      )}
                     </motion.div>
 
                     {/* Notifications */}
@@ -289,14 +326,16 @@ const Header: React.FC = () => {
                       onClick={() => navigate('/wishlist')}
                     >
                       <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
-                      <motion.span
-                        variants={badgeVariants}
-                        initial="initial"
-                        animate="animate"
-                        className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
-                      >
-                        {wishlistCount}
-                      </motion.span>
+                      {wishlistCount > 0 && (
+                        <motion.span
+                          variants={badgeVariants}
+                          initial="initial"
+                          animate="animate"
+                          className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
+                        >
+                          {wishlistCount > 99 ? '99+' : wishlistCount}
+                        </motion.span>
+                      )}
                     </motion.div>
 
                     {/* User Dropdown */}
@@ -375,14 +414,16 @@ const Header: React.FC = () => {
                       onClick={() => navigate('/wishlist')}
                     >
                       <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
-                      <motion.span
-                        variants={badgeVariants}
-                        initial="initial"
-                        animate="animate"
-                        className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
-                      >
-                        {wishlistCount}
-                      </motion.span>
+                      {wishlistCount > 0 && (
+                        <motion.span
+                          variants={badgeVariants}
+                          initial="initial"
+                          animate="animate"
+                          className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
+                        >
+                          {wishlistCount > 99 ? '99+' : wishlistCount}
+                        </motion.span>
+                      )}
                     </motion.div>
                   )
                 )}
@@ -501,7 +542,7 @@ const Header: React.FC = () => {
                       ))}
                     </div>
 
-                    {/* Sell button in mobile menu - Changed to red */}
+                    {/* Sell button in mobile menu */}
                     {user && (
                       <div className="pt-4 border-t border-border/50">
                         <motion.button

@@ -130,54 +130,54 @@ const Messages: React.FC = () => {
   };
 
   const loadMessages = async (conversationId: string, isPolling = false) => {
-    // Guard: Don't proceed if we don't have a valid user ID
-    if (!currentUserIdRef.current) {
-      console.warn('loadMessages skipped: no user ID');
-      return;
-    }
-
     try {
       const response = await chatApi.getMessages(conversationId);
       if (response.success && response.data) {
         const userId = currentUserIdRef.current;
 
+        if (!userId) {
+          console.warn('loadMessages called before userId was ready — skipping');
+          return;
+        }
+
+        const messagesWithOwn = response.data.map(msg => ({
+          ...msg,
+          isOwn: Number(msg.sender_id) === Number(userId),
+        }));
+
         if (isPolling) {
           setMessages(prev => {
+            // Create a map of existing messages
             const existingMap = new Map(prev.map(m => [String(m.id), m]));
-            const tempMessages = prev.filter(m => String(m.id).startsWith('temp-'));
 
-            const serverMessages = response.data.map(msg => {
+            // Merge new messages with existing ones
+            const merged = messagesWithOwn.map(msg => {
               const existing = existingMap.get(String(msg.id));
-              return {
-                ...msg,
-                isOwn: existing ? existing.isOwn : Number(msg.sender_id) === Number(userId),
-              };
+              return existing || msg;
             });
 
-            const serverMessageTexts = new Set(
-              serverMessages.filter(m => m.isOwn).map(m => m.message)
-            );
-            const pendingTemps = tempMessages.filter(
-              t => !serverMessageTexts.has(t.message)
-            );
-
-            const merged = [...serverMessages, ...pendingTemps].sort(
-              (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-            );
-
-            const prevSig = prev.map(m => `${m.id}:${m.isOwn}`).join(',');
-            const mergedSig = merged.map(m => `${m.id}:${m.isOwn}`).join(',');
-            if (prevSig === mergedSig) return prev;
-
-            return merged;
+            // Check if there are new messages
+            if (merged.length !== prev.length) {
+              // Dispatch event for new unread messages
+              const newUnreadCount = merged.filter(m => !m.isOwn && !m.read).length;
+              if (newUnreadCount > 0) {
+                window.dispatchEvent(new Event('messagesRead'));
+              }
+              return merged;
+            }
+            return prev;
           });
 
           loadConversations();
         } else {
-          const messagesWithOwn = response.data.map(msg => ({
-            ...msg,
-            isOwn: Number(msg.sender_id) === Number(userId),
-          }));
+          // Initial load - check for unread messages
+          const hadUnread = messages.some(m => !m.isOwn && !m.read);
+          const nowHasUnread = messagesWithOwn.some(m => !m.isOwn && !m.read);
+
+          if (hadUnread && !nowHasUnread) {
+            window.dispatchEvent(new Event('messagesRead'));
+          }
+
           setMessages(messagesWithOwn);
         }
       }
@@ -233,6 +233,9 @@ const Messages: React.FC = () => {
             ? { ...conv, last_message: messageText, last_message_time: new Date().toISOString() }
             : conv
         ));
+
+        // Refresh unread count after sending
+        window.dispatchEvent(new Event('messagesRead'));
       } else {
         setMessages(prev => prev.filter(msg => msg.id !== tempId));
         toast({
@@ -267,6 +270,8 @@ const Messages: React.FC = () => {
     setConversations(prev => prev.map(conv =>
       conv.id === conversation.id ? { ...conv, unread_count: 0 } : conv
     ));
+    // Dispatch event when opening a conversation to refresh badge
+    window.dispatchEvent(new Event('messagesRead'));
   };
 
   const handleBack = () => {
