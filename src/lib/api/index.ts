@@ -6,4 +6,6 @@ export { favoritesApi } from './favorites';
 export { imagesApi } from './images';
 export { wishlistApi } from './wishlist';
 export { adminApi } from './admin';
+export { chatApi } from './chat';
+
 export type * from './types';
