@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail,
   Phone,
@@ -13,18 +13,19 @@ import {
   Package,
   Eye,
   ZoomIn,
-  XCircle
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useProfile } from '@/contexts/ProfileContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
-import { profileApi } from '@/lib/api';
-import Header from '@/components/layout/Header';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import Footer from '@/components/layout/Footer';
+  XCircle,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useProfile } from "@/contexts/ProfileContext";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+import { profileApi } from "@/lib/api";
+import Header from "@/components/layout/Header";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import Footer from "@/components/layout/Footer";
+import { OnlineIndicator } from "@/components/OnlineIndicator";
 
 const Profile: React.FC = () => {
   const { profile, isLoading, updateProfile } = useProfile();
@@ -35,11 +36,11 @@ const Profile: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [editData, setEditData] = useState({
-    name: '',
-    username: '',
-    bio: '',
-    phone_number: '',
-    location: '',
+    name: "",
+    username: "",
+    bio: "",
+    phone_number: "",
+    location: "",
     whatsapp_enabled: false,
     phone_enabled: false,
   });
@@ -55,11 +56,11 @@ const Profile: React.FC = () => {
   React.useEffect(() => {
     if (profile) {
       setEditData({
-        name: profile.name || '',
-        username: profile.username || '',
-        bio: profile.bio || '',
-        phone_number: profile.phone_number || '',
-        location: profile.location || '',
+        name: profile.name || "",
+        username: profile.username || "",
+        bio: profile.bio || "",
+        phone_number: profile.phone_number || "",
+        location: profile.location || "",
         whatsapp_enabled: profile.whatsapp_enabled || false,
         phone_enabled: profile.phone_enabled || false,
       });
@@ -75,7 +76,7 @@ const Profile: React.FC = () => {
           setStats(response.data);
         }
       } catch (error) {
-        console.error('Failed to load stats:', error);
+        console.error("Failed to load stats:", error);
       }
     };
     loadStats();
@@ -91,21 +92,21 @@ const Profile: React.FC = () => {
   };
 
   const formatJoinDate = (dateString: string | undefined) => {
-    if (!dateString) return 'Recently';
+    if (!dateString) return "Recently";
 
     try {
       const date = new Date(dateString);
       // Check if date is valid
       if (isNaN(date.getTime())) {
-        return 'Recently';
+        return "Recently";
       }
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch (error) {
-      return 'Recently';
+      return "Recently";
     }
   };
 
@@ -123,7 +124,7 @@ const Profile: React.FC = () => {
       }
 
       // Check file type
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         toast({
           title: "Invalid file type",
           description: "Please upload an image file",
@@ -154,7 +155,7 @@ const Profile: React.FC = () => {
 
   const getAvatarUrl = () => {
     if (!profile?.avatar_url) return null;
-    return profile.avatar_url.startsWith('http')
+    return profile.avatar_url.startsWith("http")
       ? profile.avatar_url
       : `http://localhost:5150${profile.avatar_url}`;
   };
@@ -188,7 +189,7 @@ const Profile: React.FC = () => {
     );
   }
 
-  const fullName = profile.name || 'User';
+  const fullName = profile.name || "User";
   const avatarUrl = getAvatarUrl();
 
   return (
@@ -240,8 +241,18 @@ const Profile: React.FC = () => {
                       )}
                     </div>
 
+                    {/* Online Status Indicator */}
+                    {authUser?.id && (
+                      <div className="absolute bottom-1 right-1">
+                        <OnlineIndicator userId={parseInt(authUser.id)} size="lg" />
+                      </div>
+                    )}
+
                     {/* Camera Button for Upload */}
-                    <label htmlFor="avatar-upload" className="absolute bottom-0 right-0 bg-gray-900 text-white p-2 rounded-full cursor-pointer hover:bg-gray-800 transition-colors ring-2 ring-white">
+                    <label
+                      htmlFor="avatar-upload"
+                      className="absolute bottom-0 right-0 bg-gray-900 text-white p-2 rounded-full cursor-pointer hover:bg-gray-800 transition-colors ring-2 ring-white"
+                    >
                       <Camera className="w-4 h-4" />
                       <input
                         id="avatar-upload"
@@ -252,7 +263,10 @@ const Profile: React.FC = () => {
                       />
                     </label>
                   </div>
-                  <h2 className="text-xl font-semibold">{fullName || 'User'}</h2>
+                  <h2 className="text-xl font-semibold flex items-center justify-center gap-2">
+                    {fullName || "User"}
+                    {authUser?.id && <OnlineIndicator userId={parseInt(authUser.id)} size="sm" />}
+                  </h2>
                   <p className="text-gray-600">{profile.email}</p>
                   <p className="text-sm text-red-600 mt-1 capitalize">{profile.role}</p>
                   {profile.username ? (
@@ -273,9 +287,13 @@ const Profile: React.FC = () => {
                     </Button>
                   )}
                   {profile.email_verified ? (
-                    <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">Verified</span>
+                    <span className="inline-block mt-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full">
+                      Verified
+                    </span>
                   ) : (
-                    <span className="inline-block mt-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">Not Verified</span>
+                    <span className="inline-block mt-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full">
+                      Not Verified
+                    </span>
                   )}
                 </div>
 
@@ -338,7 +356,7 @@ const Profile: React.FC = () => {
                 <Button
                   variant="outline"
                   className="w-full mt-4"
-                  onClick={() => navigate('/my-listings')}
+                  onClick={() => navigate("/my-listings")}
                 >
                   View My Listings
                 </Button>
@@ -450,7 +468,9 @@ const Profile: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={editData.whatsapp_enabled}
-                        onChange={(e) => setEditData({ ...editData, whatsapp_enabled: e.target.checked })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, whatsapp_enabled: e.target.checked })
+                        }
                         disabled={!isEditing}
                         className="w-4 h-4"
                       />
@@ -460,7 +480,9 @@ const Profile: React.FC = () => {
                       <input
                         type="checkbox"
                         checked={editData.phone_enabled}
-                        onChange={(e) => setEditData({ ...editData, phone_enabled: e.target.checked })}
+                        onChange={(e) =>
+                          setEditData({ ...editData, phone_enabled: e.target.checked })
+                        }
                         disabled={!isEditing}
                         className="w-4 h-4"
                       />

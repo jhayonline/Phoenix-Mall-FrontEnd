@@ -10,6 +10,7 @@ export interface ApiResponse<T = unknown> {
 export interface LoginResponseData {
   token: string;
   pid: string;
+  id: number;
   name: string;
   is_verified: boolean;
   role?: string;
@@ -17,6 +18,7 @@ export interface LoginResponseData {
 }
 
 export interface CurrentUserResponseData {
+  id: number;
   pid: string;
   name: string;
   email: string;
@@ -120,7 +122,8 @@ export interface CategoryResponseData {
 // ============ FRONTEND EXPECTED TYPES ============
 
 export interface User {
-  id: string;
+  id: number;
+  pid: string;
   email: string;
   first_name: string;
   last_name: string;

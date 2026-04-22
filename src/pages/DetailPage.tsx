@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Heart,
   MapPin,
@@ -13,19 +13,20 @@ import {
   Share2,
   Check,
   Eye,
-  PenSquare
-} from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import Footer from '@/components/layout/Footer';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import ProductGrid from '@/components/sections/ProductGrid';
-import ReviewModal from '@/components/ReviewModal';
-import { productsApi, imagesApi, favoritesApi } from '@/lib/api';
-import type { ProductResponseData, ProductImage } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
-import FollowButton from '@/components/FollowButton';
+  PenSquare,
+} from "lucide-react";
+import { useParams, useNavigate } from "react-router-dom";
+import Header from "@/components/layout/Header";
+import Footer from "@/components/layout/Footer";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import ProductGrid from "@/components/sections/ProductGrid";
+import ReviewModal from "@/components/ReviewModal";
+import { productsApi, imagesApi, favoritesApi } from "@/lib/api";
+import type { ProductResponseData, ProductImage } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import FollowButton from "@/components/FollowButton";
+import { OnlineIndicator } from "@/components/OnlineIndicator";
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -55,11 +56,11 @@ const DetailPage: React.FC = () => {
 
   const hasViewedProduct = (productId: string): boolean => {
     const viewed = sessionStorage.getItem(`viewed_${productId}`);
-    return viewed === 'true';
+    return viewed === "true";
   };
 
   const markProductViewed = (productId: string) => {
-    sessionStorage.setItem(`viewed_${productId}`, 'true');
+    sessionStorage.setItem(`viewed_${productId}`, "true");
   };
 
   const loadProduct = useCallback(async () => {
@@ -94,7 +95,7 @@ const DetailPage: React.FC = () => {
           const imagesResponse = await imagesApi.getImages(pid!);
           if (imagesResponse.success && imagesResponse.data.length > 0) {
             allImages = imagesResponse.data;
-            const primaryImg = allImages.find(img => img.is_primary);
+            const primaryImg = allImages.find((img) => img.is_primary);
             primaryImage = primaryImg?.image_url || allImages[0]?.image_url;
           }
         } catch {
@@ -141,54 +142,61 @@ const DetailPage: React.FC = () => {
     }
   }, [user, product]);
 
-  const loadRelatedProducts = useCallback(async (categoryId: string) => {
-    try {
-      const response = await productsApi.getProducts({
-        category: categoryId,
-        limit: 6
-      });
-      if (response.success && response.data) {
-        const filtered = response.data.filter(p => p.pid !== pid);
+  const loadRelatedProducts = useCallback(
+    async (categoryId: string) => {
+      try {
+        const response = await productsApi.getProducts({
+          category: categoryId,
+          limit: 6,
+        });
+        if (response.success && response.data) {
+          const filtered = response.data.filter((p) => p.pid !== pid);
 
-        // Fetch images for each related product
-        const productsWithImages = await Promise.all(
-          filtered.slice(0, 6).map(async (product) => {
-            let primaryImage: string | undefined;
-            try {
-              const imagesResponse = await imagesApi.getImages(product.pid);
-              if (imagesResponse.success && imagesResponse.data.length > 0) {
-                const primaryImg = imagesResponse.data.find(img => img.is_primary);
-                primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+          // Fetch images for each related product
+          const productsWithImages = await Promise.all(
+            filtered.slice(0, 6).map(async (product) => {
+              let primaryImage: string | undefined;
+              try {
+                const imagesResponse = await imagesApi.getImages(product.pid);
+                if (imagesResponse.success && imagesResponse.data.length > 0) {
+                  const primaryImg = imagesResponse.data.find((img) => img.is_primary);
+                  primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+                }
+              } catch (error) {
+                //
               }
-            } catch (error) {
-              //
-            }
 
-            return {
-              ...product,
-              primaryImage,
-              rating: product.average_rating || 0,
-              reviews: product.total_reviews || 0,
-            };
-          })
-        );
+              return {
+                ...product,
+                primaryImage,
+                rating: product.average_rating || 0,
+                reviews: product.total_reviews || 0,
+              };
+            }),
+          );
 
-        setRelatedProducts(productsWithImages);
+          setRelatedProducts(productsWithImages);
+        }
+      } catch (error) {
+        //
       }
-    } catch (error) {
-      //
-    }
-  }, [pid]);
+    },
+    [pid],
+  );
 
   const handleReviewSubmitted = async () => {
     // Refresh product data to get updated ratings
     const response = await productsApi.getProduct(pid!);
     if (response.success && response.data) {
-      setProduct(prev => prev ? {
-        ...prev,
-        average_rating: response.data.average_rating,
-        total_reviews: response.data.total_reviews,
-      } : prev);
+      setProduct((prev) =>
+        prev
+          ? {
+              ...prev,
+              average_rating: response.data.average_rating,
+              total_reviews: response.data.total_reviews,
+            }
+          : prev,
+      );
     }
   };
 
@@ -211,7 +219,7 @@ const DetailPage: React.FC = () => {
         description: "Please login to add items to wishlist",
         variant: "destructive",
       });
-      navigate('/login');
+      navigate("/login");
       return;
     }
 
@@ -225,7 +233,7 @@ const DetailPage: React.FC = () => {
           title: "Removed",
           description: "Item removed from wishlist",
         });
-        window.dispatchEvent(new Event('wishlistUpdated'));
+        window.dispatchEvent(new Event("wishlistUpdated"));
       } else {
         await favoritesApi.add(product.pid);
         setIsLiked(true);
@@ -233,7 +241,7 @@ const DetailPage: React.FC = () => {
           title: "Added",
           description: "Item added to wishlist",
         });
-        window.dispatchEvent(new Event('wishlistUpdated'));
+        window.dispatchEvent(new Event("wishlistUpdated"));
       }
     } catch (error) {
       toast({
@@ -275,7 +283,9 @@ const DetailPage: React.FC = () => {
 
   const prevImage = () => {
     if (product?.allImages) {
-      setSelectedImageIndex((prev) => (prev - 1 + product.allImages!.length) % product.allImages!.length);
+      setSelectedImageIndex(
+        (prev) => (prev - 1 + product.allImages!.length) % product.allImages!.length,
+      );
     }
   };
 
@@ -298,19 +308,19 @@ const DetailPage: React.FC = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'GHS'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "GHS",
     }).format(amount);
   };
 
   const formatNumber = (num: number) => {
-    if (!num) return '0';
+    if (!num) return "0";
     if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
+      return (num / 1000000).toFixed(1) + "M";
     }
     if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
+      return (num / 1000).toFixed(1) + "K";
     }
     return num.toString();
   };
@@ -325,30 +335,25 @@ const DetailPage: React.FC = () => {
           {[...Array(5)].map((_, i) => (
             <Star
               key={i}
-              className={`w-4 h-4 ${i < fullStars
-                ? "text-yellow-400 fill-yellow-400"
-                : i === fullStars && hasHalfStar
-                  ? "text-yellow-400 fill-yellow-400 opacity-50"
-                  : "text-gray-300"
-                }`}
+              className={`w-4 h-4 ${
+                i < fullStars
+                  ? "text-yellow-400 fill-yellow-400"
+                  : i === fullStars && hasHalfStar
+                    ? "text-yellow-400 fill-yellow-400 opacity-50"
+                    : "text-gray-300"
+              }`}
             />
           ))}
         </div>
         {ratingValue > 0 && (
           <>
-            <span className="text-sm font-medium text-gray-700 ml-1">
-              {ratingValue.toFixed(1)}
-            </span>
+            <span className="text-sm font-medium text-gray-700 ml-1">{ratingValue.toFixed(1)}</span>
             {count && count > 0 && (
-              <span className="text-xs text-gray-500">
-                ({formatNumber(count)} reviews)
-              </span>
+              <span className="text-xs text-gray-500">({formatNumber(count)} reviews)</span>
             )}
           </>
         )}
-        {ratingValue === 0 && (
-          <span className="text-xs text-gray-500 ml-1">No reviews yet</span>
-        )}
+        {ratingValue === 0 && <span className="text-xs text-gray-500 ml-1">No reviews yet</span>}
       </div>
     );
   };
@@ -372,9 +377,11 @@ const DetailPage: React.FC = () => {
         <Header />
         <div className="container mx-auto px-4 py-32 text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Product Not Found</h1>
-          <p className="text-gray-600 mb-8">The product you're looking for doesn't exist or has been removed.</p>
+          <p className="text-gray-600 mb-8">
+            The product you're looking for doesn't exist or has been removed.
+          </p>
           <button
-            onClick={() => navigate('/shop')}
+            onClick={() => navigate("/shop")}
             className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors"
           >
             Continue Shopping
@@ -386,7 +393,7 @@ const DetailPage: React.FC = () => {
     );
   }
 
-  const imageList = product.allImages?.map(img => img.image_url) || [product.primaryImage || ''];
+  const imageList = product.allImages?.map((img) => img.image_url) || [product.primaryImage || ""];
   const hasImages = imageList.length > 0 && imageList[0];
   const viewsCount = product.views_count || 0;
   const wishlistCount = (product as any).wishlist_count || 0;
@@ -408,7 +415,11 @@ const DetailPage: React.FC = () => {
                 onMouseLeave={handleImageLeave}
               >
                 <img
-                  src={hasImages ? imageList[selectedImageIndex] : 'https://placehold.co/800x800/e2e8f0/94a3b8?text=No+Image'}
+                  src={
+                    hasImages
+                      ? imageList[selectedImageIndex]
+                      : "https://placehold.co/800x800/e2e8f0/94a3b8?text=No+Image"
+                  }
                   alt={product.title}
                   className="w-full h-full object-cover"
                 />
@@ -419,8 +430,8 @@ const DetailPage: React.FC = () => {
                     style={{
                       backgroundImage: `url(${imageList[selectedImageIndex]})`,
                       backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                      backgroundSize: '200%',
-                      transform: 'scale(1.5)'
+                      backgroundSize: "200%",
+                      transform: "scale(1.5)",
                     }}
                   />
                 )}
@@ -434,18 +445,24 @@ const DetailPage: React.FC = () => {
 
                 {hasImages && imageList.length > 1 && (
                   <>
-                    <button onClick={prevImage} className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors">
+                    <button
+                      onClick={prevImage}
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                    >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <button onClick={nextImage} className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors">
+                    <button
+                      onClick={nextImage}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                    >
                       <ChevronRight className="w-5 h-5" />
                     </button>
                   </>
                 )}
 
-                {product.status !== 'active' && (
+                {product.status !== "active" && (
                   <span className="absolute top-4 left-4 px-3 py-1 bg-red-500 text-white text-xs font-medium rounded-full">
-                    {product.status === 'sold' ? 'SOLD' : 'INACTIVE'}
+                    {product.status === "sold" ? "SOLD" : "INACTIVE"}
                   </span>
                 )}
               </div>
@@ -456,12 +473,17 @@ const DetailPage: React.FC = () => {
                     <button
                       key={index}
                       onClick={() => handleImageClick(index)}
-                      className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${selectedImageIndex === index
-                        ? 'border-red-500 ring-2 ring-red-200'
-                        : 'border-gray-200 hover:border-gray-400'
-                        }`}
+                      className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${
+                        selectedImageIndex === index
+                          ? "border-red-500 ring-2 ring-red-200"
+                          : "border-gray-200 hover:border-gray-400"
+                      }`}
                     >
-                      <img src={image} alt={`${product.title} view ${index + 1}`} className="w-full h-full object-cover" />
+                      <img
+                        src={image}
+                        alt={`${product.title} view ${index + 1}`}
+                        className="w-full h-full object-cover"
+                      />
                     </button>
                   ))}
                 </div>
@@ -474,9 +496,13 @@ const DetailPage: React.FC = () => {
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{product.title}</h1>
 
             <div className="flex items-center gap-3 mb-4">
-              <span className="text-3xl font-bold text-red-600">{formatCurrency(product.price)}</span>
+              <span className="text-3xl font-bold text-red-600">
+                {formatCurrency(product.price)}
+              </span>
               {product.condition && (
-                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded capitalize">{product.condition}</span>
+                <span className="px-2 py-1 bg-gray-100 text-gray-600 text-sm rounded capitalize">
+                  {product.condition}
+                </span>
               )}
             </div>
 
@@ -495,7 +521,9 @@ const DetailPage: React.FC = () => {
               </div>
             </div>
 
-            <p className="text-gray-700 mb-6 leading-relaxed">{product.description || 'No description available.'}</p>
+            <p className="text-gray-700 mb-6 leading-relaxed">
+              {product.description || "No description available."}
+            </p>
 
             {product.location && (
               <div className="flex items-center gap-2 text-gray-600 mb-6">
@@ -507,19 +535,24 @@ const DetailPage: React.FC = () => {
             <div className="flex gap-3 mb-8">
               <button
                 onClick={toggleFavorite}
-                className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${isLiked
-                  ? 'bg-red-500 text-white hover:bg-red-600'
-                  : 'bg-gray-900 text-white hover:bg-gray-800'
-                  }`}
+                className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                  isLiked
+                    ? "bg-red-500 text-white hover:bg-red-600"
+                    : "bg-gray-900 text-white hover:bg-gray-800"
+                }`}
               >
-                <Heart className={`w-5 h-5 ${isLiked ? 'fill-current' : ''}`} />
-                {isLiked ? 'Saved to Wishlist' : 'Add to Wishlist'}
+                <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
+                {isLiked ? "Saved to Wishlist" : "Add to Wishlist"}
               </button>
               <button
                 onClick={shareProduct}
                 className="p-3 rounded-lg border border-gray-300 text-gray-600 hover:border-gray-400 transition-colors relative"
               >
-                {shareCopied ? <Check className="w-5 h-5 text-green-500" /> : <Share2 className="w-5 h-5" />}
+                {shareCopied ? (
+                  <Check className="w-5 h-5 text-green-500" />
+                ) : (
+                  <Share2 className="w-5 h-5" />
+                )}
               </button>
             </div>
 
@@ -543,30 +576,48 @@ const DetailPage: React.FC = () => {
                   onClick={() => seller.username && navigate(`/user/${seller.username}`)}
                 >
                   {/* Avatar */}
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                    {seller.avatar_url ? (
-                      <img
-                        src={seller.avatar_url.startsWith('http')
-                          ? seller.avatar_url
-                          : `${(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5150/api').replace('/api', '')}${seller.avatar_url}`}
-                        alt={seller.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=ef4444&color=fff&size=48`;
-                        }}
-                      />
-                    ) : (
-                      <span className="text-white font-bold text-lg">{seller.name.charAt(0)}</span>
+                  <div className="relative">
+                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                      {seller.avatar_url ? (
+                        <img
+                          src={
+                            seller.avatar_url.startsWith("http")
+                              ? seller.avatar_url
+                              : `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api").replace("/api", "")}${seller.avatar_url}`
+                          }
+                          alt={seller.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=ef4444&color=fff&size=48`;
+                          }}
+                        />
+                      ) : (
+                        <span className="text-white font-bold text-lg">
+                          {seller.name.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+                    {/* Add online indicator */}
+                    {seller.id && (
+                      <div className="absolute -bottom-0.5 -right-0.5">
+                        <OnlineIndicator userId={seller.id} size="sm" />
+                      </div>
                     )}
                   </div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-900">{seller.name}</p>
-                    {seller.username && (
-                      <p className="text-sm text-gray-500">@{seller.username}</p>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-gray-900">{seller.name}</p>
+                      <OnlineIndicator
+                        userId={seller.id}
+                        size="sm"
+                        showDetailedText={true}
+                        textClassName="text-xs"
+                      />
+                    </div>
+                    {seller.username && <p className="text-sm text-gray-500">@{seller.username}</p>}
                     <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
                       <span>{seller.product_count} listings</span>
                       <span>{seller.follower_count} followers</span>
@@ -597,7 +648,12 @@ const DetailPage: React.FC = () => {
               <div className="flex gap-3">
                 {product.whatsapp_contact && seller?.whatsapp_enabled && (
                   <button
-                    onClick={() => window.open(`https://wa.me/${seller.phone_number?.replace(/\D/g, '')}`, '_blank')}
+                    onClick={() =>
+                      window.open(
+                        `https://wa.me/${seller.phone_number?.replace(/\D/g, "")}`,
+                        "_blank",
+                      )
+                    }
                     className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <MessageCircle className="w-4 h-4" />
@@ -615,7 +671,7 @@ const DetailPage: React.FC = () => {
                     className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
                   >
                     <Phone className="w-4 h-4" />
-                    {copied ? <Check className="w-4 h-4 text-green-500" /> : 'Call'}
+                    {copied ? <Check className="w-4 h-4 text-green-500" /> : "Call"}
                   </button>
                 )}
               </div>
@@ -644,7 +700,7 @@ const DetailPage: React.FC = () => {
             <ProductGrid
               products={relatedProducts}
               viewMode="3"
-              onViewModeChange={() => { }}
+              onViewModeChange={() => {}}
               loading={false}
             />
           </div>

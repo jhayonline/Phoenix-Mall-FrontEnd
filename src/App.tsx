@@ -21,6 +21,8 @@ import SellerDashboard from "./pages/SellerDashboard";
 import EditProduct from "./pages/EditProduct";
 import MyListings from "./pages/MyListings";
 import UserProfile from "./pages/UserProfile";
+import { OnlineStatusProvider } from "@/contexts/OnlineStatusContext";
+import { Heartbeat } from "@/components/Heartbeat";
 
 // Admin
 import AdminDashboard from "./pages/admin/Dashboard";
@@ -35,39 +37,42 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <ProfileProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/shop" element={<ShopPage />} />
-              <Route path="/product/:pid" element={<DetailPage />} />
-              <Route path="/messaging" element={<Messages />} />
-              <Route path="/notifications" element={<Notifications />} />
-              <Route path="/contact" element={<Contact />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/sell" element={<SellPage />} />
-              <Route path="/wishlist" element={<WishlistPage />} />
-              <Route path="/seller/dashboard" element={<SellerDashboard />} />
-              <Route path="/edit-product/:pid" element={<EditProduct />} />
-              <Route path="/my-listings" element={<MyListings />} />
-              <Route path="/user/:username" element={<UserProfile />} />
+        <OnlineStatusProvider>
+          <Heartbeat />
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+                <Route path="/shop" element={<ShopPage />} />
+                <Route path="/product/:pid" element={<DetailPage />} />
+                <Route path="/messaging" element={<Messages />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/sell" element={<SellPage />} />
+                <Route path="/wishlist" element={<WishlistPage />} />
+                <Route path="/seller/dashboard" element={<SellerDashboard />} />
+                <Route path="/edit-product/:pid" element={<EditProduct />} />
+                <Route path="/my-listings" element={<MyListings />} />
+                <Route path="/user/:username" element={<UserProfile />} />
 
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/categories" element={<CategoriesManagement />} />
+                <Route path="/admin/dashboard" element={<AdminDashboard />} />
+                <Route path="/admin/categories" element={<CategoriesManagement />} />
 
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </OnlineStatusProvider>
       </ProfileProvider>
     </AuthProvider>
   </QueryClientProvider>

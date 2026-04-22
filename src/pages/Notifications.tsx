@@ -223,8 +223,8 @@ const Notifications = () => {
                   }}
                   onClick={() => handleNotificationClick(notification)}
                   className={`border-b border-gray-100 last:border-b-0 cursor-pointer transition-all duration-200 ${!notification.isRead
-                      ? 'bg-gradient-to-r from-red-50 to-transparent border-l-4 border-l-red-500'
-                      : 'hover:bg-gray-50'
+                    ? 'bg-gradient-to-r from-red-50 to-transparent border-l-4 border-l-red-500'
+                    : 'hover:bg-gray-50'
                     }`}
                 >
                   <div className="p-4 flex items-start">

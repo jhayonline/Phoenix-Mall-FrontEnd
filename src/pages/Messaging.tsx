@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search,
   MoreVertical,
@@ -13,14 +13,15 @@ import {
   Star,
   Trash2,
   Bell,
-  MessageSquare
-} from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { chatApi, type ChatMessage, type Conversation } from '@/lib/api/chat';
+  MessageSquare,
+} from "lucide-react";
+import { useSearchParams } from "react-router-dom";
+import Header from "@/components/layout/Header";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { chatApi, type ChatMessage, type Conversation } from "@/lib/api/chat";
+import { OnlineIndicator } from "@/components/OnlineIndicator";
 
 interface MessageWithDetails extends ChatMessage {
   isOwn: boolean;
@@ -33,9 +34,9 @@ const Messages: React.FC = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<MessageWithDetails[]>([]);
-  const [messageInput, setMessageInput] = useState('');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'all' | 'unread'>('all');
+  const [messageInput, setMessageInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState<"all" | "unread">("all");
   const [isMobileView, setIsMobileView] = useState(window.innerWidth < 768);
   const [showChatInfo, setShowChatInfo] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -65,8 +66,8 @@ const Messages: React.FC = () => {
         setShowChatInfo(false);
       }
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, [selectedConversation]);
 
   // Load conversations only when auth is ready
@@ -78,9 +79,9 @@ const Messages: React.FC = () => {
 
   // Auto-select conversation from URL once conversations are loaded
   useEffect(() => {
-    const convId = searchParams.get('conv');
+    const convId = searchParams.get("conv");
     if (convId && conversations.length > 0 && !selectedConversation) {
-      const conv = conversations.find(c => c.id === convId);
+      const conv = conversations.find((c) => c.id === convId);
       if (conv) setSelectedConversation(conv);
     }
   }, [conversations, searchParams, selectedConversation]);
@@ -108,7 +109,7 @@ const Messages: React.FC = () => {
 
   // Scroll to bottom when messages change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   const loadConversations = async () => {
@@ -118,7 +119,7 @@ const Messages: React.FC = () => {
         setConversations(response.data);
       }
     } catch (error) {
-      console.error('Failed to load conversations:', error);
+      console.error("Failed to load conversations:", error);
       toast({
         title: "Error",
         description: "Failed to load conversations",
@@ -136,22 +137,22 @@ const Messages: React.FC = () => {
         const userId = currentUserIdRef.current;
 
         if (!userId) {
-          console.warn('loadMessages called before userId was ready — skipping');
+          console.warn("loadMessages called before userId was ready — skipping");
           return;
         }
 
-        const messagesWithOwn = response.data.map(msg => ({
+        const messagesWithOwn = response.data.map((msg) => ({
           ...msg,
           isOwn: Number(msg.sender_id) === Number(userId),
         }));
 
         if (isPolling) {
-          setMessages(prev => {
+          setMessages((prev) => {
             // Create a map of existing messages
-            const existingMap = new Map(prev.map(m => [String(m.id), m]));
+            const existingMap = new Map(prev.map((m) => [String(m.id), m]));
 
             // Merge new messages with existing ones
-            const merged = messagesWithOwn.map(msg => {
+            const merged = messagesWithOwn.map((msg) => {
               const existing = existingMap.get(String(msg.id));
               return existing || msg;
             });
@@ -159,9 +160,9 @@ const Messages: React.FC = () => {
             // Check if there are new messages
             if (merged.length !== prev.length) {
               // Dispatch event for new unread messages
-              const newUnreadCount = merged.filter(m => !m.isOwn && !m.read).length;
+              const newUnreadCount = merged.filter((m) => !m.isOwn && !m.read).length;
               if (newUnreadCount > 0) {
-                window.dispatchEvent(new Event('messagesRead'));
+                window.dispatchEvent(new Event("messagesRead"));
               }
               return merged;
             }
@@ -171,11 +172,11 @@ const Messages: React.FC = () => {
           loadConversations();
         } else {
           // Initial load - check for unread messages
-          const hadUnread = messages.some(m => !m.isOwn && !m.read);
-          const nowHasUnread = messagesWithOwn.some(m => !m.isOwn && !m.read);
+          const hadUnread = messages.some((m) => !m.isOwn && !m.read);
+          const nowHasUnread = messagesWithOwn.some((m) => !m.isOwn && !m.read);
 
           if (hadUnread && !nowHasUnread) {
-            window.dispatchEvent(new Event('messagesRead'));
+            window.dispatchEvent(new Event("messagesRead"));
           }
 
           setMessages(messagesWithOwn);
@@ -183,7 +184,7 @@ const Messages: React.FC = () => {
       }
     } catch (error) {
       if (!isPolling) {
-        console.error('Failed to load messages:', error);
+        console.error("Failed to load messages:", error);
         toast({
           title: "Error",
           description: "Failed to load messages",
@@ -201,7 +202,7 @@ const Messages: React.FC = () => {
 
     setSending(true);
     const messageText = messageInput.trim();
-    setMessageInput('');
+    setMessageInput("");
 
     const tempId = `temp-${Date.now()}`;
     const optimisticMessage: MessageWithDetails = {
@@ -215,29 +216,28 @@ const Messages: React.FC = () => {
       isOwn: true,
     };
 
-    setMessages(prev => [...prev, optimisticMessage]);
+    setMessages((prev) => [...prev, optimisticMessage]);
 
     try {
-      const response = await chatApi.sendMessage(
-        selectedConversation.other_user_id,
-        messageText
-      );
+      const response = await chatApi.sendMessage(selectedConversation.other_user_id, messageText);
 
       if (response.success) {
-        setMessages(prev => prev.map(msg =>
-          msg.id === tempId ? { ...response.data, isOwn: true } : msg
-        ));
+        setMessages((prev) =>
+          prev.map((msg) => (msg.id === tempId ? { ...response.data, isOwn: true } : msg)),
+        );
 
-        setConversations(prev => prev.map(conv =>
-          conv.id === selectedConversation.id
-            ? { ...conv, last_message: messageText, last_message_time: new Date().toISOString() }
-            : conv
-        ));
+        setConversations((prev) =>
+          prev.map((conv) =>
+            conv.id === selectedConversation.id
+              ? { ...conv, last_message: messageText, last_message_time: new Date().toISOString() }
+              : conv,
+          ),
+        );
 
         // Refresh unread count after sending
-        window.dispatchEvent(new Event('messagesRead'));
+        window.dispatchEvent(new Event("messagesRead"));
       } else {
-        setMessages(prev => prev.filter(msg => msg.id !== tempId));
+        setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
         toast({
           title: "Error",
           description: "Failed to send message",
@@ -245,8 +245,8 @@ const Messages: React.FC = () => {
         });
       }
     } catch (error) {
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
-      console.error('Failed to send message:', error);
+      setMessages((prev) => prev.filter((msg) => msg.id !== tempId));
+      console.error("Failed to send message:", error);
       toast({
         title: "Error",
         description: "Failed to send message",
@@ -258,7 +258,7 @@ const Messages: React.FC = () => {
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
@@ -267,11 +267,11 @@ const Messages: React.FC = () => {
   const handleConversationSelect = (conversation: Conversation) => {
     setSelectedConversation(conversation);
     setSearchParams({ conv: conversation.id });
-    setConversations(prev => prev.map(conv =>
-      conv.id === conversation.id ? { ...conv, unread_count: 0 } : conv
-    ));
+    setConversations((prev) =>
+      prev.map((conv) => (conv.id === conversation.id ? { ...conv, unread_count: 0 } : conv)),
+    );
     // Dispatch event when opening a conversation to refresh badge
-    window.dispatchEvent(new Event('messagesRead'));
+    window.dispatchEvent(new Event("messagesRead"));
   };
 
   const handleBack = () => {
@@ -286,31 +286,31 @@ const Messages: React.FC = () => {
     const hours = diff / (1000 * 60 * 60);
 
     if (hours < 24) {
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     } else if (hours < 48) {
-      return 'Yesterday';
+      return "Yesterday";
     } else {
-      return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      return date.toLocaleDateString([], { month: "short", day: "numeric" });
     }
   };
 
-  const filteredConversations = conversations.filter(conv => {
+  const filteredConversations = conversations.filter((conv) => {
     const matchesSearch = conv.other_user_name.toLowerCase().includes(searchQuery.toLowerCase());
-    if (filterType === 'unread') return matchesSearch && conv.unread_count > 0;
+    if (filterType === "unread") return matchesSearch && conv.unread_count > 0;
     return matchesSearch;
   });
 
   const quickReplies = [
-    { text: 'Is this available?' },
-    { text: 'Last price?' },
-    { text: 'What is your location?' },
-    { text: 'I want to make an offer.' },
-    { text: 'Please call me.' }
+    { text: "Is this available?" },
+    { text: "Last price?" },
+    { text: "What is your location?" },
+    { text: "I want to make an offer." },
+    { text: "Please call me." },
   ];
 
   const chatInfoVariants = {
-    open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
-    closed: { x: '100%', transition: { type: 'spring', stiffness: 300, damping: 30 } }
+    open: { x: 0, transition: { type: "spring", stiffness: 300, damping: 30 } },
+    closed: { x: "100%", transition: { type: "spring", stiffness: 300, damping: 30 } },
   };
 
   if (loading) {
@@ -331,10 +331,15 @@ const Messages: React.FC = () => {
 
       <div className="pt-20 md:pt-24 pb-24 md:pb-6">
         <div className="container mx-auto px-4 max-w-7xl">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700" style={{ height: 'calc(100vh - 8rem)' }}>
+          <div
+            className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-200 dark:border-gray-700"
+            style={{ height: "calc(100vh - 8rem)" }}
+          >
             <div className="flex h-full">
               {/* Conversations Sidebar */}
-              <div className={`${isMobileView && selectedConversation ? 'hidden' : 'w-full md:w-96'} border-r border-gray-200 dark:border-gray-700 flex flex-col`}>
+              <div
+                className={`${isMobileView && selectedConversation ? "hidden" : "w-full md:w-96"} border-r border-gray-200 dark:border-gray-700 flex flex-col`}
+              >
                 {/* Header */}
                 <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-red-50 to-red-100 dark:from-gray-800 dark:to-gray-800">
                   <div className="flex items-center justify-between mb-4">
@@ -360,14 +365,15 @@ const Messages: React.FC = () => {
 
                   {/* Filters */}
                   <div className="flex gap-2 mt-4">
-                    {['all', 'unread'].map((filter) => (
+                    {["all", "unread"].map((filter) => (
                       <button
                         key={filter}
                         onClick={() => setFilterType(filter as any)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${filterType === filter
-                          ? 'bg-red-600 text-white shadow-md'
-                          : 'bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                          }`}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                          filterType === filter
+                            ? "bg-red-600 text-white shadow-md"
+                            : "bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        }`}
                       >
                         {filter.charAt(0).toUpperCase() + filter.slice(1)}
                       </button>
@@ -383,7 +389,9 @@ const Messages: React.FC = () => {
                         <MessageSquare className="w-8 h-8 text-gray-400" />
                       </div>
                       <p className="text-gray-500">No messages yet</p>
-                      <p className="text-sm text-gray-400 mt-1">Start a conversation from a product page</p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Start a conversation from a product page
+                      </p>
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
@@ -392,18 +400,26 @@ const Messages: React.FC = () => {
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         onClick={() => handleConversationSelect(conv)}
-                        className={`flex items-center gap-3 p-4 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700 ${selectedConversation?.id === conv.id ? 'bg-red-50 dark:bg-gray-700' : ''
-                          }`}
+                        className={`flex items-center gap-3 p-4 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700 ${
+                          selectedConversation?.id === conv.id ? "bg-red-50 dark:bg-gray-700" : ""
+                        }`}
                       >
                         <div className="relative">
                           <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center">
                             {conv.other_user_avatar ? (
-                              <img src={conv.other_user_avatar} alt={conv.other_user_name} className="w-full h-full object-cover" />
+                              <img
+                                src={conv.other_user_avatar}
+                                alt={conv.other_user_name}
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <span className="text-white font-bold text-lg">
                                 {conv.other_user_name.charAt(0)}
                               </span>
                             )}
+                          </div>
+                          <div className="absolute -bottom-0.5 -right-0.5">
+                            <OnlineIndicator userId={conv.other_user_id} size="sm" />
                           </div>
                         </div>
 
@@ -435,7 +451,9 @@ const Messages: React.FC = () => {
 
               {/* Chat Area */}
               {selectedConversation ? (
-                <div className={`${isMobileView && !showChatInfo ? 'flex-1' : 'hidden md:flex flex-1'} flex flex-col`}>
+                <div
+                  className={`${isMobileView && !showChatInfo ? "flex-1" : "hidden md:flex flex-1"} flex flex-col`}
+                >
                   {/* Chat Header */}
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-red-50 to-red-100 dark:from-gray-800 dark:to-gray-800 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -450,18 +468,32 @@ const Messages: React.FC = () => {
                       <div className="relative">
                         <div className="w-10 h-10 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center">
                           {selectedConversation.other_user_avatar ? (
-                            <img src={selectedConversation.other_user_avatar} alt={selectedConversation.other_user_name} className="w-full h-full object-cover" />
+                            <img
+                              src={selectedConversation.other_user_avatar}
+                              alt={selectedConversation.other_user_name}
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             <span className="text-white font-bold">
                               {selectedConversation.other_user_name.charAt(0)}
                             </span>
                           )}
                         </div>
+                        <div className="absolute -bottom-0.5 -right-0.5">
+                          <OnlineIndicator userId={selectedConversation.other_user_id} size="sm" />
+                        </div>
                       </div>
                       <div>
                         <h2 className="font-semibold text-gray-900 dark:text-white">
                           {selectedConversation.other_user_name}
                         </h2>
+                        {/* Show online status text below the name */}
+                        <OnlineIndicator
+                          userId={selectedConversation.other_user_id}
+                          size="sm"
+                          showDetailedText={true}
+                          textClassName="text-xs"
+                        />
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -482,17 +514,22 @@ const Messages: React.FC = () => {
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: index * 0.05 }}
-                        className={`flex ${message.isOwn ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${message.isOwn ? "justify-end" : "justify-start"}`}
                       >
-                        <div className={`max-w-[70%] ${message.isOwn ? 'items-end' : 'items-start'}`}>
+                        <div
+                          className={`max-w-[70%] ${message.isOwn ? "items-end" : "items-start"}`}
+                        >
                           <div
-                            className={`rounded-2xl px-4 py-2 ${message.isOwn
-                              ? 'bg-gradient-to-r from-red-600 to-red-500 text-white'
-                              : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600'
-                              }`}
+                            className={`rounded-2xl px-4 py-2 ${
+                              message.isOwn
+                                ? "bg-gradient-to-r from-red-600 to-red-500 text-white"
+                                : "bg-white dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600"
+                            }`}
                           >
                             <p className="text-sm">{message.message}</p>
-                            <div className={`flex items-center gap-1 mt-1 text-xs ${message.isOwn ? 'text-red-100' : 'text-gray-500'}`}>
+                            <div
+                              className={`flex items-center gap-1 mt-1 text-xs ${message.isOwn ? "text-red-100" : "text-gray-500"}`}
+                            >
                               <span>{formatTime(message.created_at)}</span>
                               {message.isOwn && message.read && <CheckCheck className="w-3 h-3" />}
                             </div>
@@ -535,7 +572,7 @@ const Messages: React.FC = () => {
                           placeholder="Type a message..."
                           rows={1}
                           className="w-full px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                          style={{ minHeight: '40px', maxHeight: '100px' }}
+                          style={{ minHeight: "40px", maxHeight: "100px" }}
                         />
                       </div>
                       <button
@@ -586,7 +623,11 @@ const Messages: React.FC = () => {
                     <div className="p-6 text-center border-b border-gray-200 dark:border-gray-700">
                       <div className="w-24 h-24 mx-auto mb-4 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600">
                         {selectedConversation.other_user_avatar ? (
-                          <img src={selectedConversation.other_user_avatar} alt={selectedConversation.other_user_name} className="w-full h-full object-cover" />
+                          <img
+                            src={selectedConversation.other_user_avatar}
+                            alt={selectedConversation.other_user_name}
+                            className="w-full h-full object-cover"
+                          />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <span className="text-white text-3xl font-bold">
@@ -599,7 +640,7 @@ const Messages: React.FC = () => {
                         {selectedConversation.other_user_name}
                       </h4>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        @{selectedConversation.other_user_name.toLowerCase().replace(/\s/g, '')}
+                        @{selectedConversation.other_user_name.toLowerCase().replace(/\s/g, "")}
                       </p>
                     </div>
 
@@ -619,7 +660,9 @@ const Messages: React.FC = () => {
                           <Star className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div className="flex-1 text-left">
-                          <p className="font-medium text-gray-900 dark:text-white">Add to Favorites</p>
+                          <p className="font-medium text-gray-900 dark:text-white">
+                            Add to Favorites
+                          </p>
                           <p className="text-sm text-gray-500 dark:text-gray-400">Star this chat</p>
                         </div>
                       </button>
@@ -630,7 +673,9 @@ const Messages: React.FC = () => {
                         </div>
                         <div className="flex-1 text-left">
                           <p className="font-medium text-gray-900 dark:text-white">Archive Chat</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Move to archive</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Move to archive
+                          </p>
                         </div>
                       </button>
 
@@ -640,7 +685,9 @@ const Messages: React.FC = () => {
                         </div>
                         <div className="flex-1 text-left">
                           <p className="font-medium text-red-600 dark:text-red-400">Delete Chat</p>
-                          <p className="text-sm text-gray-500 dark:text-gray-400">Permanently delete</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            Permanently delete
+                          </p>
                         </div>
                       </button>
                     </div>

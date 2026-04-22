@@ -1,9 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { authApi } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { authApi } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface User {
-  id: string;
+  id: number;
+  pid: string;
   email: string;
   first_name: string;
   last_name: string;
@@ -23,6 +24,7 @@ interface RegisterData {
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => Promise<void>;
@@ -32,9 +34,8 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
 };
@@ -52,13 +53,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       const response = await authApi.getCurrentUser();
-      if (response.success) {
-        setUser(response.data);
+      if (response.success && response.data) {
+        // Ensure the user object has all required fields
+        const userData: User = {
+          id: response.data.id || 0,
+          pid: response.data.pid || "",
+          email: response.data.email || "",
+          first_name: response.data.first_name || "",
+          last_name: response.data.last_name || "",
+          role: response.data.role || "user",
+          is_verified: response.data.is_verified || false,
+          created_at: response.data.created_at || new Date().toISOString(),
+        };
+      } else {
+        setUser(null);
       }
     } catch (error) {
       setUser(null);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.log('Auth check failed (expected if not logged in):', errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -68,8 +79,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       const response = await authApi.login({ email, password });
-      if (response.success) {
-        setUser(response.data.user);
+      if (response.success && response.data) {
+        const userData = response.data.user;
+        // Ensure id is a number
+        const formattedUser: User = {
+          ...userData,
+          id: typeof userData.id === "string" ? parseInt(userData.id, 10) : userData.id,
+        };
+        setUser(formattedUser);
         toast({
           title: "Login Successful",
           description: "Welcome back to Phoenix!",
@@ -92,15 +109,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       const response = await authApi.register(userData);
-      if (response.success) {
-        setUser(response.data.user);
+      if (response.success && response.data) {
+        const formattedUser: User = {
+          ...response.data.user,
+          id:
+            typeof response.data.user.id === "string"
+              ? parseInt(response.data.user.id, 10)
+              : response.data.user.id,
+        };
+        setUser(formattedUser);
         toast({
           title: "Account Created",
           description: "Welcome to Phoenix! Your account has been created successfully.",
         });
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Something went wrong during registration";
+      const errorMessage =
+        error instanceof Error ? error.message : "Something went wrong during registration";
       toast({
         title: "Registration Failed",
         description: errorMessage,
@@ -122,7 +147,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
     } catch (error) {
       setUser(null);
-      localStorage.removeItem('access_token');
+      localStorage.removeItem("access_token");
       toast({
         title: "Logged Out",
         description: "You have been successfully logged out",
@@ -131,7 +156,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
+        isAuthenticated: !!user,
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
