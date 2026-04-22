@@ -1,15 +1,20 @@
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Heart, Bell, Plus, MessageCircle } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { profileApi } from "@/lib/api";
+import { OnlineIndicator } from "@/components/OnlineIndicator";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api";
 const API_BASE = API_BASE_URL.replace("/api", "");
 
 const resolveImageUrl = (url: string | null | undefined): string => {
   if (!url) return "";
-  return url.startsWith("http") ? url : `${API_BASE}${url}`;
+  if (url.startsWith("http")) return url;
+  // Remove leading slash if present to avoid double slashes
+  const cleanPath = url.startsWith("/") ? url.slice(1) : url;
+  return `${API_BASE}/${cleanPath}`;
 };
 
 type Tab = {
@@ -102,13 +107,64 @@ const MobileBottomNav: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user } = useAuth();
-  const [messageCount] = useState(2);
-  const [notifCount] = useState(3);
+  const [messageCount, setMessageCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(0);
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
 
   const isActive = useCallback((path: string) => location.pathname === path, [location.pathname]);
 
-  const avatarUrl = resolveImageUrl(user?.avatar_url);
+  // Load profile data for avatar
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (user) {
+        try {
+          const response = await profileApi.getProfile();
+          if (response.success && response.data) {
+            setProfileAvatar(response.data.avatar_url);
+          }
+        } catch (error) {
+          console.error("Failed to load profile avatar:", error);
+        }
+      }
+    };
+    loadProfile();
+  }, [user]);
+
+  // Load unread counts
+  useEffect(() => {
+    const loadCounts = async () => {
+      if (!user) return;
+      try {
+        // Import dynamically to avoid circular dependencies
+        const { chatApi } = await import("@/lib/api/chat");
+        const response = await chatApi.getTotalUnreadCount();
+        if (response.success && response.data) {
+          setMessageCount(response.data.total);
+        }
+      } catch (error) {
+        console.error("Failed to load unread count:", error);
+      }
+    };
+    loadCounts();
+
+    // Listen for message read events
+    const handleMessagesRead = () => {
+      loadCounts();
+    };
+    window.addEventListener("messagesRead", handleMessagesRead);
+    return () => window.removeEventListener("messagesRead", handleMessagesRead);
+  }, [user]);
+
+  const getAvatarUrl = () => {
+    const url = profileAvatar || user?.avatar_url;
+    if (!url) return null;
+    return resolveImageUrl(url);
+  };
+
+  const avatarUrl = getAvatarUrl();
   const isProfileActive = isActive("/profile");
+  const userInitial =
+    user?.name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "?";
 
   const tabs: (Tab | "center")[] = [
     { name: "Search", icon: Search, path: "/search", badge: null },
@@ -230,29 +286,39 @@ const MobileBottomNav: React.FC = () => {
           )}
         </AnimatePresence>
 
-        {/* Avatar */}
-        <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center">
-          {user && avatarUrl ? (
-            <img
-              src={avatarUrl}
-              alt={user.name}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
-                  user.name,
-                )}&background=ef4444&color=fff&size=80`;
-              }}
-            />
-          ) : user ? (
-            <span className="text-white font-bold text-lg">
-              {user.name?.charAt(0)?.toUpperCase()}
-            </span>
-          ) : (
-            // Guest: show a generic person silhouette
-            <svg viewBox="0 0 24 24" className="w-6 h-6 text-white" fill="currentColor">
-              <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
-            </svg>
+        {/* Avatar with online indicator */}
+        <div className="relative w-full h-full">
+          <div className="w-full h-full rounded-full overflow-hidden bg-gradient-to-br from-red-400 to-red-600 flex items-center justify-center">
+            {user && avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt={user.name || "User"}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(
+                    user.name || user.email || "User",
+                  )}&background=ef4444&color=fff&size=120`;
+                }}
+              />
+            ) : user ? (
+              <span className="text-white font-bold text-lg">{userInitial}</span>
+            ) : (
+              // Guest: show a generic person silhouette
+              <svg viewBox="0 0 24 24" className="w-7 h-7 text-white" fill="currentColor">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z" />
+              </svg>
+            )}
+          </div>
+
+          {/* Online status indicator */}
+          {user?.id && (
+            <div className="absolute -bottom-0.5 -right-0.5">
+              <OnlineIndicator
+                userId={typeof user.id === "string" ? parseInt(user.id, 10) : user.id}
+                size="sm"
+              />
+            </div>
           )}
         </div>
       </motion.button>
