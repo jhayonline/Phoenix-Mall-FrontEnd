@@ -22,6 +22,7 @@ import MobileBottomNav from "@/components/layout/MobileBottomNav";
 import ProductGrid from "@/components/sections/ProductGrid";
 import ReviewModal from "@/components/ReviewModal";
 import { productsApi, imagesApi, favoritesApi } from "@/lib/api";
+import { chatApi } from "@/lib/api/chat";
 import type { ProductResponseData, ProductImage } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
@@ -51,6 +52,7 @@ const DetailPage: React.FC = () => {
   const [shareCopied, setShareCopied] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [seller, setSeller] = useState<any | null>(null);
+  const [isCurrentUserSeller, setIsCurrentUserSeller] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -102,15 +104,19 @@ const DetailPage: React.FC = () => {
           //
         }
 
-        // Fetch seller info — must be before setProduct, no reference leak
+        // Fetch seller info
         try {
           const sellerRes = await productsApi.getSeller(productData.seller_id);
           setSeller(sellerRes.data);
+          // Check if the current user is the seller
+          if (user && sellerRes.data) {
+            const currentUserId = typeof user.id === "string" ? parseInt(user.id, 10) : user.id;
+            setIsCurrentUserSeller(currentUserId === sellerRes.data.id);
+          }
         } catch {
           //
         }
 
-        // No seller field on product — it's in its own state now
         setProduct({
           ...productData,
           primaryImage,
@@ -130,7 +136,7 @@ const DetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [pid, toast]);
+  }, [pid, toast, user]);
 
   const checkFavoriteStatus = useCallback(async () => {
     if (!user || !product) return;
@@ -152,7 +158,6 @@ const DetailPage: React.FC = () => {
         if (response.success && response.data) {
           const filtered = response.data.filter((p) => p.pid !== pid);
 
-          // Fetch images for each related product
           const productsWithImages = await Promise.all(
             filtered.slice(0, 6).map(async (product) => {
               let primaryImage: string | undefined;
@@ -185,7 +190,6 @@ const DetailPage: React.FC = () => {
   );
 
   const handleReviewSubmitted = async () => {
-    // Refresh product data to get updated ratings
     const response = await productsApi.getProduct(pid!);
     if (response.success && response.data) {
       setProduct((prev) =>
@@ -197,6 +201,49 @@ const DetailPage: React.FC = () => {
             }
           : prev,
       );
+    }
+  };
+
+  const handleChatSeller = async () => {
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please login to message the seller",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!seller || !product) return;
+
+    try {
+      // Use the product's UUID (id) not the PID
+      const productUuid = product.id;
+
+      const message = `Hi, I'm interested in your product: ${product.title}`;
+
+      // Send message with proper parameters
+      const response = await chatApi.sendMessage(seller.id, message, productUuid);
+
+      if (response.success) {
+        toast({
+          title: "Message Sent",
+          description: "You can now continue the conversation in Messages",
+        });
+
+        // Navigate to messages
+        navigate("/messaging");
+      } else {
+        throw new Error("Failed to send message");
+      }
+    } catch (error: any) {
+      console.error("Failed to start chat:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to start conversation. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -506,7 +553,7 @@ const DetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Stats Row - Views, Wishlist, Rating from backend */}
+            {/* Stats Row */}
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200 flex-wrap">
               <div className="flex items-center gap-1 text-gray-500">
                 <Eye className="w-4 h-4" />
@@ -556,8 +603,8 @@ const DetailPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Write a Review Button */}
-            {user && (
+            {/* Write a Review Button - only for buyers, not for seller */}
+            {user && !isCurrentUserSeller && (
               <button
                 onClick={() => setShowReviewModal(true)}
                 className="w-full mb-8 py-2 px-4 rounded-lg border border-gray-300 text-gray-700 hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
@@ -598,7 +645,7 @@ const DetailPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    {/* Add online indicator */}
+                    {/* Online indicator */}
                     {seller.id && (
                       <div className="absolute -bottom-0.5 -right-0.5">
                         <OnlineIndicator userId={seller.id} size="sm" />
@@ -624,8 +671,8 @@ const DetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Follow button — only for other users */}
-                  {user && user.id !== seller.id?.toString() && (
+                  {/* Follow button - only for other users, not for seller themselves */}
+                  {user && !isCurrentUserSeller && (
                     <div onClick={(e) => e.stopPropagation()}>
                       <FollowButton
                         userId={seller.id}
@@ -645,7 +692,19 @@ const DetailPage: React.FC = () => {
                 </div>
               )}
 
+              {/* Contact Buttons */}
               <div className="flex gap-3">
+                {/* Chat Seller Button - only for other users, not for seller */}
+                {user && !isCurrentUserSeller && (
+                  <button
+                    onClick={handleChatSeller}
+                    className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Chat Seller
+                  </button>
+                )}
+
                 {product.whatsapp_contact && seller?.whatsapp_enabled && (
                   <button
                     onClick={() =>
