@@ -246,7 +246,6 @@ const Notifications = () => {
         )}
       </main>
 
-      <Footer />
       <MobileBottomNav />
     </div>
   );
