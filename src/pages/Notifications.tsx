@@ -1,26 +1,25 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
 import {
   Bell,
-  Check,
-  X,
   MessageSquare,
   Heart,
   UserPlus,
   Clock,
-  Eye
-} from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import Header from '@/components/layout/Header';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import Footer from '@/components/layout/Footer';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { chatApi, type Conversation } from '@/lib/api/chat';
+  CheckCircle2,
+  ArrowRight,
+  Inbox,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import Header from "@/components/layout/Header";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import Footer from "@/components/layout/Footer";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { chatApi, type Conversation } from "@/lib/api/chat";
 
 interface Notification {
   id: string;
-  type: 'message' | 'like' | 'follow';
+  type: "message" | "like" | "follow";
   title: string;
   description: string;
   timestamp: string;
@@ -38,29 +37,22 @@ const Notifications = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  // Load notifications from API
   useEffect(() => {
     loadNotifications();
-
-    // Mark as viewed when page loads
-    markNotificationsAsViewed();
   }, []);
 
   const loadNotifications = async () => {
     try {
-      // Load conversations to check for unread messages
       const convResponse = await chatApi.getConversations();
       if (convResponse.success && convResponse.data) {
-        const unreadConversations = convResponse.data.filter(conv => conv.unread_count > 0);
+        const unreadConversations = convResponse.data.filter((conv) => conv.unread_count > 0);
 
-        // Create notifications from unread messages
-        const messageNotifications: Notification[] = unreadConversations.map(conv => ({
+        const messageNotifications: Notification[] = unreadConversations.map((conv) => ({
           id: `msg-${conv.id}`,
-          type: 'message',
-          title: `New message from ${conv.other_user_name}`,
+          type: "message",
+          title: conv.other_user_name,
           description: conv.last_message,
           timestamp: conv.last_message_time,
           isRead: false,
@@ -69,37 +61,24 @@ const Notifications = () => {
             conversation_id: conv.id,
             user_id: conv.other_user_id,
             user_name: conv.other_user_name,
-          }
+          },
         }));
 
         setNotifications(messageNotifications);
-        setUnreadCount(messageNotifications.length);
       }
-
-      // TODO: Add likes and follows from API when implemented
-
     } catch (error) {
-      console.error('Failed to load notifications:', error);
+      console.error("Failed to load notifications:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const markNotificationsAsViewed = async () => {
-    // This will be handled when user opens the page
-    // In a real implementation, you'd call an API to mark as viewed
-  };
-
   const markAsRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
   };
 
   const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    setUnreadCount(0);
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
   };
 
   const handleNotificationClick = (notification: Notification) => {
@@ -107,14 +86,8 @@ const Notifications = () => {
 
     if (notification.link) {
       navigate(notification.link);
-    } else if (notification.type === 'message' && notification.data?.conversation_id) {
+    } else if (notification.type === "message" && notification.data?.conversation_id) {
       navigate(`/messages?conv=${notification.data.conversation_id}`);
-    } else if (notification.type === 'like' || notification.type === 'follow') {
-      // Navigate to profile when implemented
-      toast({
-        title: "Coming Soon",
-        description: "Profile pages will be available soon",
-      });
     }
   };
 
@@ -126,32 +99,37 @@ const Notifications = () => {
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffHours < 24) return `${diffHours} hr ago`;
-    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
-    return date.toLocaleDateString();
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
   };
 
-  const getNotificationIcon = (type: Notification['type']) => {
+  const getNotificationIcon = (type: Notification["type"], isRead: boolean) => {
+    const baseClasses = "w-5 h-5";
+    const iconColor = isRead ? "text-gray-400" : "text-red-500";
+
     switch (type) {
-      case 'message':
-        return <MessageSquare className="w-5 h-5 text-green-500" />;
-      case 'like':
-        return <Heart className="w-5 h-5 text-red-500" />;
-      case 'follow':
-        return <UserPlus className="w-5 h-5 text-blue-500" />;
+      case "message":
+        return <MessageSquare className={`${baseClasses} ${iconColor}`} />;
+      case "like":
+        return <Heart className={`${baseClasses} ${iconColor}`} />;
+      case "follow":
+        return <UserPlus className={`${baseClasses} ${iconColor}`} />;
       default:
-        return <Bell className="w-5 h-5 text-gray-500" />;
+        return <Bell className={`${baseClasses} ${iconColor}`} />;
     }
   };
+
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
         <Header />
         <div className="flex items-center justify-center h-96">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-red-600"></div>
+          <div className="w-8 h-8 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
         </div>
         <Footer />
         <MobileBottomNav />
@@ -163,141 +141,109 @@ const Notifications = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
 
-      <main className="container mx-auto px-4 py-8 pt-24">
-        {/* Header Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="relative">
-                <Bell className="w-8 h-8 text-red-600" />
-                {unreadCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
-                  >
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </motion.span>
-                )}
-              </div>
-              <h1 className="text-3xl font-bold font-heading">Notifications</h1>
+      <main className="max-w-3xl mx-auto px-4 pt-24 pb-12">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-3">
+              <Bell className="w-6 h-6 text-red-500" />
+              <h1 className="text-2xl font-semibold text-gray-900">Notifications</h1>
             </div>
-
             {unreadCount > 0 && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
+              <button
                 onClick={markAllAsRead}
-                className="px-4 py-2 rounded-lg text-sm font-medium transition-all bg-red-100 text-red-600 hover:bg-red-200"
+                className="text-sm text-gray-500 hover:text-gray-700 transition-colors flex items-center gap-1.5"
               >
-                Mark all as read
-              </motion.button>
+                <CheckCircle2 className="w-4 h-4" />
+                Mark all read
+              </button>
             )}
           </div>
-          <p className="text-gray-600 mt-2">
-            Stay updated with your messages and activities
+          <p className="text-sm text-gray-500">
+            {unreadCount === 0
+              ? "All caught up! No new notifications."
+              : `${unreadCount} unread notification${unreadCount !== 1 ? "s" : ""}`}
           </p>
-        </motion.div>
+        </div>
 
         {/* Notifications List */}
-        <div className="bg-white rounded-xl shadow-soft overflow-hidden">
-          <AnimatePresence mode="popLayout">
-            {notifications.length > 0 ? (
-              notifications.map((notification, index) => (
-                <motion.div
-                  key={notification.id}
-                  layout
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -100, transition: { duration: 0.2 } }}
-                  transition={{
-                    type: "spring",
-                    damping: 25,
-                    stiffness: 300,
-                    delay: index * 0.03
-                  }}
-                  onClick={() => handleNotificationClick(notification)}
-                  className={`border-b border-gray-100 last:border-b-0 cursor-pointer transition-all duration-200 ${!notification.isRead
-                    ? 'bg-gradient-to-r from-red-50 to-transparent border-l-4 border-l-red-500'
-                    : 'hover:bg-gray-50'
-                    }`}
+        {notifications.length > 0 ? (
+          <div className="space-y-2">
+            {notifications.map((notification) => (
+              <div
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`
+                  group relative flex items-start gap-4 p-4 rounded-xl cursor-pointer
+                  transition-all duration-200 hover:bg-gray-100
+                  ${!notification.isRead ? "bg-white shadow-sm border border-gray-200" : "bg-transparent"}
+                `}
+              >
+                {/* Unread indicator dot */}
+                {!notification.isRead && (
+                  <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full" />
+                )}
+
+                {/* Icon */}
+                <div
+                  className={`
+                  flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center
+                  ${!notification.isRead ? "bg-red-50" : "bg-gray-100"}
+                `}
                 >
-                  <div className="p-4 flex items-start">
-                    {/* Notification Icon */}
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      className="flex-shrink-0 p-2 bg-white rounded-full shadow-sm border border-gray-200 mr-4"
-                    >
-                      {getNotificationIcon(notification.type)}
-                    </motion.div>
+                  {getNotificationIcon(notification.type, notification.isRead)}
+                </div>
 
-                    {/* Notification Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className={`font-medium ${!notification.isRead ? 'text-gray-900' : 'text-gray-700'}`}>
-                            {notification.title}
-                          </h3>
-                          <p className="text-sm text-gray-600 mt-1">
-                            {notification.description}
-                          </p>
-                          <p className="text-xs text-gray-500 mt-2 flex items-center">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {formatTime(notification.timestamp)}
-                          </p>
-                        </div>
-                      </div>
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3
+                        className={`
+                        text-sm font-medium
+                        ${!notification.isRead ? "text-gray-900" : "text-gray-600"}
+                      `}
+                      >
+                        {notification.title}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
+                        {notification.description}
+                      </p>
                     </div>
-
-                    {/* Unread indicator - eye icon for old notifications */}
-                    <div className="flex items-center space-x-2 ml-4">
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <span className="text-xs text-gray-400 whitespace-nowrap">
+                        {formatTime(notification.timestamp)}
+                      </span>
                       {!notification.isRead && (
-                        <motion.div
-                          initial={{ scale: 0 }}
-                          animate={{ scale: 1 }}
-                          className="w-2 h-2 bg-red-500 rounded-full"
-                        />
-                      )}
-                      {notification.isRead && (
-                        <Eye className="w-4 h-4 text-gray-400" />
+                        <span className="text-[10px] font-medium text-red-500 bg-red-50 px-1.5 py-0.5 rounded">
+                          NEW
+                        </span>
                       )}
                     </div>
                   </div>
 
-                  {/* Highlight bar for unread notifications */}
-                  {!notification.isRead && (
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: '100%' }}
-                      transition={{ duration: 0.5 }}
-                      className="h-0.5 bg-gradient-to-r from-red-400 to-red-600"
-                    />
-                  )}
-                </motion.div>
-              ))
-            ) : (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-16 px-4 text-center"
-              >
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                  <Bell className="w-8 h-8 text-gray-400" />
+                  {/* Action hint */}
+                  <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="text-xs text-gray-400 flex items-center gap-1">
+                      Click to view <ArrowRight className="w-3 h-3" />
+                    </span>
+                  </div>
                 </div>
-                <h3 className="text-lg font-medium text-gray-700 mb-2">No notifications</h3>
-                <p className="text-gray-500 max-w-md">
-                  You're all caught up! New messages and activities will appear here.
-                </p>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          /* Empty State */
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <Inbox className="w-8 h-8 text-gray-400" />
+            </div>
+            <h3 className="text-base font-medium text-gray-900 mb-1">No notifications yet</h3>
+            <p className="text-sm text-gray-500 max-w-sm">
+              When you receive messages or activity updates, they'll appear here.
+            </p>
+          </div>
+        )}
       </main>
 
       <Footer />
