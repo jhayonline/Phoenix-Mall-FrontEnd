@@ -77,9 +77,6 @@ const Footer: React.FC = () => {
             {/* Brand Section */}
             <div className="lg:col-span-4 space-y-6">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-lg">
-                  <span className="text-red-600 font-bold text-xl">P</span>
-                </div>
                 <span className="text-2xl font-bold text-white">PhoeniX Mall</span>
               </div>
 

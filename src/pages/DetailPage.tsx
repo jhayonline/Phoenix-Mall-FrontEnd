@@ -29,12 +29,23 @@ import { useAuth } from "@/hooks/use-auth";
 import FollowButton from "@/components/FollowButton";
 import { OnlineIndicator } from "@/components/OnlineIndicator";
 
+interface ProductSpec {
+  spec_id: string;
+  spec_name: string;
+  value: string;
+}
+
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
   allImages?: ProductImage[];
   wishlist_count?: number;
   average_rating?: number;
   total_reviews?: number;
+  specs?: ProductSpec[];
+  region?: string;
+  town?: string;
+  negotiation?: string;
+  promotion_type?: string;
 }
 
 const DetailPage: React.FC = () => {
@@ -53,6 +64,7 @@ const DetailPage: React.FC = () => {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [seller, setSeller] = useState<any | null>(null);
   const [isCurrentUserSeller, setIsCurrentUserSeller] = useState(false);
+  const [showFullDescription, setShowFullDescription] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -70,7 +82,7 @@ const DetailPage: React.FC = () => {
     try {
       const response = await productsApi.getProduct(pid!);
       if (response.success && response.data) {
-        let productData = response.data;
+        let productData = response.data as ProductWithDetails;
 
         if (!hasViewedProduct(pid!)) {
           try {
@@ -84,6 +96,10 @@ const DetailPage: React.FC = () => {
                 wishlist_count: (updatedResponse.data as any).wishlist_count,
                 average_rating: (updatedResponse.data as any).average_rating,
                 total_reviews: (updatedResponse.data as any).total_reviews,
+                specs: (updatedResponse.data as any).specs,
+                region: (updatedResponse.data as any).region,
+                town: (updatedResponse.data as any).town,
+                negotiation: (updatedResponse.data as any).negotiation,
               };
             }
           } catch {
@@ -364,6 +380,19 @@ const DetailPage: React.FC = () => {
     return num.toString();
   };
 
+  const getNegotiationLabel = (value: string) => {
+    switch (value) {
+      case "fixed":
+        return "Fixed Price";
+      case "negotiable":
+        return "Price Negotiable";
+      case "flexible":
+        return "Ask Seller";
+      default:
+        return "Price Negotiable";
+    }
+  };
+
   const renderStars = (ratingValue: number, count?: number) => {
     const fullStars = Math.floor(ratingValue);
     const hasHalfStar = ratingValue % 1 >= 0.5;
@@ -434,10 +463,54 @@ const DetailPage: React.FC = () => {
 
   const imageList = product.allImages?.map((img) => img.image_url) || [product.primaryImage || ""];
   const hasImages = imageList.length > 0 && imageList[0];
+  const totalImages = imageList.length;
+
+  const getVisibleThumbnails = () => {
+    if (totalImages <= 5) {
+      return imageList.filter((_, idx) => idx !== selectedImageIndex);
+    }
+
+    const thumbnails: string[] = [];
+    let start = Math.max(0, selectedImageIndex - 2);
+    let end = Math.min(totalImages - 1, start + 3);
+
+    if (end - start < 3) {
+      start = Math.max(0, end - 3);
+    }
+
+    for (let i = start; i <= end; i++) {
+      if (i !== selectedImageIndex) {
+        thumbnails.push(imageList[i]);
+      }
+    }
+
+    while (thumbnails.length < 4 && thumbnails.length < totalImages - 1) {
+      if (start > 0) {
+        start--;
+        if (start !== selectedImageIndex) {
+          thumbnails.unshift(imageList[start]);
+        }
+      } else if (end < totalImages - 1) {
+        end++;
+        if (end !== selectedImageIndex) {
+          thumbnails.push(imageList[end]);
+        }
+      } else {
+        break;
+      }
+    }
+
+    return thumbnails.slice(0, 4);
+  };
+
+  const visibleThumbnails = getVisibleThumbnails();
+
   const viewsCount = product.views_count || 0;
   const wishlistCount = (product as any).wishlist_count || 0;
   const averageRating = (product as any).average_rating || 0;
   const totalReviews = (product as any).total_reviews || 0;
+  const specs = product.specs || [];
+  const hasSpecs = specs.length > 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -445,9 +518,10 @@ const DetailPage: React.FC = () => {
 
       <div className="container mx-auto px-4 pt-24 pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-          {/* Product Images */}
+          {/* Left Column - Product Images */}
           <div className="relative">
             <div className="sticky top-24">
+              {/* Main Image */}
               <div
                 className="relative aspect-square overflow-hidden rounded-lg bg-gray-100 mb-4 cursor-zoom-in"
                 onMouseMove={handleImageHover}
@@ -482,21 +556,27 @@ const DetailPage: React.FC = () => {
                   {zoomEnabled ? <ZoomOut className="w-5 h-5" /> : <ZoomIn className="w-5 h-5" />}
                 </button>
 
-                {hasImages && imageList.length > 1 && (
+                {hasImages && totalImages > 1 && (
                   <>
                     <button
                       onClick={prevImage}
-                      className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                      className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                     <button
                       onClick={nextImage}
-                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 bg-white rounded-full shadow-md hover:bg-gray-100 transition-colors"
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-md hover:bg-white transition-colors"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
                   </>
+                )}
+
+                {hasImages && totalImages > 1 && (
+                  <div className="absolute bottom-4 right-4 px-2 py-1 bg-black/60 text-white text-xs rounded-full">
+                    {selectedImageIndex + 1} / {totalImages}
+                  </div>
                 )}
 
                 {product.status !== "active" && (
@@ -506,35 +586,133 @@ const DetailPage: React.FC = () => {
                 )}
               </div>
 
-              {hasImages && imageList.length > 1 && (
-                <div className="grid grid-cols-4 gap-3">
-                  {imageList.map((image, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleImageClick(index)}
-                      className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${
-                        selectedImageIndex === index
-                          ? "border-red-500 ring-2 ring-red-200"
-                          : "border-gray-200 hover:border-gray-400"
-                      }`}
-                    >
-                      <img
-                        src={image}
-                        alt={`${product.title} view ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  ))}
+              {/* Thumbnail Images */}
+              {hasImages && totalImages > 1 && (
+                <div className="grid grid-cols-4 gap-3 mb-6">
+                  {visibleThumbnails.map((image, idx) => {
+                    const originalIndex = imageList.findIndex((img) => img === image);
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleImageClick(originalIndex)}
+                        className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${
+                          selectedImageIndex === originalIndex
+                            ? "border-red-500 ring-2 ring-red-200"
+                            : "border-gray-200 hover:border-gray-400"
+                        }`}
+                      >
+                        <img
+                          src={image}
+                          alt={`${product.title} thumbnail ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    );
+                  })}
                 </div>
               )}
+
+              {/* Seller Section */}
+              <div className="mt-4">
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="p-4 border-b border-gray-100 bg-gray-50">
+                    <h3 className="font-semibold text-gray-900">Seller Information</h3>
+                  </div>
+                  <div className="p-4">
+                    {seller ? (
+                      <div
+                        className="flex items-center gap-3 cursor-pointer"
+                        onClick={() => seller.username && navigate(`/user/${seller.username}`)}
+                      >
+                        <div className="relative">
+                          <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
+                            {seller.avatar_url ? (
+                              <img
+                                src={
+                                  seller.avatar_url.startsWith("http")
+                                    ? seller.avatar_url
+                                    : `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api").replace("/api", "")}${seller.avatar_url}`
+                                }
+                                alt={seller.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=ef4444&color=fff&size=48`;
+                                }}
+                              />
+                            ) : (
+                              <span className="text-white font-bold text-lg">
+                                {seller.name.charAt(0)}
+                              </span>
+                            )}
+                          </div>
+                          {seller.id && (
+                            <div className="absolute -bottom-0.5 -right-0.5">
+                              <OnlineIndicator userId={seller.id} size="sm" />
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900">{seller.name}</p>
+                            <OnlineIndicator
+                              userId={seller.id}
+                              size="sm"
+                              showDetailedText={true}
+                              textClassName="text-xs"
+                            />
+                          </div>
+                          {seller.username && (
+                            <p className="text-sm text-gray-500">@{seller.username}</p>
+                          )}
+                          <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+                            <span>{seller.product_count} listings</span>
+                            <span>{seller.follower_count} followers</span>
+                          </div>
+                        </div>
+
+                        {user && !isCurrentUserSeller && (
+                          <div onClick={(e) => e.stopPropagation()}>
+                            <FollowButton
+                              userId={seller.id}
+                              userPid={seller.pid}
+                              username={seller.username || seller.name}
+                              variant="outline"
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">Loading seller information...</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Safety Tips */}
+              <div className="mt-4">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <h3 className="font-semibold text-yellow-900 mb-2 flex items-center gap-2 text-sm">
+                    <Shield className="w-4 h-4" />
+                    Safety Tips
+                  </h3>
+                  <ul className="text-xs text-yellow-800 space-y-1">
+                    <li>• Avoid paying in advance, even for delivery</li>
+                    <li>• Meet at a safe public place</li>
+                    <li>• Inspect the item before paying</li>
+                    <li>• Only pay if you're satisfied</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Product Info */}
+          {/* Right Column - Product Info */}
           <div>
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{product.title}</h1>
 
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center gap-3 mb-4 flex-wrap">
               <span className="text-3xl font-bold text-red-600">
                 {formatCurrency(product.price)}
               </span>
@@ -543,8 +721,14 @@ const DetailPage: React.FC = () => {
                   {product.condition}
                 </span>
               )}
+              {product.negotiation && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-sm rounded">
+                  {getNegotiationLabel(product.negotiation)}
+                </span>
+              )}
             </div>
 
+            {/* Stats Row */}
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200 flex-wrap">
               <div className="flex items-center gap-1 text-gray-500">
                 <Eye className="w-4 h-4" />
@@ -559,183 +743,123 @@ const DetailPage: React.FC = () => {
               </div>
             </div>
 
-            <p className="text-gray-700 mb-6 leading-relaxed">
-              {product.description || "No description available."}
-            </p>
-
-            {product.location && (
-              <div className="flex items-center gap-2 text-gray-600 mb-6">
+            {/* Location */}
+            {(product.location || (product.town && product.region)) && (
+              <div className="flex items-center gap-2 text-gray-600 mb-4">
                 <MapPin className="w-5 h-5" />
-                <span>{product.location}</span>
+                <span>
+                  {product.town && product.region
+                    ? `${product.town}, ${product.region}`
+                    : product.location}
+                </span>
               </div>
             )}
 
-            <div className="flex gap-3 mb-8">
-              <button
-                onClick={toggleFavorite}
-                className={`flex-1 py-3 px-6 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
-                  isLiked
-                    ? "bg-red-500 text-white hover:bg-red-600"
-                    : "bg-gray-900 text-white hover:bg-gray-800"
-                }`}
-              >
-                <Heart className={`w-5 h-5 ${isLiked ? "fill-current" : ""}`} />
-                {isLiked ? "Saved to Wishlist" : "Add to Wishlist"}
-              </button>
-              <button
-                onClick={shareProduct}
-                className="p-3 rounded-lg border border-gray-300 text-gray-600 hover:border-gray-400 transition-colors relative"
-              >
-                {shareCopied ? (
-                  <Check className="w-5 h-5 text-green-500" />
-                ) : (
-                  <Share2 className="w-5 h-5" />
+            {/* Description */}
+            {product.description && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-2">Description</h3>
+                <p className="text-gray-700 leading-relaxed">
+                  {showFullDescription || product.description.length <= 300
+                    ? product.description
+                    : `${product.description.substring(0, 300)}...`}
+                </p>
+                {product.description.length > 300 && (
+                  <button
+                    onClick={() => setShowFullDescription(!showFullDescription)}
+                    className="text-red-600 text-sm mt-2 hover:text-red-700"
+                  >
+                    {showFullDescription ? "Show less" : "Read more"}
+                  </button>
                 )}
-              </button>
-            </div>
-
-            {user && !isCurrentUserSeller && (
-              <button
-                onClick={() => setShowReviewModal(true)}
-                className="w-full mb-8 py-2 px-4 rounded-lg border border-gray-300 text-gray-700 hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
-              >
-                <PenSquare className="w-4 h-4" />
-                Write a Review
-              </button>
+              </div>
             )}
 
-            <div className="border-t border-gray-200 pt-6 mb-8">
-              <h3 className="font-semibold text-gray-900 mb-4">Seller</h3>
-
-              {seller && (
-                <div
-                  className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors mb-4"
-                  onClick={() => seller.username && navigate(`/user/${seller.username}`)}
+            {/* Action Buttons - Only for non-sellers */}
+            {!isCurrentUserSeller && (
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={toggleFavorite}
+                  className={`flex-1 py-2.5 px-4 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 text-sm ${
+                    isLiked
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-gray-900 text-white hover:bg-gray-800"
+                  }`}
                 >
-                  <div className="relative">
-                    <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
-                      {seller.avatar_url ? (
-                        <img
-                          src={
-                            seller.avatar_url.startsWith("http")
-                              ? seller.avatar_url
-                              : `${(import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api").replace("/api", "")}${seller.avatar_url}`
-                          }
-                          alt={seller.name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(seller.name)}&background=ef4444&color=fff&size=48`;
-                          }}
-                        />
-                      ) : (
-                        <span className="text-white font-bold text-lg">
-                          {seller.name.charAt(0)}
-                        </span>
-                      )}
-                    </div>
-                    {seller.id && (
-                      <div className="absolute -bottom-0.5 -right-0.5">
-                        <OnlineIndicator userId={seller.id} size="sm" />
-                      </div>
-                    )}
-                  </div>
+                  <Heart className={`w-4 h-4 ${isLiked ? "fill-current" : ""}`} />
+                  {isLiked ? "Saved" : "Wishlist"}
+                </button>
 
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="font-semibold text-gray-900">{seller.name}</p>
-                      <OnlineIndicator
-                        userId={seller.id}
-                        size="sm"
-                        showDetailedText={true}
-                        textClassName="text-xs"
-                      />
-                    </div>
-                    {seller.username && <p className="text-sm text-gray-500">@{seller.username}</p>}
-                    <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
-                      <span>{seller.product_count} listings</span>
-                      <span>{seller.follower_count} followers</span>
-                    </div>
-                  </div>
+                {user && (
+                  <button
+                    onClick={() => setShowReviewModal(true)}
+                    className="flex-1 py-2.5 px-4 rounded-lg border border-gray-300 text-gray-700 hover:border-gray-400 transition-colors flex items-center justify-center gap-2 text-sm"
+                  >
+                    <PenSquare className="w-4 h-4" />
+                    Review
+                  </button>
+                )}
 
-                  {user && !isCurrentUserSeller && (
-                    <div onClick={(e) => e.stopPropagation()}>
-                      <FollowButton
-                        userId={seller.id}
-                        userPid={seller.pid}
-                        username={seller.username || seller.name}
-                        variant="outline"
-                      />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {seller?.location && (
-                <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
-                  <MapPin className="w-4 h-4" />
-                  <span>{seller.location}</span>
-                </div>
-              )}
-
-              <div className="flex gap-3">
-                {user && !isCurrentUserSeller && (
+                {user && (
                   <button
                     onClick={handleChatSeller}
-                    className="flex-1 bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 py-2.5 px-4 rounded-lg bg-red-600 text-white hover:bg-red-700 transition-colors flex items-center justify-center gap-2 text-sm"
                   >
                     <MessageCircle className="w-4 h-4" />
-                    Chat Seller
+                    Chat
                   </button>
                 )}
 
-                {product.whatsapp_contact && seller?.whatsapp_enabled && (
-                  <button
-                    onClick={() =>
-                      window.open(
-                        `https://wa.me/${seller.phone_number?.replace(/\D/g, "")}`,
-                        "_blank",
-                      )
-                    }
-                    className="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    WhatsApp
-                  </button>
-                )}
-                {product.phone_contact && seller?.phone_enabled && seller?.phone_number && (
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(seller.phone_number);
-                      setCopied(true);
-                      setTimeout(() => setCopied(false), 2000);
-                      toast({ title: "Copied!", description: "Phone number copied to clipboard" });
-                    }}
-                    className="flex-1 border border-gray-300 text-gray-700 py-2 px-4 rounded-lg text-sm font-medium hover:border-gray-400 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Phone className="w-4 h-4" />
-                    {copied ? <Check className="w-4 h-4 text-green-500" /> : "Call"}
-                  </button>
-                )}
+                <button
+                  onClick={shareProduct}
+                  className="p-2.5 rounded-lg border border-gray-300 text-gray-600 hover:border-gray-400 transition-colors relative"
+                >
+                  {shareCopied ? (
+                    <Check className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <Share2 className="w-4 h-4" />
+                  )}
+                </button>
               </div>
-            </div>
+            )}
 
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-              <h3 className="font-semibold text-yellow-900 mb-3 flex items-center gap-2">
-                <Shield className="w-5 h-5" />
-                Safety Tips from Phoenix
-              </h3>
-              <ul className="text-sm text-yellow-800 space-y-2">
-                <li>• Avoid paying in advance, even for delivery</li>
-                <li>• Meet with the seller at a safe public place</li>
-                <li>• Inspect the item and ensure it's exactly what you want</li>
-                <li>• Make sure that the packed item is the one you've inspected</li>
-                <li>• Only pay if you're satisfied</li>
-              </ul>
-            </div>
+            {/* Seller View - Show edit option instead of action buttons */}
+            {isCurrentUserSeller && (
+              <div className="bg-gray-100 rounded-lg p-4 mb-6 text-center">
+                <p className="text-gray-600 text-sm">This is your listing</p>
+                <button
+                  onClick={() => navigate(`/edit-product/${pid}`)}
+                  className="mt-2 text-red-600 text-sm hover:text-red-700"
+                >
+                  Edit Product
+                </button>
+              </div>
+            )}
+
+            {/* Specifications Section */}
+            {hasSpecs && (
+              <div className="mb-6">
+                <h3 className="font-semibold text-gray-900 mb-3 text-lg">Specifications</h3>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+                  <div className="divide-y divide-gray-100">
+                    {specs.map((spec) => (
+                      <div key={spec.spec_id} className="flex py-3 px-4">
+                        <div className="w-1/2">
+                          <span className="text-sm text-gray-500">{spec.spec_name}</span>
+                        </div>
+                        <div className="w-1/2">
+                          <span className="text-sm font-medium text-gray-900">{spec.value}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
+        {/* Related Products */}
         {relatedProducts.length > 0 && (
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Products</h2>
