@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import {
   Heart,
   User,
@@ -33,7 +33,6 @@ const Header: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get user and logout function from AuthContext
   const { user, logout } = useAuth();
 
   // Load wishlist count
@@ -96,7 +95,7 @@ const Header: React.FC = () => {
     };
   }, [user]);
 
-  // Load unread notification count (from conversations + future notifications)
+  // Load unread notification count
   useEffect(() => {
     const loadUnreadNotificationCount = async () => {
       if (!user) {
@@ -171,31 +170,9 @@ const Header: React.FC = () => {
     });
   }
 
-  // Icon variants for animation
-  const iconVariants = {
-    hover: {
-      scale: 1.15,
-      rotate: 5,
-      transition: { type: "spring", stiffness: 400, damping: 10 },
-    },
-    tap: { scale: 0.95 },
-  };
-
-  // Badge animation
-  const badgeVariants = {
-    initial: { scale: 0 },
-    animate: {
-      scale: 1,
-      transition: { type: "spring", stiffness: 500, damping: 10 },
-    },
-  };
-
   return (
     <>
-      <motion.header
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ type: "spring", damping: 20, stiffness: 100 }}
+      <header
         className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
           isScrolled ? "glass shadow-medium backdrop-blur-lg bg-background/80" : "bg-transparent"
         }`}
@@ -203,23 +180,21 @@ const Header: React.FC = () => {
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between lg:gap-8">
             {/* Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <div
               className="flex items-center space-x-2 cursor-pointer"
               onClick={() => navigate("/")}
             >
               <span className="text-xl font-bold font-heading text-[#FF0000]">PhoeniX</span>
               <img src="/phoenix-logo.svg" alt="Phoenix Mall Logo" className="w-7 h-7" />
-            </motion.div>
+            </div>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-6">
               {navigationItems.map((item) => (
-                <motion.div key={item.name} className="relative" whileHover="hover" whileTap="tap">
-                  <motion.a
+                <div key={item.name} className="relative">
+                  <a
                     href={item.path}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all ${
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors ${
                       isActive(item.path)
                         ? "bg-primary/10 text-primary font-medium"
                         : "text-foreground/80 hover:text-foreground hover:bg-accent"
@@ -228,31 +203,11 @@ const Header: React.FC = () => {
                       e.preventDefault();
                       navigate(item.path);
                     }}
-                    variants={{
-                      hover: { y: -2 },
-                      tap: { y: 0 },
-                    }}
                   >
-                    <motion.span
-                      variants={{
-                        hover: { scale: 1.1 },
-                        tap: { scale: 0.95 },
-                      }}
-                    >
-                      {item.icon}
-                    </motion.span>
+                    {item.icon}
                     <span>{item.name}</span>
-                  </motion.a>
-
-                  {isActive(item.path) && (
-                    <motion.div
-                      layoutId="activeIndicator"
-                      className="absolute bottom-0 left-1/2 w-1 h-1 bg-primary rounded-full -translate-x-1/2"
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                    />
-                  )}
-                </motion.div>
+                  </a>
+                </div>
               ))}
             </nav>
 
@@ -267,109 +222,78 @@ const Header: React.FC = () => {
                     </div>
                   ) : (
                     <>
-                      <motion.div whileHover={{ y: -2 }} whileTap={{ y: 0 }}>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => navigate("/login")}
-                          className="flex items-center space-x-1.5 rounded-full px-4"
-                        >
-                          <LogIn className="w-4 h-4" />
-                          <span>Login</span>
-                        </Button>
-                      </motion.div>
-                      <motion.div whileHover={{ y: -2 }} whileTap={{ y: 0 }}>
-                        <Button
-                          size="sm"
-                          onClick={() => navigate("/register")}
-                          className="flex items-center space-x-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-purple-600"
-                        >
-                          <UserPlus className="w-4 h-4" />
-                          <span>Sign Up</span>
-                        </Button>
-                      </motion.div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => navigate("/login")}
+                        className="flex items-center space-x-1.5 rounded-full px-4"
+                      >
+                        <LogIn className="w-4 h-4" />
+                        <span>Login</span>
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => navigate("/register")}
+                        className="flex items-center space-x-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-purple-600"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Sign Up</span>
+                      </Button>
                     </>
                   )}
                 </div>
               )}
 
-              {/* Icons Row - Show on ALL pages when user is logged in */}
+              {/* Icons Row */}
               <div className="flex items-center space-x-3">
                 {user ? (
                   <>
-                    {/* SELL BUTTON - Red gradient */}
-                    <motion.div
-                      variants={iconVariants}
-                      whileHover="hover"
-                      whileTap="tap"
+                    {/* SELL BUTTON */}
+                    <button
                       className="relative p-2 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:shadow-lg transition-all cursor-pointer hidden md:block"
                       onClick={() => navigate("/sell")}
                     >
                       <Plus className="w-5 h-5" />
-                    </motion.div>
+                    </button>
 
-                    {/* Messaging with real unread count */}
-                    <motion.div
-                      variants={iconVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      className="relative p-2 rounded-full transition-all duration-200 cursor-pointer group hover:bg-gradient-to-r hover:from-primary hover:to-purple-600 hidden md:block"
-                      onClick={() => navigate("/messaging")}
+                    {/* Messaging */}
+                    <button
+                      className="relative p-2 rounded-full transition-all duration-200 cursor-pointer hover:bg-accent hidden md:block"
+                      onClick={() => navigate("/messaging", { state: { from: location.pathname } })}
                     >
-                      <MessageSquare className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
+                      <MessageSquare className="w-5 h-5 text-foreground/80" />
                       {unreadMessageCount > 0 && (
-                        <motion.span
-                          variants={badgeVariants}
-                          initial="initial"
-                          animate="animate"
-                          className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
-                        >
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5">
                           {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
-                        </motion.span>
+                        </span>
                       )}
-                    </motion.div>
+                    </button>
 
-                    {/* Notifications with real unread count */}
-                    <motion.div
-                      variants={iconVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      className="relative p-2 rounded-full transition-all duration-200 cursor-pointer group hover:bg-gradient-to-r hover:from-primary hover:to-purple-600 hidden md:block"
+                    {/* Notifications */}
+                    <button
+                      className="relative p-2 rounded-full transition-all duration-200 cursor-pointer hover:bg-accent hidden md:block"
                       onClick={() => navigate("/notifications")}
                     >
-                      <Bell className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
+                      <Bell className="w-5 h-5 text-foreground/80" />
                       {unreadNotificationCount > 0 && (
-                        <motion.span
-                          variants={badgeVariants}
-                          initial="initial"
-                          animate="animate"
-                          className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
-                        >
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5">
                           {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
-                        </motion.span>
+                        </span>
                       )}
-                    </motion.div>
+                    </button>
 
-                    {/* Wishlist Button */}
-                    <motion.div
-                      variants={iconVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      className="relative p-2 rounded-full hover:bg-accent cursor-pointer group"
+                    {/* Wishlist */}
+                    <button
+                      className="relative p-2 rounded-full hover:bg-accent cursor-pointer"
                       onClick={() => navigate("/wishlist")}
                     >
-                      <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
+                      <Heart className="w-5 h-5 text-foreground/80" />
                       {wishlistCount > 0 && (
-                        <motion.span
-                          variants={badgeVariants}
-                          initial="initial"
-                          animate="animate"
-                          className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
-                        >
+                        <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5">
                           {wishlistCount > 99 ? "99+" : wishlistCount}
-                        </motion.span>
+                        </span>
                       )}
-                    </motion.div>
+                    </button>
 
                     {/* User Dropdown */}
                     <div
@@ -377,132 +301,72 @@ const Header: React.FC = () => {
                       onMouseEnter={() => setIsProfileMenuOpen(true)}
                       onMouseLeave={() => setIsProfileMenuOpen(false)}
                     >
-                      <motion.div
-                        variants={iconVariants}
-                        whileHover="hover"
-                        whileTap="tap"
-                        className="p-2 rounded-full hover:bg-accent cursor-pointer group"
-                      >
-                        <User className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
-                      </motion.div>
+                      <button className="p-2 rounded-full hover:bg-accent cursor-pointer">
+                        <User className="w-5 h-5 text-foreground/80" />
+                      </button>
 
-                      <AnimatePresence>
-                        {isProfileMenuOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                            transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                            className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-xl p-2 z-50 overflow-hidden"
-                            style={{ originY: 0, originX: 1 }}
-                          >
-                            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent opacity-50" />
-
-                            <div className="relative space-y-1">
-                              <div className="px-3 py-2 border-b border-border/50">
-                                <p className="font-medium text-sm">
-                                  {user.first_name} {user.last_name}
-                                </p>
-                                <p className="text-xs text-muted-foreground">{user.email}</p>
-                              </div>
-
-                              {profileMenuItems.map((item, index) => (
-                                <motion.div
-                                  key={item.name}
-                                  className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent cursor-pointer rounded-md text-sm group"
-                                  onClick={item.action}
-                                  initial={{ opacity: 0, x: 10 }}
-                                  animate={{
-                                    opacity: 1,
-                                    x: 0,
-                                    transition: {
-                                      delay: index * 0.05,
-                                      type: "spring",
-                                      stiffness: 500,
-                                    },
-                                  }}
-                                  whileHover={{ x: 4 }}
-                                >
-                                  <motion.div
-                                    whileHover={{ scale: 1.2 }}
-                                    className="text-foreground/80 group-hover:text-white transition-colors"
-                                  >
-                                    {item.icon}
-                                  </motion.div>
-                                  <span className="group-hover:text-white transition-colors">
-                                    {item.name}
-                                  </span>
-                                </motion.div>
-                              ))}
+                      {isProfileMenuOpen && (
+                        <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-xl p-2 z-50 overflow-hidden">
+                          <div className="relative space-y-1">
+                            <div className="px-3 py-2 border-b border-border/50">
+                              <p className="font-medium text-sm">
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{user.email}</p>
                             </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+
+                            {profileMenuItems.map((item) => (
+                              <div
+                                key={item.name}
+                                className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent cursor-pointer rounded-md text-sm group"
+                                onClick={item.action}
+                              >
+                                <div className="text-foreground/80 group-hover:text-white transition-colors">
+                                  {item.icon}
+                                </div>
+                                <span className="group-hover:text-white transition-colors">
+                                  {item.name}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </>
                 ) : (
                   // Show only wishlist for non-logged in users on non-home pages
                   !isHome && (
-                    <motion.div
-                      variants={iconVariants}
-                      whileHover="hover"
-                      whileTap="tap"
-                      className="relative p-2 rounded-full hover:bg-accent cursor-pointer group"
+                    <button
+                      className="relative p-2 rounded-full hover:bg-accent cursor-pointer"
                       onClick={() => navigate("/wishlist")}
                     >
-                      <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
+                      <Heart className="w-5 h-5 text-foreground/80" />
                       {wishlistCount > 0 && (
-                        <motion.span
-                          variants={badgeVariants}
-                          initial="initial"
-                          animate="animate"
-                          className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
-                        >
+                        <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5">
                           {wishlistCount > 99 ? "99+" : wishlistCount}
-                        </motion.span>
+                        </span>
                       )}
-                    </motion.div>
+                    </button>
                   )
                 )}
               </div>
 
               {/* Mobile Menu Toggle */}
-              <motion.div
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="lg:hidden relative z-[200]"
-              >
+              <div className="lg:hidden relative z-[200]">
                 <Button
                   variant="ghost"
                   size="sm"
                   className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md"
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 >
-                  <AnimatePresence mode="wait">
-                    {isMobileMenuOpen ? (
-                      <motion.div
-                        key="close"
-                        initial={{ rotate: -90, opacity: 0 }}
-                        animate={{ rotate: 0, opacity: 1 }}
-                        exit={{ rotate: 90, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <X className="w-5 h-5 text-gray-700" />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="menu"
-                        initial={{ rotate: 90, opacity: 0 }}
-                        animate={{ rotate: 0, opacity: 1 }}
-                        exit={{ rotate: -90, opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <Menu className="w-5 h-5 text-gray-700" />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                  {isMobileMenuOpen ? (
+                    <X className="w-5 h-5 text-gray-700" />
+                  ) : (
+                    <Menu className="w-5 h-5 text-gray-700" />
+                  )}
                 </Button>
-              </motion.div>
+              </div>
             </div>
           </div>
 
@@ -510,56 +374,31 @@ const Header: React.FC = () => {
           <AnimatePresence>
             {isMobileMenuOpen && (
               <>
-                {/* Backdrop */}
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
+                <div
                   className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
                   onClick={() => setIsMobileMenuOpen(false)}
                 />
-
-                {/* Sidebar */}
-                <motion.div
-                  initial={{ x: "100%" }}
-                  animate={{ x: 0 }}
-                  exit={{ x: "100%" }}
-                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
-                  className="fixed top-0 right-0 w-80 h-full bg-background border-l border-border/50 shadow-2xl z-[200] lg:hidden overflow-y-auto"
-                  style={{ originX: 1 }}
-                >
+                <div className="fixed top-0 right-0 w-80 h-full bg-background border-l border-border/50 shadow-2xl z-[200] lg:hidden overflow-y-auto transition-transform duration-300 ease-in-out transform translate-x-0">
                   <div className="flex flex-col h-full p-6 space-y-8">
-                    {/* Header with close button */}
                     <div className="flex items-center justify-between">
-                      <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: 0.1 }}
-                        className="flex items-center space-x-2"
-                      >
+                      <div className="flex items-center space-x-2">
                         <span className="text-xl font-bold font-heading bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                           PhoeniX Mall
                         </span>
                         <img src="/phoenix-logo.svg" alt="Phoenix Mall Logo" className="w-8 h-8" />
-                      </motion.div>
-
-                      <motion.button
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.9 }}
+                      </div>
+                      <button
                         onClick={() => setIsMobileMenuOpen(false)}
                         className="p-2 rounded-full hover:bg-accent"
                       >
                         <X className="w-5 h-5" />
-                      </motion.button>
+                      </button>
                     </div>
 
-                    {/* Navigation Items */}
                     <div className="flex flex-col space-y-3">
                       {navigationItems.map((item) => (
-                        <motion.button
+                        <button
                           key={item.name}
-                          whileHover={{ x: 4 }}
-                          whileTap={{ scale: 0.95 }}
                           onClick={() => {
                             navigate(item.path);
                             setIsMobileMenuOpen(false);
@@ -572,16 +411,13 @@ const Header: React.FC = () => {
                         >
                           {item.icon}
                           <span>{item.name}</span>
-                        </motion.button>
+                        </button>
                       ))}
                     </div>
 
-                    {/* Sell button in mobile menu */}
                     {user && (
                       <div className="pt-4 border-t border-border/50">
-                        <motion.button
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
+                        <button
                           onClick={() => {
                             navigate("/sell");
                             setIsMobileMenuOpen(false);
@@ -590,11 +426,10 @@ const Header: React.FC = () => {
                         >
                           <Plus className="w-5 h-5" />
                           <span>Sell an Item</span>
-                        </motion.button>
+                        </button>
                       </div>
                     )}
 
-                    {/* Auth buttons in mobile menu */}
                     {!user && (
                       <div className="flex flex-col space-y-3 pt-4 border-t border-border/50">
                         <Button
@@ -621,7 +456,6 @@ const Header: React.FC = () => {
                       </div>
                     )}
 
-                    {/* User info if logged in */}
                     {user && (
                       <div className="pt-4 border-t border-border/50">
                         <div className="px-3 py-2">
@@ -648,12 +482,12 @@ const Header: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </motion.div>
+                </div>
               </>
             )}
           </AnimatePresence>
         </div>
-      </motion.header>
+      </header>
     </>
   );
 };

@@ -375,10 +375,9 @@ const Messages: React.FC = () => {
                     </div>
                   ) : (
                     filteredConversations.map((conv) => (
-                      <motion.div
+                      // Removed motion.div, using regular div for better performance
+                      <div
                         key={conv.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
                         onClick={() => handleConversationSelect(conv)}
                         className={`flex items-center gap-3 p-3 md:p-4 cursor-pointer transition-all hover:bg-gray-50 dark:hover:bg-gray-700 ${
                           selectedConversation?.id === conv.id ? "bg-red-50 dark:bg-gray-700" : ""
@@ -423,7 +422,7 @@ const Messages: React.FC = () => {
                             )}
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     ))
                   )}
                 </div>
@@ -480,12 +479,10 @@ const Messages: React.FC = () => {
                   </div>
 
                   <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3 md:space-y-4 bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-                    {messages.map((message, index) => (
-                      <motion.div
+                    {messages.map((message) => (
+                      // Removed motion.div with animations, using regular div
+                      <div
                         key={message.id}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: Math.min(index * 0.02, 0.5) }}
                         className={`flex ${message.isOwn ? "justify-end" : "justify-start"}`}
                       >
                         <div
@@ -507,7 +504,7 @@ const Messages: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                      </motion.div>
+                      </div>
                     ))}
                     <div ref={messagesEndRef} />
                   </div>
@@ -572,31 +569,22 @@ const Messages: React.FC = () => {
                 </div>
               )}
 
-              {/* Chat Info Sidebar */}
+              {/* Chat Info Sidebar - simplified animations */}
               <AnimatePresence>
                 {showChatInfo && selectedConversation && (
                   <>
                     {isMobileView && (
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
+                      <div
                         className="fixed inset-0 bg-black/50 z-30"
                         onClick={() => setShowChatInfo(false)}
                       />
                     )}
-                    <motion.div
-                      variants={{
-                        open: { x: 0 },
-                        closed: { x: "100%" },
-                      }}
-                      initial="closed"
-                      animate="open"
-                      exit="closed"
-                      transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    <div
                       className={`${
                         isMobileView ? "fixed right-0 top-0 bottom-0 w-80 z-40" : "relative w-80"
-                      } bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-xl flex flex-col`}
+                      } bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 shadow-xl flex flex-col transition-transform duration-300 ease-in-out ${
+                        showChatInfo ? "translate-x-0" : "translate-x-full"
+                      }`}
                     >
                       <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                         <h3 className="font-semibold text-gray-900 dark:text-white">Chat Info</h3>
@@ -692,7 +680,7 @@ const Messages: React.FC = () => {
                           </div>
                         </button>
                       </div>
-                    </motion.div>
+                    </div>
                   </>
                 )}
               </AnimatePresence>

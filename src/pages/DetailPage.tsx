@@ -104,11 +104,9 @@ const DetailPage: React.FC = () => {
           //
         }
 
-        // Fetch seller info
         try {
           const sellerRes = await productsApi.getSeller(productData.seller_id);
           setSeller(sellerRes.data);
-          // Check if the current user is the seller
           if (user && sellerRes.data) {
             const currentUserId = typeof user.id === "string" ? parseInt(user.id, 10) : user.id;
             setIsCurrentUserSeller(currentUserId === sellerRes.data.id);
@@ -218,12 +216,8 @@ const DetailPage: React.FC = () => {
     if (!seller || !product) return;
 
     try {
-      // Use the product's UUID (id) not the PID
       const productUuid = product.id;
-
       const message = `Hi, I'm interested in your product: ${product.title}`;
-
-      // Send message with proper parameters
       const response = await chatApi.sendMessage(seller.id, message, productUuid);
 
       if (response.success) {
@@ -231,8 +225,6 @@ const DetailPage: React.FC = () => {
           title: "Message Sent",
           description: "You can now continue the conversation in Messages",
         });
-
-        // Navigate to messages
         navigate("/messaging", { state: { from: `/product/${pid}` } });
       } else {
         throw new Error("Failed to send message");
@@ -553,7 +545,6 @@ const DetailPage: React.FC = () => {
               )}
             </div>
 
-            {/* Stats Row */}
             <div className="flex items-center gap-4 mb-6 pb-4 border-b border-gray-200 flex-wrap">
               <div className="flex items-center gap-1 text-gray-500">
                 <Eye className="w-4 h-4" />
@@ -603,7 +594,6 @@ const DetailPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Write a Review Button - only for buyers, not for seller */}
             {user && !isCurrentUserSeller && (
               <button
                 onClick={() => setShowReviewModal(true)}
@@ -622,7 +612,6 @@ const DetailPage: React.FC = () => {
                   className="flex items-center gap-3 p-3 rounded-lg border border-gray-200 hover:border-gray-300 cursor-pointer transition-colors mb-4"
                   onClick={() => seller.username && navigate(`/user/${seller.username}`)}
                 >
-                  {/* Avatar */}
                   <div className="relative">
                     <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-red-500 to-red-600 flex items-center justify-center flex-shrink-0">
                       {seller.avatar_url ? (
@@ -645,7 +634,6 @@ const DetailPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    {/* Online indicator */}
                     {seller.id && (
                       <div className="absolute -bottom-0.5 -right-0.5">
                         <OnlineIndicator userId={seller.id} size="sm" />
@@ -653,7 +641,6 @@ const DetailPage: React.FC = () => {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-semibold text-gray-900">{seller.name}</p>
@@ -671,7 +658,6 @@ const DetailPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Follow button - only for other users, not for seller themselves */}
                   {user && !isCurrentUserSeller && (
                     <div onClick={(e) => e.stopPropagation()}>
                       <FollowButton
@@ -692,9 +678,7 @@ const DetailPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Contact Buttons */}
               <div className="flex gap-3">
-                {/* Chat Seller Button - only for other users, not for seller */}
                 {user && !isCurrentUserSeller && (
                   <button
                     onClick={handleChatSeller}
@@ -752,7 +736,6 @@ const DetailPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Related Products */}
         {relatedProducts.length > 0 && (
           <div className="mt-16">
             <h2 className="text-2xl font-bold text-gray-900 mb-8">Related Products</h2>
@@ -766,7 +749,6 @@ const DetailPage: React.FC = () => {
         )}
       </div>
 
-      {/* Review Modal */}
       <ReviewModal
         isOpen={showReviewModal}
         onClose={() => setShowReviewModal(false)}

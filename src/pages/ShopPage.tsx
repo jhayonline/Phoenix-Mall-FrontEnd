@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   X,
   SlidersHorizontal,
@@ -6,20 +6,19 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronRight as ChevronRightIcon,
-} from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import Header from '@/components/layout/Header';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import Footer from '@/components/layout/Footer';
-import HeroBanner from '@/components/sections/HeroBanner';
-import ProductGrid from '@/components/sections/ProductGrid';
-import { productsApi, categoriesApi, imagesApi } from '@/lib/api';
-import type { ProductResponseData, CategoryResponseData } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
-import SearchBar from '@/components/SearchBar';
-import { useSearchParams } from 'react-router-dom';
-import { iconMap } from '@/lib/iconMap';
-import { Package } from 'lucide-react';
+} from "lucide-react";
+import Header from "@/components/layout/Header";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import Footer from "@/components/layout/Footer";
+import HeroBanner from "@/components/sections/HeroBanner";
+import ProductGrid from "@/components/sections/ProductGrid";
+import { productsApi, categoriesApi, imagesApi } from "@/lib/api";
+import type { ProductResponseData, CategoryResponseData } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+import SearchBar from "@/components/SearchBar";
+import { useSearchParams } from "react-router-dom";
+import { iconMap } from "@/lib/iconMap";
+import { Package } from "lucide-react";
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -50,8 +49,8 @@ const ShopPage = () => {
   const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [priceRange, setPriceRange] = useState([0, 10000]);
-  const [sortBy, setSortBy] = useState('default');
-  const [viewMode, setViewMode] = useState('2');
+  const [sortBy, setSortBy] = useState("default");
+  const [viewMode, setViewMode] = useState("2");
   const [currentPage, setCurrentPage] = useState(1);
   const [pagination, setPagination] = useState<PaginationInfo>({
     total: 0,
@@ -61,7 +60,7 @@ const ShopPage = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [hoveredCategory, setHoveredCategory] = useState<CategoryWithSubs | null>(null);
   const [isHoveringSecondary, setIsHoveringSecondary] = useState(false);
   const hoverContainerRef = useRef<HTMLDivElement>(null);
@@ -70,28 +69,31 @@ const ShopPage = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Load categories on mount
+  // Memoize API base URL to avoid recalculations
+  const API_BASE_URL = useMemo(() => {
+    const base = import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api";
+    return base.replace("/api", "");
+  }, []);
+
   useEffect(() => {
     loadCategories();
   }, []);
 
-  // Load products when filters change
   useEffect(() => {
     loadProducts();
   }, [selectedCategories, priceRange, sortBy, searchQuery, currentPage]);
 
   useEffect(() => {
-    const searchFromUrl = searchParams.get('search');
+    const searchFromUrl = searchParams.get("search");
     if (searchFromUrl) {
       setSearchQuery(searchFromUrl);
     }
-    const categoryFromUrl = searchParams.get('category');
+    const categoryFromUrl = searchParams.get("category");
     if (categoryFromUrl) {
       setSelectedCategories([categoryFromUrl]);
     }
   }, []);
 
-  // Handle click outside to close sidebars
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -104,8 +106,8 @@ const ShopPage = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const loadCategories = async () => {
@@ -114,19 +116,21 @@ const ShopPage = () => {
       if (response.success && response.data) {
         setAllCategories(response.data);
 
-        const level1Categories = response.data.filter(cat => cat.level === 1);
-        const categoriesWithChildren = level1Categories.map(cat => {
+        const level1Categories = response.data.filter((cat) => cat.level === 1);
+        const categoriesWithChildren = level1Categories.map((cat) => {
           const IconComponent = iconMap[cat.name] || Package;
           return {
             ...cat,
-            subcategories: response.data.filter(sub => sub.parent_id === cat.id && sub.level === 2),
+            subcategories: response.data.filter(
+              (sub) => sub.parent_id === cat.id && sub.level === 2,
+            ),
             icon: <IconComponent className="w-5 h-5" />,
           };
         });
         setCategoriesWithSubs(categoriesWithChildren);
       }
     } catch (error) {
-      console.error('Failed to load categories:', error);
+      console.error("Failed to load categories:", error);
       toast({
         title: "Error",
         description: "Failed to load categories",
@@ -135,6 +139,7 @@ const ShopPage = () => {
     }
   };
 
+  // Optimized product loading - load images in parallel but don't block rendering
   const loadProducts = async () => {
     setLoading(true);
     try {
@@ -143,14 +148,14 @@ const ShopPage = () => {
         limit: 20,
       };
 
-      if (sortBy === 'price-low') {
-        params.sort = 'price_asc';
-      } else if (sortBy === 'price-high') {
-        params.sort = 'price_desc';
-      } else if (sortBy === 'newest') {
-        params.sort = 'newest';
-      } else if (sortBy === 'popular') {
-        params.sort = 'most_viewed';
+      if (sortBy === "price-low") {
+        params.sort = "price_asc";
+      } else if (sortBy === "price-high") {
+        params.sort = "price_desc";
+      } else if (sortBy === "newest") {
+        params.sort = "newest";
+      } else if (sortBy === "popular") {
+        params.sort = "most_viewed";
       }
 
       if (searchQuery) {
@@ -158,8 +163,8 @@ const ShopPage = () => {
       }
 
       if (selectedCategories.length > 0) {
-        const selectedCategory = allCategories.find(cat =>
-          cat.name.toLowerCase() === selectedCategories[0].toLowerCase()
+        const selectedCategory = allCategories.find(
+          (cat) => cat.name.toLowerCase() === selectedCategories[0].toLowerCase(),
         );
         if (selectedCategory) {
           params.category = selectedCategory.slug;
@@ -180,33 +185,52 @@ const ShopPage = () => {
           setPagination(response.pagination);
         }
 
-        const productsWithDetails = await Promise.all(
-          response.data.map(async (product) => {
-            let primaryImage: string | undefined;
+        // Set products first without images for faster display
+        const productsWithoutImages = response.data.map((product) => ({
+          ...product,
+          primaryImage: undefined,
+          rating: 4.5,
+          reviews: Math.floor(Math.random() * 200),
+        }));
+        setProducts(productsWithoutImages);
 
-            try {
-              const imagesResponse = await imagesApi.getImages(product.pid);
-              if (imagesResponse.success && imagesResponse.data.length > 0) {
-                const primaryImg = imagesResponse.data.find(img => img.is_primary);
-                primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+        // Load images in background
+        const loadImages = async () => {
+          const productsWithImages = await Promise.all(
+            response.data.map(async (product, index) => {
+              let primaryImage: string | undefined;
+
+              try {
+                const imagesResponse = await imagesApi.getImages(product.pid);
+                if (imagesResponse.success && imagesResponse.data.length > 0) {
+                  const primaryImg = imagesResponse.data.find((img) => img.is_primary);
+                  const imageUrl = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+                  if (imageUrl && !imageUrl.startsWith("http")) {
+                    primaryImage = `${API_BASE_URL}${imageUrl}`;
+                  } else {
+                    primaryImage = imageUrl;
+                  }
+                }
+              } catch (error) {
+                console.error("Failed to load images for product:", product.pid);
               }
-            } catch (error) {
-              console.error('Failed to load images for product:', product.pid);
-            }
 
-            return {
-              ...product,
-              primaryImage,
-              rating: 4.5,
-              reviews: Math.floor(Math.random() * 200),
-            };
-          })
-        );
+              return {
+                ...product,
+                primaryImage:
+                  primaryImage || "https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image",
+                rating: 4.5,
+                reviews: Math.floor(Math.random() * 200),
+              };
+            }),
+          );
+          setProducts(productsWithImages);
+        };
 
-        setProducts(productsWithDetails);
+        loadImages(); // Don't await, let it load in background
       }
     } catch (error) {
-      console.error('Failed to load products:', error);
+      console.error("Failed to load products:", error);
       toast({
         title: "Error",
         description: "Failed to load products",
@@ -238,7 +262,7 @@ const ShopPage = () => {
   const goToPage = (page: number) => {
     if (page >= 1 && page <= pagination.total_pages) {
       setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ top: 0, behavior: "auto" }); // Changed from "smooth" to "auto" for faster scrolling
     }
   };
 
@@ -270,28 +294,18 @@ const ShopPage = () => {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'GHS'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "GHS",
     }).format(amount);
   };
 
-  const formatNumber = (num: number) => {
-    if (num >= 1000000) {
-      return (num / 1000000).toFixed(1) + 'M';
-    }
-    if (num >= 1000) {
-      return (num / 1000).toFixed(1) + 'K';
-    }
-    return num.toString();
-  };
-
   const sortOptions = [
-    { value: 'default', label: 'Default' },
-    { value: 'price-low', label: 'Price: Low to High' },
-    { value: 'price-high', label: 'Price: High to Low' },
-    { value: 'newest', label: 'Newest First' },
-    { value: 'popular', label: 'Most Popular' }
+    { value: "default", label: "Default" },
+    { value: "price-low", label: "Price: Low to High" },
+    { value: "price-high", label: "Price: High to Low" },
+    { value: "newest", label: "Newest First" },
+    { value: "popular", label: "Most Popular" },
   ];
 
   if (loading && products.length === 0) {
@@ -362,26 +376,30 @@ const ShopPage = () => {
 
                 <div className="py-2">
                   {categoriesWithSubs.map((category) => (
-                    <div
-                      key={category.id}
-                      onMouseEnter={() => handleCategoryMouseEnter(category)}
-                    >
+                    <div key={category.id} onMouseEnter={() => handleCategoryMouseEnter(category)}>
                       <button
                         onClick={() => handleCategoryClick(category.name)}
-                        className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-all duration-200 group ${selectedCategories.includes(category.name)
-                          ? 'bg-red-50 border-r-2 border-red-500'
-                          : ''
-                          }`}
+                        className={`w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition-colors duration-150 group ${
+                          selectedCategories.includes(category.name)
+                            ? "bg-red-50 border-r-2 border-red-500"
+                            : ""
+                        }`}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`text-gray-400 group-hover:text-red-500 transition-colors ${selectedCategories.includes(category.name) ? 'text-red-500' : ''
-                            }`}>
+                          <div
+                            className={`text-gray-400 group-hover:text-red-500 transition-colors ${
+                              selectedCategories.includes(category.name) ? "text-red-500" : ""
+                            }`}
+                          >
                             {category.icon}
                           </div>
-                          <span className={`text-sm font-medium ${selectedCategories.includes(category.name)
-                            ? 'text-red-600'
-                            : 'text-gray-700 group-hover:text-gray-900'
-                            }`}>
+                          <span
+                            className={`text-sm font-medium ${
+                              selectedCategories.includes(category.name)
+                                ? "text-red-600"
+                                : "text-gray-700 group-hover:text-gray-900"
+                            }`}
+                          >
                             {category.name}
                           </span>
                         </div>
@@ -401,14 +419,18 @@ const ShopPage = () => {
                         type="number"
                         placeholder="Min"
                         value={priceRange[0]}
-                        onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                        onChange={(e) =>
+                          setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])
+                        }
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                       />
                       <input
                         type="number"
                         placeholder="Max"
                         value={priceRange[1]}
-                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
+                        onChange={(e) =>
+                          setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])
+                        }
                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
                       />
                     </div>
@@ -420,23 +442,18 @@ const ShopPage = () => {
               </div>
             </div>
 
-            {/* Secondary Sidebar - Subcategories (Level 2 only) */}
-            <AnimatePresence>
-              {hoveredCategory && hoveredCategory.subcategories && hoveredCategory.subcategories.length > 0 && (
-                <motion.div
+            {/* Secondary Sidebar - Subcategories */}
+            {hoveredCategory &&
+              hoveredCategory.subcategories &&
+              hoveredCategory.subcategories.length > 0 && (
+                <div
                   ref={secondaryRef}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.15 }}
                   className="hidden lg:block w-64 flex-shrink-0 bg-white rounded-r-xl shadow-sm border border-l-0 border-gray-100 overflow-hidden sticky top-24"
                   onMouseEnter={handleSecondaryMouseEnter}
                   onMouseLeave={handleSecondaryMouseLeave}
                 >
                   <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-gray-100">
-                    <h3 className="font-semibold text-gray-900">
-                      {hoveredCategory.name}
-                    </h3>
+                    <h3 className="font-semibold text-gray-900">{hoveredCategory.name}</h3>
                   </div>
                   <div className="py-2 max-h-[calc(100vh-200px)] overflow-y-auto">
                     {hoveredCategory.subcategories.map((sub) => {
@@ -455,11 +472,10 @@ const ShopPage = () => {
                       );
                     })}
                   </div>
-                </motion.div>
+                </div>
               )}
-            </AnimatePresence>
 
-            {/* Main Content Area - Product Grid */}
+            {/* Main Content Area */}
             <div className="flex-1">
               <ProductGrid
                 products={products}
@@ -494,14 +510,15 @@ const ShopPage = () => {
                         pages.push(i);
                       }
 
-                      return pages.map(page => (
+                      return pages.map((page) => (
                         <button
                           key={page}
                           onClick={() => goToPage(page)}
-                          className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentPage === page
-                            ? 'bg-red-600 text-white'
-                            : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                            }`}
+                          className={`min-w-[40px] px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            currentPage === page
+                              ? "bg-red-600 text-white"
+                              : "bg-white border border-gray-300 text-gray-700 hover:bg-gray-50"
+                          }`}
                         >
                           {page}
                         </button>
@@ -522,8 +539,8 @@ const ShopPage = () => {
 
               {pagination.total > 0 && (
                 <div className="text-center text-sm text-gray-500 mt-4">
-                  Showing {((currentPage - 1) * pagination.per_page) + 1} to{' '}
-                  {Math.min(currentPage * pagination.per_page, pagination.total)} of{' '}
+                  Showing {(currentPage - 1) * pagination.per_page + 1} to{" "}
+                  {Math.min(currentPage * pagination.per_page, pagination.total)} of{" "}
                   {pagination.total.toLocaleString()} products
                 </div>
               )}
@@ -532,120 +549,110 @@ const ShopPage = () => {
         </div>
 
         {/* Mobile Filter Modal */}
-        <AnimatePresence>
-          {showFilters && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 z-50 lg:hidden"
-                onClick={() => setShowFilters(false)}
-              />
-              <motion.div
-                initial={{ x: '-100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '-100%' }}
-                transition={{ type: 'tween' }}
-                className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 lg:hidden flex flex-col"
-              >
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                  <h3 className="font-semibold text-lg">Categories</h3>
-                  <button onClick={() => setShowFilters(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+        {showFilters && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+              onClick={() => setShowFilters(false)}
+            />
+            <div className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 lg:hidden flex flex-col">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
+                <h3 className="font-semibold text-lg">Categories</h3>
+                <button
+                  onClick={() => setShowFilters(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-6">
-                  <SearchBar
-                    placeholder="Search products..."
-                    onSearch={handleSearch}
-                    initialValue={searchQuery}
-                    className="mb-4"
-                  />
-                  {categoriesWithSubs.map((category) => (
-                    <div key={category.id}>
-                      <button
-                        onClick={() => {
-                          handleCategoryClick(category.name);
-                          setShowFilters(false);
-                        }}
-                        className={`w-full text-left py-2 flex items-center justify-between ${selectedCategories.includes(category.name) ? 'text-red-600 font-medium' : 'text-gray-700'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          {category.icon}
-                          <span>{category.name}</span>
-                        </div>
-                      </button>
-                      {category.subcategories && (
-                        <div className="ml-6 mt-1 space-y-1">
-                          {category.subcategories.map((sub) => (
-                            <button
-                              key={sub.id}
-                              onClick={() => {
-                                handleCategoryClick(sub.name);
-                                setShowFilters(false);
-                              }}
-                              className="block w-full text-left py-1.5 text-sm text-gray-500 hover:text-gray-700"
-                            >
-                              {sub.name}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+              <div className="flex-1 overflow-y-auto p-4 space-y-6">
+                <SearchBar
+                  placeholder="Search products..."
+                  onSearch={handleSearch}
+                  initialValue={searchQuery}
+                  className="mb-4"
+                />
+                {categoriesWithSubs.map((category) => (
+                  <div key={category.id}>
+                    <button
+                      onClick={() => {
+                        handleCategoryClick(category.name);
+                        setShowFilters(false);
+                      }}
+                      className={`w-full text-left py-2 flex items-center justify-between ${
+                        selectedCategories.includes(category.name)
+                          ? "text-red-600 font-medium"
+                          : "text-gray-700"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        {category.icon}
+                        <span>{category.name}</span>
+                      </div>
+                    </button>
+                    {category.subcategories && (
+                      <div className="ml-6 mt-1 space-y-1">
+                        {category.subcategories.map((sub) => (
+                          <button
+                            key={sub.id}
+                            onClick={() => {
+                              handleCategoryClick(sub.name);
+                              setShowFilters(false);
+                            }}
+                            className="block w-full text-left py-1.5 text-sm text-gray-500 hover:text-gray-700"
+                          >
+                            {sub.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Mobile Sort Modal */}
-        <AnimatePresence>
-          {showSort && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black/50 z-50 lg:hidden"
-                onClick={() => setShowSort(false)}
-              />
-              <motion.div
-                initial={{ y: '100%' }}
-                animate={{ y: 0 }}
-                exit={{ y: '100%' }}
-                transition={{ type: 'tween' }}
-                className="fixed bottom-0 left-0 right-0 bg-white z-50 lg:hidden rounded-t-xl"
-              >
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                  <h3 className="font-semibold text-lg">Sort By</h3>
-                  <button onClick={() => setShowSort(false)} className="p-2 hover:bg-gray-100 rounded-lg">
-                    <X className="w-5 h-5" />
-                  </button>
-                </div>
+        {showSort && (
+          <>
+            <div
+              className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+              onClick={() => setShowSort(false)}
+            />
+            <div className="fixed bottom-0 left-0 right-0 bg-white z-50 lg:hidden rounded-t-xl">
+              <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                <h3 className="font-semibold text-lg">Sort By</h3>
+                <button
+                  onClick={() => setShowSort(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                <div className="p-4">
-                  {sortOptions.map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => {
-                        setSortBy(option.value);
-                        setShowSort(false);
-                      }}
-                      className={`w-full text-left py-3 px-2 rounded-lg transition-colors ${sortBy === option.value ? 'bg-red-50 text-red-600 font-medium' : 'hover:bg-gray-50'
-                        }`}
-                    >
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
+              <div className="p-4">
+                {sortOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => {
+                      setSortBy(option.value);
+                      setShowSort(false);
+                    }}
+                    className={`w-full text-left py-3 px-2 rounded-lg transition-colors ${
+                      sortBy === option.value
+                        ? "bg-red-50 text-red-600 font-medium"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="h-20 lg:hidden"></div>
 

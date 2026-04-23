@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
 import { Heart, MapPin, Star, Grid, List } from "lucide-react";
 import { Link } from "react-router-dom";
 import { favoritesApi } from "@/lib/api";
@@ -23,12 +22,16 @@ interface ProductGridProps {
   loading?: boolean;
 }
 
-const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewModeChange, loading }) => {
+const ProductGrid: React.FC<ProductGridProps> = ({
+  products,
+  viewMode,
+  onViewModeChange,
+  loading,
+}) => {
   const [likedProducts, setLikedProducts] = useState<Set<string>>(new Set());
   const { toast } = useToast();
   const { user } = useAuth();
 
-  // Define checkFavorites with useCallback
   const checkFavorites = useCallback(async () => {
     try {
       const checks = await Promise.all(
@@ -39,16 +42,15 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
           } catch {
             return { pid: product.pid, favorited: false };
           }
-        })
+        }),
       );
-      const favoritedSet = new Set(checks.filter(c => c.favorited).map(c => c.pid));
+      const favoritedSet = new Set(checks.filter((c) => c.favorited).map((c) => c.pid));
       setLikedProducts(favoritedSet);
     } catch (error) {
-      console.error('Failed to check favorites:', error);
+      console.error("Failed to check favorites:", error);
     }
   }, [products]);
 
-  // Check favorites on load
   useEffect(() => {
     if (user && products.length > 0) {
       checkFavorites();
@@ -71,7 +73,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
     try {
       if (likedProducts.has(pid)) {
         await favoritesApi.remove(pid);
-        setLikedProducts(prev => {
+        setLikedProducts((prev) => {
           const newSet = new Set(prev);
           newSet.delete(pid);
           return newSet;
@@ -80,18 +82,18 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
           title: "Removed",
           description: "Item removed from wishlist",
         });
-        window.dispatchEvent(new Event('wishlistUpdated'));
+        window.dispatchEvent(new Event("wishlistUpdated"));
       } else {
         await favoritesApi.add(pid);
-        setLikedProducts(prev => new Set([...prev, pid]));
+        setLikedProducts((prev) => new Set([...prev, pid]));
         toast({
           title: "Added",
           description: "Item added to wishlist",
         });
-        window.dispatchEvent(new Event('wishlistUpdated'));
+        window.dispatchEvent(new Event("wishlistUpdated"));
       }
     } catch (error) {
-      console.error('Failed to toggle favorite:', error);
+      console.error("Failed to toggle favorite:", error);
       toast({
         title: "Error",
         description: "Something went wrong",
@@ -101,9 +103,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'GHS'
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "GHS",
     }).format(amount);
   };
 
@@ -116,29 +118,32 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
         {[...Array(5)].map((_, i) => (
           <Star
             key={i}
-            className={`w-3 h-3 ${i < fullStars
-              ? "text-yellow-400 fill-yellow-400"
-              : i === fullStars && hasHalfStar
-                ? "text-yellow-400 fill-yellow-400 opacity-50"
-                : "text-gray-300"
-              }`}
+            className={`w-3 h-3 ${
+              i < fullStars
+                ? "text-yellow-400 fill-yellow-400"
+                : i === fullStars && hasHalfStar
+                  ? "text-yellow-400 fill-yellow-400 opacity-50"
+                  : "text-gray-300"
+            }`}
           />
         ))}
-        {rating > 0 && (
-          <span className="text-xs text-gray-500 ml-1">{rating.toFixed(1)}</span>
-        )}
+        {rating > 0 && <span className="text-xs text-gray-500 ml-1">{rating.toFixed(1)}</span>}
       </div>
     );
   };
 
-
   const getGridCols = () => {
     switch (viewMode) {
-      case '1': return 'grid-cols-1';
-      case '2': return 'grid-cols-2 lg:grid-cols-3';
-      case '3': return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4';
-      case '4': return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5';
-      default: return 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4';
+      case "1":
+        return "grid-cols-1";
+      case "2":
+        return "grid-cols-2 lg:grid-cols-3";
+      case "3":
+        return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
+      case "4":
+        return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-5";
+      default:
+        return "grid-cols-2 sm:grid-cols-3 lg:grid-cols-4";
     }
   };
 
@@ -173,78 +178,98 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
     <div className="flex-1">
       {/* Desktop Top Bar */}
       <div className="hidden lg:flex items-center justify-between mb-6">
-        <p className="text-sm text-gray-500">
-          Showing {products.length} products
-        </p>
+        <p className="text-sm text-gray-500">Showing {products.length} products</p>
 
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm text-gray-600">View:</span>
-            {['1', '2', '3', '4'].map((view) => (
+            {["1", "2", "3", "4"].map((view) => (
               <button
                 key={view}
                 onClick={() => onViewModeChange(view)}
-                className={`p-2 rounded transition-colors ${viewMode === view ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                className={`p-2 rounded transition-colors ${
+                  viewMode === view
+                    ? "bg-gray-900 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
               >
-                {view === '1' ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
+                {view === "1" ? <List className="w-4 h-4" /> : <Grid className="w-4 h-4" />}
               </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Products Grid */}
+      {/* Products Grid - No framer-motion animations */}
       <div className={`grid gap-3 sm:gap-4 ${getGridCols()}`}>
         {products.map((product) => (
-          <motion.div
+          <div
             key={product.pid}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className={`group relative bg-white rounded-lg border border-gray-200 hover:shadow-lg transition-all duration-300 ${viewMode === '1' ? 'flex gap-4 p-3' : 'overflow-hidden'
-              }`}
+            className={`group relative bg-white rounded-lg border border-gray-200 hover:shadow-lg hover:border-gray-300 transition-all duration-200 ${
+              viewMode === "1" ? "flex gap-4 p-3" : "overflow-hidden"
+            }`}
           >
             <Link to={`/product/${product.pid}`} className="block w-full">
               {/* Product Image */}
-              <div className={`relative ${viewMode === '1' ? 'w-24 h-24 flex-shrink-0' : 'aspect-square'
-                } overflow-hidden ${viewMode !== '1' ? 'rounded-t-lg' : 'rounded-lg'}`}>
+              <div
+                className={`relative ${
+                  viewMode === "1" ? "w-24 h-24 flex-shrink-0" : "aspect-square"
+                } overflow-hidden ${viewMode !== "1" ? "rounded-t-lg" : "rounded-lg"}`}
+              >
                 <img
-                  src={product.primaryImage || 'https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image'}
+                  src={
+                    product.primaryImage ||
+                    "https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image"
+                  }
                   alt={product.title}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                  loading="lazy"
                 />
 
                 {/* Wishlist Button */}
                 <button
                   onClick={(e) => toggleLike(product.pid, e)}
-                  className={`absolute top-2 right-2 p-1.5 rounded-full shadow-sm transition-all ${likedProducts.has(product.pid) ? 'bg-red-500 text-white' : 'bg-white/80 text-gray-600 hover:bg-white'
-                    } ${viewMode === '1' ? 'scale-75' : ''}`}
+                  className={`absolute top-2 right-2 p-1.5 rounded-full shadow-sm transition-colors ${
+                    likedProducts.has(product.pid)
+                      ? "bg-red-500 text-white"
+                      : "bg-white/80 text-gray-600 hover:bg-white"
+                  } ${viewMode === "1" ? "scale-75" : ""}`}
                 >
-                  <Heart className={`w-3 h-3 ${likedProducts.has(product.pid) ? 'fill-current' : ''}`} />
+                  <Heart
+                    className={`w-3 h-3 ${likedProducts.has(product.pid) ? "fill-current" : ""}`}
+                  />
                 </button>
 
                 {/* Status Badge */}
-                {product.status?.toLowerCase() !== 'active' && (
-                  <span className={`absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded ${viewMode === '1' ? 'text-xs px-1.5 py-0.5' : ''
-                    }`}>
-                    {product.status === 'sold' ? 'SOLD' : 'INACTIVE'}
+                {product.status?.toLowerCase() !== "active" && (
+                  <span
+                    className={`absolute top-2 left-2 px-2 py-1 bg-red-500 text-white text-xs font-medium rounded ${
+                      viewMode === "1" ? "text-xs px-1.5 py-0.5" : ""
+                    }`}
+                  >
+                    {product.status === "sold" ? "SOLD" : "INACTIVE"}
                   </span>
                 )}
               </div>
 
               {/* Product Info */}
-              <div className={`${viewMode === '1' ? 'flex-1' : 'p-3'}`}>
+              <div className={`${viewMode === "1" ? "flex-1" : "p-3"}`}>
                 <div className="flex items-start justify-between mb-1">
-                  <h3 className={`font-medium text-gray-900 line-clamp-2 ${viewMode === '1' ? 'text-sm' : 'text-sm sm:text-base'
-                    }`}>
+                  <h3
+                    className={`font-medium text-gray-900 line-clamp-2 ${
+                      viewMode === "1" ? "text-sm" : "text-sm sm:text-base"
+                    }`}
+                  >
                     {product.title}
                   </h3>
                 </div>
 
                 {product.condition && (
-                  <p className={`text-gray-500 mb-2 ${viewMode === '1' ? 'text-xs' : 'text-xs sm:text-sm'
-                    }`}>
+                  <p
+                    className={`text-gray-500 mb-2 ${
+                      viewMode === "1" ? "text-xs" : "text-xs sm:text-sm"
+                    }`}
+                  >
                     {product.condition}
                   </p>
                 )}
@@ -265,15 +290,18 @@ const ProductGrid: React.FC<ProductGridProps> = ({ products, viewMode, onViewMod
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className={`font-semibold text-gray-900 ${viewMode === '1' ? 'text-sm' : 'text-base'
-                      }`}>
+                    <span
+                      className={`font-semibold text-gray-900 ${
+                        viewMode === "1" ? "text-sm" : "text-base"
+                      }`}
+                    >
                       {formatCurrency(product.price)}
                     </span>
                   </div>
                 </div>
               </div>
             </Link>
-          </motion.div>
+          </div>
         ))}
       </div>
     </div>
