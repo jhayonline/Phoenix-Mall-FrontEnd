@@ -52,9 +52,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const checkAuthStatus = async () => {
     try {
       setIsLoading(true);
+      const token = localStorage.getItem("access_token");
+
+      if (!token) {
+        console.log("No token found");
+        setUser(null);
+        return;
+      }
+
       const response = await authApi.getCurrentUser();
       if (response.success && response.data) {
-        // Ensure the user object has all required fields
         const userData: User = {
           id: response.data.id || 0,
           pid: response.data.pid || "",
@@ -65,10 +72,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           is_verified: response.data.is_verified || false,
           created_at: response.data.created_at || new Date().toISOString(),
         };
+        console.log("User restored from session:", userData);
+        setUser(userData); // <-- THIS WAS MISSING!
       } else {
         setUser(null);
       }
     } catch (error) {
+      console.error("Auth check failed:", error);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -81,11 +91,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const response = await authApi.login({ email, password });
       if (response.success && response.data) {
         const userData = response.data.user;
-        // Ensure id is a number
         const formattedUser: User = {
           ...userData,
           id: typeof userData.id === "string" ? parseInt(userData.id, 10) : userData.id,
         };
+        console.log("User logged in:", formattedUser);
         setUser(formattedUser);
         toast({
           title: "Login Successful",

@@ -233,7 +233,7 @@ const DetailPage: React.FC = () => {
         });
 
         // Navigate to messages
-        navigate("/messaging");
+        navigate("/messaging", { state: { from: `/product/${pid}` } });
       } else {
         throw new Error("Failed to send message");
       }

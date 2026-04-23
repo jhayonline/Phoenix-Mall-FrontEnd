@@ -1,16 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Heart, User, Menu, X, LogIn, UserPlus,
-  MessageSquare, Bell,
-  LogOut, Store,
-  Home, ShoppingCart, Grid, Mail, Plus, Package
-} from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { wishlistApi, chatApi } from '@/lib/api';
-import SearchBar from '@/components/SearchBar';
+  Heart,
+  User,
+  Menu,
+  X,
+  LogIn,
+  UserPlus,
+  MessageSquare,
+  Bell,
+  LogOut,
+  Store,
+  Home,
+  ShoppingCart,
+  Grid,
+  Mail,
+  Plus,
+  Package,
+} from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/contexts/AuthContext";
+import { wishlistApi, chatApi } from "@/lib/api";
 
 const Header: React.FC = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -48,8 +59,8 @@ const Header: React.FC = () => {
       loadWishlistCount();
     };
 
-    window.addEventListener('wishlistUpdated', handleWishlistUpdate);
-    return () => window.removeEventListener('wishlistUpdated', handleWishlistUpdate);
+    window.addEventListener("wishlistUpdated", handleWishlistUpdate);
+    return () => window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
   }, [user]);
 
   // Load unread message count for messaging icon
@@ -77,11 +88,11 @@ const Header: React.FC = () => {
       loadUnreadCount();
     };
 
-    window.addEventListener('messagesRead', handleMessagesRead);
+    window.addEventListener("messagesRead", handleMessagesRead);
 
     return () => {
       clearInterval(interval);
-      window.removeEventListener('messagesRead', handleMessagesRead);
+      window.removeEventListener("messagesRead", handleMessagesRead);
     };
   }, [user]);
 
@@ -109,42 +120,54 @@ const Header: React.FC = () => {
       loadUnreadNotificationCount();
     };
 
-    window.addEventListener('messagesRead', handleMessagesRead);
+    window.addEventListener("messagesRead", handleMessagesRead);
 
     return () => {
-      window.removeEventListener('messagesRead', handleMessagesRead);
+      window.removeEventListener("messagesRead", handleMessagesRead);
     };
   }, [user]);
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const navigationItems = [
-    { name: 'Home', path: '/', icon: <Home className="w-4 h-4" /> },
-    { name: 'Shop', path: '/shop', icon: <ShoppingCart className="w-4 h-4" /> },
-    { name: 'Contact', path: '/contact', icon: <Mail className="w-4 h-4" /> }
+    { name: "Home", path: "/", icon: <Home className="w-4 h-4" /> },
+    { name: "Shop", path: "/shop", icon: <ShoppingCart className="w-4 h-4" /> },
+    { name: "Contact", path: "/contact", icon: <Mail className="w-4 h-4" /> },
   ];
 
   const isActive = (path: string) => location.pathname === path;
-  const isHome = location.pathname === '/';
+  const isHome = location.pathname === "/";
 
   const profileMenuItems = [
-    { name: 'My Profile', icon: <User className="w-4 h-4" />, action: () => navigate('/profile') },
-    { name: 'My Listings', icon: <Package className="w-4 h-4" />, action: () => navigate('/my-listings') },
-    { name: 'Seller Dashboard', icon: <Store className="w-4 h-4" />, action: () => navigate('/seller/dashboard') },
-    { name: 'My Wishlist', icon: <Heart className="w-4 h-4" />, action: () => navigate('/wishlist') },
-    { name: 'Logout', icon: <LogOut className="w-4 h-4" />, action: () => logout() },
+    { name: "My Profile", icon: <User className="w-4 h-4" />, action: () => navigate("/profile") },
+    {
+      name: "My Listings",
+      icon: <Package className="w-4 h-4" />,
+      action: () => navigate("/my-listings"),
+    },
+    {
+      name: "Seller Dashboard",
+      icon: <Store className="w-4 h-4" />,
+      action: () => navigate("/seller/dashboard"),
+    },
+    {
+      name: "My Wishlist",
+      icon: <Heart className="w-4 h-4" />,
+      action: () => navigate("/wishlist"),
+    },
+    { name: "Logout", icon: <LogOut className="w-4 h-4" />, action: () => logout() },
   ];
 
   // Add admin items conditionally
-  if (user?.role === 'admin') {
+  if (user?.role === "admin") {
     profileMenuItems.push({
-      name: 'Manage Categories',
+      name: "Manage Categories",
       icon: <Grid className="w-4 h-4" />,
-      action: () => navigate('/admin/categories')
+      action: () => navigate("/admin/categories"),
     });
   }
 
@@ -153,9 +176,9 @@ const Header: React.FC = () => {
     hover: {
       scale: 1.15,
       rotate: 5,
-      transition: { type: "spring", stiffness: 400, damping: 10 }
+      transition: { type: "spring", stiffness: 400, damping: 10 },
     },
-    tap: { scale: 0.95 }
+    tap: { scale: 0.95 },
   };
 
   // Badge animation
@@ -163,8 +186,8 @@ const Header: React.FC = () => {
     initial: { scale: 0 },
     animate: {
       scale: 1,
-      transition: { type: "spring", stiffness: 500, damping: 10 }
-    }
+      transition: { type: "spring", stiffness: 500, damping: 10 },
+    },
   };
 
   return (
@@ -173,10 +196,9 @@ const Header: React.FC = () => {
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ type: "spring", damping: 20, stiffness: 100 }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? 'glass shadow-medium backdrop-blur-lg bg-background/80'
-          : 'bg-transparent'
-          }`}
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
+          isScrolled ? "glass shadow-medium backdrop-blur-lg bg-background/80" : "bg-transparent"
+        }`}
       >
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between lg:gap-8">
@@ -185,46 +207,36 @@ const Header: React.FC = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               className="flex items-center space-x-2 cursor-pointer"
-              onClick={() => navigate('/')}
+              onClick={() => navigate("/")}
             >
-              <span className="text-xl font-bold font-heading text-[#FF0000]">
-                PhoeniX
-              </span>
-              <img
-                src="/phoenix-logo.svg"
-                alt="Phoenix Mall Logo"
-                className="w-7 h-7"
-              />
+              <span className="text-xl font-bold font-heading text-[#FF0000]">PhoeniX</span>
+              <img src="/phoenix-logo.svg" alt="Phoenix Mall Logo" className="w-7 h-7" />
             </motion.div>
 
             {/* Desktop Navigation */}
             <nav className="hidden lg:flex items-center space-x-6">
               {navigationItems.map((item) => (
-                <motion.div
-                  key={item.name}
-                  className="relative"
-                  whileHover="hover"
-                  whileTap="tap"
-                >
+                <motion.div key={item.name} className="relative" whileHover="hover" whileTap="tap">
                   <motion.a
                     href={item.path}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all ${isActive(item.path)
-                      ? 'bg-primary/10 text-primary font-medium'
-                      : 'text-foreground/80 hover:text-foreground hover:bg-accent'
-                      }`}
+                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all ${
+                      isActive(item.path)
+                        ? "bg-primary/10 text-primary font-medium"
+                        : "text-foreground/80 hover:text-foreground hover:bg-accent"
+                    }`}
                     onClick={(e) => {
                       e.preventDefault();
                       navigate(item.path);
                     }}
                     variants={{
                       hover: { y: -2 },
-                      tap: { y: 0 }
+                      tap: { y: 0 },
                     }}
                   >
                     <motion.span
                       variants={{
                         hover: { scale: 1.1 },
-                        tap: { scale: 0.95 }
+                        tap: { scale: 0.95 },
                       }}
                     >
                       {item.icon}
@@ -259,7 +271,7 @@ const Header: React.FC = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => navigate('/login')}
+                          onClick={() => navigate("/login")}
                           className="flex items-center space-x-1.5 rounded-full px-4"
                         >
                           <LogIn className="w-4 h-4" />
@@ -269,7 +281,7 @@ const Header: React.FC = () => {
                       <motion.div whileHover={{ y: -2 }} whileTap={{ y: 0 }}>
                         <Button
                           size="sm"
-                          onClick={() => navigate('/register')}
+                          onClick={() => navigate("/register")}
                           className="flex items-center space-x-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-purple-600"
                         >
                           <UserPlus className="w-4 h-4" />
@@ -291,7 +303,7 @@ const Header: React.FC = () => {
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:shadow-lg transition-all cursor-pointer hidden md:block"
-                      onClick={() => navigate('/sell')}
+                      onClick={() => navigate("/sell")}
                     >
                       <Plus className="w-5 h-5" />
                     </motion.div>
@@ -302,7 +314,7 @@ const Header: React.FC = () => {
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full transition-all duration-200 cursor-pointer group hover:bg-gradient-to-r hover:from-primary hover:to-purple-600 hidden md:block"
-                      onClick={() => navigate('/messaging')}
+                      onClick={() => navigate("/messaging")}
                     >
                       <MessageSquare className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       {unreadMessageCount > 0 && (
@@ -312,7 +324,7 @@ const Header: React.FC = () => {
                           animate="animate"
                           className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
                         >
-                          {unreadMessageCount > 99 ? '99+' : unreadMessageCount}
+                          {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                         </motion.span>
                       )}
                     </motion.div>
@@ -323,7 +335,7 @@ const Header: React.FC = () => {
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full transition-all duration-200 cursor-pointer group hover:bg-gradient-to-r hover:from-primary hover:to-purple-600 hidden md:block"
-                      onClick={() => navigate('/notifications')}
+                      onClick={() => navigate("/notifications")}
                     >
                       <Bell className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       {unreadNotificationCount > 0 && (
@@ -333,7 +345,7 @@ const Header: React.FC = () => {
                           animate="animate"
                           className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
                         >
-                          {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount}
+                          {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                         </motion.span>
                       )}
                     </motion.div>
@@ -344,7 +356,7 @@ const Header: React.FC = () => {
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full hover:bg-accent cursor-pointer group"
-                      onClick={() => navigate('/wishlist')}
+                      onClick={() => navigate("/wishlist")}
                     >
                       <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       {wishlistCount > 0 && (
@@ -354,7 +366,7 @@ const Header: React.FC = () => {
                           animate="animate"
                           className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
                         >
-                          {wishlistCount > 99 ? '99+' : wishlistCount}
+                          {wishlistCount > 99 ? "99+" : wishlistCount}
                         </motion.span>
                       )}
                     </motion.div>
@@ -388,7 +400,9 @@ const Header: React.FC = () => {
 
                             <div className="relative space-y-1">
                               <div className="px-3 py-2 border-b border-border/50">
-                                <p className="font-medium text-sm">{user.first_name} {user.last_name}</p>
+                                <p className="font-medium text-sm">
+                                  {user.first_name} {user.last_name}
+                                </p>
                                 <p className="text-xs text-muted-foreground">{user.email}</p>
                               </div>
 
@@ -404,8 +418,8 @@ const Header: React.FC = () => {
                                     transition: {
                                       delay: index * 0.05,
                                       type: "spring",
-                                      stiffness: 500
-                                    }
+                                      stiffness: 500,
+                                    },
                                   }}
                                   whileHover={{ x: 4 }}
                                 >
@@ -415,7 +429,9 @@ const Header: React.FC = () => {
                                   >
                                     {item.icon}
                                   </motion.div>
-                                  <span className="group-hover:text-white transition-colors">{item.name}</span>
+                                  <span className="group-hover:text-white transition-colors">
+                                    {item.name}
+                                  </span>
                                 </motion.div>
                               ))}
                             </div>
@@ -432,7 +448,7 @@ const Header: React.FC = () => {
                       whileHover="hover"
                       whileTap="tap"
                       className="relative p-2 rounded-full hover:bg-accent cursor-pointer group"
-                      onClick={() => navigate('/wishlist')}
+                      onClick={() => navigate("/wishlist")}
                     >
                       <Heart className="w-5 h-5 text-foreground/80 group-hover:text-white transition-colors" />
                       {wishlistCount > 0 && (
@@ -442,7 +458,7 @@ const Header: React.FC = () => {
                           animate="animate"
                           className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5"
                         >
-                          {wishlistCount > 99 ? '99+' : wishlistCount}
+                          {wishlistCount > 99 ? "99+" : wishlistCount}
                         </motion.span>
                       )}
                     </motion.div>
@@ -454,12 +470,12 @@ const Header: React.FC = () => {
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                className="lg:hidden"
+                className="lg:hidden relative z-[200]"
               >
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="p-2 rounded-full"
+                  className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md"
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 >
                   <AnimatePresence mode="wait">
@@ -471,7 +487,7 @@ const Header: React.FC = () => {
                         exit={{ rotate: 90, opacity: 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <X className="w-5 h-5" />
+                        <X className="w-5 h-5 text-gray-700" />
                       </motion.div>
                     ) : (
                       <motion.div
@@ -481,7 +497,7 @@ const Header: React.FC = () => {
                         exit={{ rotate: -90, opacity: 0 }}
                         transition={{ duration: 0.2 }}
                       >
-                        <Menu className="w-5 h-5" />
+                        <Menu className="w-5 h-5 text-gray-700" />
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -505,11 +521,11 @@ const Header: React.FC = () => {
 
                 {/* Sidebar */}
                 <motion.div
-                  initial={{ x: '100%' }}
+                  initial={{ x: "100%" }}
                   animate={{ x: 0 }}
-                  exit={{ x: '100%' }}
-                  transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                  className="fixed top-0 right-0 w-80 h-full bg-background border-l border-border/50 shadow-2xl z-50 lg:hidden overflow-y-auto"
+                  exit={{ x: "100%" }}
+                  transition={{ type: "spring", damping: 30, stiffness: 300 }}
+                  className="fixed top-0 right-0 w-80 h-full bg-background border-l border-border/50 shadow-2xl z-[200] lg:hidden overflow-y-auto"
                   style={{ originX: 1 }}
                 >
                   <div className="flex flex-col h-full p-6 space-y-8">
@@ -524,11 +540,7 @@ const Header: React.FC = () => {
                         <span className="text-xl font-bold font-heading bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
                           PhoeniX Mall
                         </span>
-                        <img
-                          src="/phoenix-logo.svg"
-                          alt="Phoenix Mall Logo"
-                          className="w-8 h-8"
-                        />
+                        <img src="/phoenix-logo.svg" alt="Phoenix Mall Logo" className="w-8 h-8" />
                       </motion.div>
 
                       <motion.button
@@ -552,10 +564,11 @@ const Header: React.FC = () => {
                             navigate(item.path);
                             setIsMobileMenuOpen(false);
                           }}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium ${isActive(item.path)
-                            ? 'bg-primary/10 text-primary'
-                            : 'hover:bg-accent text-foreground/80'
-                            }`}
+                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium ${
+                            isActive(item.path)
+                              ? "bg-primary/10 text-primary"
+                              : "hover:bg-accent text-foreground/80"
+                          }`}
                         >
                           {item.icon}
                           <span>{item.name}</span>
@@ -570,7 +583,7 @@ const Header: React.FC = () => {
                           whileHover={{ scale: 1.02 }}
                           whileTap={{ scale: 0.98 }}
                           onClick={() => {
-                            navigate('/sell');
+                            navigate("/sell");
                             setIsMobileMenuOpen(false);
                           }}
                           className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium"
@@ -587,7 +600,7 @@ const Header: React.FC = () => {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            navigate('/login');
+                            navigate("/login");
                             setIsMobileMenuOpen(false);
                           }}
                           className="w-full"
@@ -597,7 +610,7 @@ const Header: React.FC = () => {
                         </Button>
                         <Button
                           onClick={() => {
-                            navigate('/register');
+                            navigate("/register");
                             setIsMobileMenuOpen(false);
                           }}
                           className="w-full bg-gradient-to-r from-primary to-purple-600"
@@ -612,7 +625,9 @@ const Header: React.FC = () => {
                     {user && (
                       <div className="pt-4 border-t border-border/50">
                         <div className="px-3 py-2">
-                          <p className="font-medium text-sm">{user.first_name} {user.last_name}</p>
+                          <p className="font-medium text-sm">
+                            {user.first_name} {user.last_name}
+                          </p>
                           <p className="text-xs text-muted-foreground">{user.email}</p>
                         </div>
                         <div className="flex flex-col space-y-2 mt-3">
@@ -637,18 +652,6 @@ const Header: React.FC = () => {
               </>
             )}
           </AnimatePresence>
-
-          {/* Mobile Search */}
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{
-              opacity: isScrolled ? 1 : 0,
-              height: isScrolled ? 'auto' : 0
-            }}
-            className="md:hidden mt-3 overflow-hidden"
-          >
-            <SearchBar placeholder="Search products..." className="w-full" />
-          </motion.div>
         </div>
       </motion.header>
     </>

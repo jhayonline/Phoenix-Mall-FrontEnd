@@ -10,7 +10,7 @@ import Register from "./pages/Register";
 import NotFound from "./pages/NotFound";
 import ShopPage from "./pages/ShopPage";
 import DetailPage from "./pages/DetailPage";
-import Messages from "./pages/Messaging";
+import Messages from "./pages/Messages";
 import Notifications from "./pages/Notifications";
 import Contact from "./pages/Contact";
 import Profile from "./pages/Profile";
