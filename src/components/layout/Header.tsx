@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from "react";
-import { AnimatePresence } from "framer-motion";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Heart,
   User,
@@ -17,6 +16,8 @@ import {
   Mail,
   Plus,
   Package,
+  HelpCircle,
+  Settings,
 } from "lucide-react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -34,6 +35,10 @@ const Header: React.FC = () => {
   const location = useLocation();
 
   const { user, logout } = useAuth();
+
+  // Refs for profile menu
+  const profileMenuRef = useRef<HTMLDivElement>(null);
+  const profileButtonRef = useRef<HTMLButtonElement>(null);
 
   // Load wishlist count
   useEffect(() => {
@@ -62,7 +67,7 @@ const Header: React.FC = () => {
     return () => window.removeEventListener("wishlistUpdated", handleWishlistUpdate);
   }, [user]);
 
-  // Load unread message count for messaging icon
+  // Load unread message count
   useEffect(() => {
     const loadUnreadCount = async () => {
       if (!user) {
@@ -126,11 +131,40 @@ const Header: React.FC = () => {
     };
   }, [user]);
 
+  // Handle click outside for profile menu
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        profileMenuRef.current &&
+        !profileMenuRef.current.contains(event.target as Node) &&
+        profileButtonRef.current &&
+        !profileButtonRef.current.contains(event.target as Node)
+      ) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [isMobileMenuOpen]);
 
   const navigationItems = [
     { name: "Home", path: "/", icon: <Home className="w-4 h-4" /> },
@@ -158,12 +192,27 @@ const Header: React.FC = () => {
       icon: <Heart className="w-4 h-4" />,
       action: () => navigate("/wishlist"),
     },
+    {
+      name: "Messages",
+      icon: <MessageSquare className="w-4 h-4" />,
+      action: () => navigate("/messaging"),
+    },
+    {
+      name: "Settings",
+      icon: <Settings className="w-4 h-4" />,
+      action: () => navigate("/settings"),
+    },
+    {
+      name: "Help Center",
+      icon: <HelpCircle className="w-4 h-4" />,
+      action: () => navigate("/help"),
+    },
     { name: "Logout", icon: <LogOut className="w-4 h-4" />, action: () => logout() },
   ];
 
   // Add admin items conditionally
   if (user?.role === "admin") {
-    profileMenuItems.push({
+    profileMenuItems.unshift({
       name: "Manage Categories",
       icon: <Grid className="w-4 h-4" />,
       action: () => navigate("/admin/categories"),
@@ -173,97 +222,89 @@ const Header: React.FC = () => {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-300 ${
-          isScrolled ? "glass shadow-medium backdrop-blur-lg bg-background/80" : "bg-transparent"
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? "bg-background/95 backdrop-blur-md shadow-md border-b border-border/50"
+            : "bg-background/80 backdrop-blur-sm"
         }`}
       >
         <div className="container mx-auto px-4 py-3">
           <div className="flex items-center justify-between lg:gap-8">
             {/* Logo */}
             <div
-              className="flex items-center space-x-2 cursor-pointer"
+              className="flex items-center space-x-2 cursor-pointer group"
               onClick={() => navigate("/")}
             >
-              <span className="text-xl font-bold font-heading text-[#FF0000]">PhoeniX</span>
-              <img src="/phoenix-logo.svg" alt="Phoenix Mall Logo" className="w-7 h-7" />
+              <img src="/phoenix-logo.svg" alt="Phoenix Mall Logo" className="w-8 h-8" />
+              <span className="text-xl font-bold font-heading" style={{ color: "#FF0000" }}>
+                PhoeniX
+              </span>
             </div>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center space-x-6">
+            <nav className="hidden lg:flex items-center space-x-1">
               {navigationItems.map((item) => (
-                <div key={item.name} className="relative">
-                  <a
-                    href={item.path}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-colors ${
-                      isActive(item.path)
-                        ? "bg-primary/10 text-primary font-medium"
-                        : "text-foreground/80 hover:text-foreground hover:bg-accent"
-                    }`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate(item.path);
-                    }}
-                  >
-                    {item.icon}
-                    <span>{item.name}</span>
-                  </a>
-                </div>
+                <button
+                  key={item.name}
+                  onClick={() => navigate(item.path)}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg transition-colors ${
+                    isActive(item.path)
+                      ? "bg-primary/10 text-primary font-medium"
+                      : "text-foreground/70 hover:text-foreground hover:bg-accent"
+                  }`}
+                >
+                  {item.icon}
+                  <span>{item.name}</span>
+                </button>
               ))}
             </nav>
 
             {/* Action Buttons */}
-            <div className="flex items-center space-x-3">
-              {/* Auth Buttons (only on Home) */}
-              {isHome && (
+            <div className="flex items-center space-x-2">
+              {/* Auth Buttons */}
+              {isHome && !user && (
                 <div className="hidden md:flex items-center space-x-2">
-                  {user ? (
-                    <div className="flex items-center space-x-2">
-                      <span className="text-sm text-foreground">Welcome, {user.first_name}</span>
-                    </div>
-                  ) : (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => navigate("/login")}
-                        className="flex items-center space-x-1.5 rounded-full px-4"
-                      >
-                        <LogIn className="w-4 h-4" />
-                        <span>Login</span>
-                      </Button>
-                      <Button
-                        size="sm"
-                        onClick={() => navigate("/register")}
-                        className="flex items-center space-x-1.5 rounded-full px-4 bg-gradient-to-r from-primary to-purple-600"
-                      >
-                        <UserPlus className="w-4 h-4" />
-                        <span>Sign Up</span>
-                      </Button>
-                    </>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => navigate("/login")}
+                    className="rounded-full"
+                  >
+                    <LogIn className="w-4 h-4 mr-1" />
+                    Login
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate("/register")}
+                    className="rounded-full bg-[#FF0000] hover:bg-[#CC0000] text-white"
+                  >
+                    <UserPlus className="w-4 h-4 mr-1" />
+                    Sign Up
+                  </Button>
                 </div>
               )}
 
               {/* Icons Row */}
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-1">
                 {user ? (
                   <>
-                    {/* SELL BUTTON */}
+                    {/* Sell Button */}
                     <button
-                      className="relative p-2 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white shadow-md hover:shadow-lg transition-all cursor-pointer hidden md:block"
+                      className="hidden md:flex items-center gap-1.5 px-4 py-2 rounded-full bg-gradient-to-r from-red-500 to-red-600 text-white text-sm font-medium hover:shadow-lg transition-all"
                       onClick={() => navigate("/sell")}
                     >
-                      <Plus className="w-5 h-5" />
+                      <Plus className="w-4 h-4" />
+                      <span>Sell</span>
                     </button>
 
                     {/* Messaging */}
                     <button
-                      className="relative p-2 rounded-full transition-all duration-200 cursor-pointer hover:bg-accent hidden md:block"
-                      onClick={() => navigate("/messaging", { state: { from: location.pathname } })}
+                      className="relative p-2 rounded-full hover:bg-accent transition-colors"
+                      onClick={() => navigate("/messaging")}
                     >
-                      <MessageSquare className="w-5 h-5 text-foreground/80" />
+                      <MessageSquare className="w-5 h-5 text-foreground/70" />
                       {unreadMessageCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5">
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-1">
                           {unreadMessageCount > 99 ? "99+" : unreadMessageCount}
                         </span>
                       )}
@@ -271,12 +312,12 @@ const Header: React.FC = () => {
 
                     {/* Notifications */}
                     <button
-                      className="relative p-2 rounded-full transition-all duration-200 cursor-pointer hover:bg-accent hidden md:block"
+                      className="relative p-2 rounded-full hover:bg-accent transition-colors"
                       onClick={() => navigate("/notifications")}
                     >
-                      <Bell className="w-5 h-5 text-foreground/80" />
+                      <Bell className="w-5 h-5 text-foreground/70" />
                       {unreadNotificationCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5">
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-1">
                           {unreadNotificationCount > 99 ? "99+" : unreadNotificationCount}
                         </span>
                       )}
@@ -284,50 +325,52 @@ const Header: React.FC = () => {
 
                     {/* Wishlist */}
                     <button
-                      className="relative p-2 rounded-full hover:bg-accent cursor-pointer"
+                      className="relative p-2 rounded-full hover:bg-accent transition-colors"
                       onClick={() => navigate("/wishlist")}
                     >
-                      <Heart className="w-5 h-5 text-foreground/80" />
+                      <Heart className="w-5 h-5 text-foreground/70" />
                       {wishlistCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5">
+                        <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-1">
                           {wishlistCount > 99 ? "99+" : wishlistCount}
                         </span>
                       )}
                     </button>
 
                     {/* User Dropdown */}
-                    <div
-                      className="relative"
-                      onMouseEnter={() => setIsProfileMenuOpen(true)}
-                      onMouseLeave={() => setIsProfileMenuOpen(false)}
-                    >
-                      <button className="p-2 rounded-full hover:bg-accent cursor-pointer">
-                        <User className="w-5 h-5 text-foreground/80" />
+                    <div className="relative">
+                      <button
+                        ref={profileButtonRef}
+                        className="p-2 rounded-full hover:bg-accent transition-colors cursor-pointer"
+                        onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                        aria-label="User menu"
+                      >
+                        <User className="w-5 h-5 text-foreground/70" />
                       </button>
 
                       {isProfileMenuOpen && (
-                        <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-xl shadow-xl p-2 z-50 overflow-hidden">
-                          <div className="relative space-y-1">
-                            <div className="px-3 py-2 border-b border-border/50">
-                              <p className="font-medium text-sm">
-                                {user.first_name} {user.last_name}
-                              </p>
-                              <p className="text-xs text-muted-foreground">{user.email}</p>
-                            </div>
-
+                        <div
+                          ref={profileMenuRef}
+                          className="absolute right-0 mt-2 w-64 bg-card border border-border rounded-xl shadow-xl py-2 z-50"
+                        >
+                          <div className="px-4 py-3 border-b border-border/50">
+                            <p className="font-semibold text-sm">
+                              {user?.first_name} {user?.last_name}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{user?.email}</p>
+                          </div>
+                          <div className="py-1 max-h-[70vh] overflow-y-auto">
                             {profileMenuItems.map((item) => (
-                              <div
+                              <button
                                 key={item.name}
-                                className="flex items-center gap-3 px-3 py-2.5 hover:bg-accent cursor-pointer rounded-md text-sm group"
-                                onClick={item.action}
+                                onClick={() => {
+                                  item.action();
+                                  setIsProfileMenuOpen(false);
+                                }}
+                                className="w-full flex items-center gap-3 px-4 py-2.5 text-sm hover:bg-accent transition-colors text-left"
                               >
-                                <div className="text-foreground/80 group-hover:text-white transition-colors">
-                                  {item.icon}
-                                </div>
-                                <span className="group-hover:text-white transition-colors">
-                                  {item.name}
-                                </span>
-                              </div>
+                                <span className="text-muted-foreground">{item.icon}</span>
+                                <span>{item.name}</span>
+                              </button>
                             ))}
                           </div>
                         </div>
@@ -335,159 +378,185 @@ const Header: React.FC = () => {
                     </div>
                   </>
                 ) : (
-                  // Show only wishlist for non-logged in users on non-home pages
+                  // Show wishlist for non-logged in users
                   !isHome && (
                     <button
-                      className="relative p-2 rounded-full hover:bg-accent cursor-pointer"
+                      className="relative p-2 rounded-full hover:bg-accent transition-colors"
                       onClick={() => navigate("/wishlist")}
                     >
-                      <Heart className="w-5 h-5 text-foreground/80" />
+                      <Heart className="w-5 h-5 text-foreground/70" />
                       {wishlistCount > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-primary text-white text-xs rounded-full min-w-[18px] h-5 flex items-center justify-center font-medium px-1.5">
+                        <span className="absolute -top-1 -right-1 bg-primary text-white text-[10px] font-bold rounded-full min-w-[18px] h-4 flex items-center justify-center px-1">
                           {wishlistCount > 99 ? "99+" : wishlistCount}
                         </span>
                       )}
                     </button>
                   )
                 )}
-              </div>
 
-              {/* Mobile Menu Toggle */}
-              <div className="lg:hidden relative z-[200]">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-2 rounded-full bg-white/80 backdrop-blur-sm shadow-md"
+                {/* Mobile Menu Toggle */}
+                <button
+                  className="lg:hidden p-2 rounded-lg hover:bg-accent transition-colors"
                   onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 >
-                  {isMobileMenuOpen ? (
-                    <X className="w-5 h-5 text-gray-700" />
-                  ) : (
-                    <Menu className="w-5 h-5 text-gray-700" />
-                  )}
-                </Button>
+                  {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+                </button>
               </div>
             </div>
           </div>
+        </div>
+      </header>
 
-          {/* Mobile Menu Panel */}
-          <AnimatePresence>
-            {isMobileMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40 lg:hidden"
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+          <div className="fixed top-0 right-0 w-full max-w-sm h-full bg-background z-50 lg:hidden shadow-2xl overflow-y-auto">
+            <div className="flex flex-col h-full">
+              {/* Mobile Menu Header */}
+              <div className="flex items-center justify-between p-4 border-b border-border">
+                <div className="flex items-center space-x-2">
+                  <img src="/phoenix-logo.svg" alt="Phoenix Mall Logo" className="w-8 h-8" />
+                  <span className="text-xl font-bold" style={{ color: "#FF0000" }}>
+                    PhoeniX
+                  </span>
+                </div>
+                <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                />
-                <div className="fixed top-0 right-0 w-80 h-full bg-background border-l border-border/50 shadow-2xl z-[200] lg:hidden overflow-y-auto transition-transform duration-300 ease-in-out transform translate-x-0">
-                  <div className="flex flex-col h-full p-6 space-y-8">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xl font-bold font-heading bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
-                          PhoeniX Mall
-                        </span>
-                        <img src="/phoenix-logo.svg" alt="Phoenix Mall Logo" className="w-8 h-8" />
-                      </div>
+                  className="p-2 rounded-lg hover:bg-accent transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* User Section for Mobile */}
+              {user && (
+                <div className="p-4 border-b border-border bg-muted/20">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-6 h-6 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">
+                        {user.first_name} {user.last_name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Mobile Navigation */}
+              <div className="flex-1 py-4">
+                <div className="px-4 space-y-1">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
+                    Menu
+                  </p>
+                  {navigationItems.map((item) => (
+                    <button
+                      key={item.name}
+                      onClick={() => {
+                        navigate(item.path);
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left transition-colors ${
+                        isActive(item.path)
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "hover:bg-accent"
+                      }`}
+                    >
+                      {item.icon}
+                      <span>{item.name}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {user && (
+                  <>
+                    {/* Sell Button Mobile */}
+                    <div className="px-4 mt-4">
                       <button
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className="p-2 rounded-full hover:bg-accent"
+                        onClick={() => {
+                          navigate("/sell");
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-medium"
                       >
-                        <X className="w-5 h-5" />
+                        <Plus className="w-5 h-5" />
+                        <span>Sell an Item</span>
                       </button>
                     </div>
 
-                    <div className="flex flex-col space-y-3">
-                      {navigationItems.map((item) => (
+                    {/* Mobile Menu Items */}
+                    <div className="px-4 mt-6 space-y-1">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">
+                        Account
+                      </p>
+                      {profileMenuItems.map((item) => (
                         <button
                           key={item.name}
                           onClick={() => {
-                            navigate(item.path);
+                            item.action();
                             setIsMobileMenuOpen(false);
                           }}
-                          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-left text-sm font-medium ${
-                            isActive(item.path)
-                              ? "bg-primary/10 text-primary"
-                              : "hover:bg-accent text-foreground/80"
-                          }`}
+                          className="w-full flex items-center gap-3 px-3 py-3 rounded-lg text-left hover:bg-accent transition-colors"
                         >
                           {item.icon}
                           <span>{item.name}</span>
                         </button>
                       ))}
                     </div>
+                  </>
+                )}
 
-                    {user && (
-                      <div className="pt-4 border-t border-border/50">
-                        <button
-                          onClick={() => {
-                            navigate("/sell");
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-medium"
-                        >
-                          <Plus className="w-5 h-5" />
-                          <span>Sell an Item</span>
-                        </button>
-                      </div>
-                    )}
-
-                    {!user && (
-                      <div className="flex flex-col space-y-3 pt-4 border-t border-border/50">
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            navigate("/login");
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="w-full"
-                        >
-                          <LogIn className="w-4 h-4 mr-2" />
-                          Login
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            navigate("/register");
-                            setIsMobileMenuOpen(false);
-                          }}
-                          className="w-full bg-gradient-to-r from-primary to-purple-600"
-                        >
-                          <UserPlus className="w-4 h-4 mr-2" />
-                          Sign Up
-                        </Button>
-                      </div>
-                    )}
-
-                    {user && (
-                      <div className="pt-4 border-t border-border/50">
-                        <div className="px-3 py-2">
-                          <p className="font-medium text-sm">
-                            {user.first_name} {user.last_name}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{user.email}</p>
-                        </div>
-                        <div className="flex flex-col space-y-2 mt-3">
-                          {profileMenuItems.map((item) => (
-                            <button
-                              key={item.name}
-                              onClick={() => {
-                                item.action();
-                                setIsMobileMenuOpen(false);
-                              }}
-                              className="flex items-center gap-3 px-3 py-2 text-left text-sm hover:bg-accent rounded-md"
-                            >
-                              {item.icon}
-                              <span>{item.name}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
+                {!user && (
+                  <div className="px-4 mt-6 space-y-3">
+                    <button
+                      onClick={() => {
+                        navigate("/login");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-border rounded-xl hover:bg-accent transition-colors"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      <span>Login</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate("/register");
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-white font-medium"
+                      style={{ backgroundColor: "#FF0000" }}
+                    >
+                      <UserPlus className="w-4 h-4" />
+                      <span>Sign Up</span>
+                    </button>
                   </div>
+                )}
+              </div>
+
+              {/* Mobile Footer */}
+              <div className="p-4 border-t border-border">
+                <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground">
+                  <button onClick={() => navigate("/help")} className="hover:text-foreground">
+                    Help
+                  </button>
+                  <button onClick={() => navigate("/contact")} className="hover:text-foreground">
+                    Contact
+                  </button>
+                  <button onClick={() => navigate("/terms")} className="hover:text-foreground">
+                    Terms
+                  </button>
                 </div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
-      </header>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };

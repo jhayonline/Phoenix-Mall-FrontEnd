@@ -54,10 +54,6 @@ const NavButton: React.FC<{
           </span>
         )}
       </div>
-
-      {/* Active dot */}
-      {active && <div className="w-1 h-1 rounded-full bg-red-600 mt-0.5" />}
-      {!active && <div className="w-1 h-1 mt-0.5" />}
     </button>
   );
 };

@@ -7,11 +7,8 @@ import {
   Twitter,
   Instagram,
   Youtube,
-  HeadphonesIcon,
   ArrowUp,
   MessageCircle,
-  Heart,
-  Shield,
   Clock,
   Send,
   CheckCircle,
@@ -184,14 +181,6 @@ const Footer: React.FC = () => {
                   <span>Accra, Ghana</span>
                 </div>
               </div>
-
-              {/* Working Hours */}
-              <div className="pt-4">
-                <div className="flex items-center gap-2 text-sm text-red-200">
-                  <Clock className="w-4 h-4 flex-shrink-0" />
-                  <span>Support Available: 24/7</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -213,8 +202,8 @@ const Footer: React.FC = () => {
               </span>
               <span className="w-1 h-1 bg-white/30 rounded-full hidden sm:block" />
               <span className="flex items-center gap-1 text-red-200">
-                <Shield className="w-3 h-3" />
-                Safe Transactions
+                <Clock className="w-3 h-3" />
+                Support Available 24/7
               </span>
             </div>
           </div>

@@ -1,7 +1,7 @@
-import { backendRequest } from './client';
+import { backendRequest } from "./client";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5150/api';
-const API_BASE_URL_WITHOUT_API = API_BASE_URL.replace('/api', '');
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api";
+const API_BASE_URL_WITHOUT_API = API_BASE_URL.replace("/api", "");
 
 export interface ChatMessage {
   id: string;
@@ -26,18 +26,22 @@ export interface Conversation {
 // Helper to format avatar URL
 const formatAvatarUrl = (url: string | null): string | null => {
   if (!url) return null;
-  if (url.startsWith('http')) return url;
+  if (url.startsWith("http")) return url;
   return `${API_BASE_URL_WITHOUT_API}${url}`;
 };
 
 export const chatApi = {
-  async sendMessage(receiverId: number, message: string, productId?: string): Promise<{ success: boolean; data: ChatMessage }> {
-    const response = await backendRequest<ChatMessage>('/chat/send', {
-      method: 'POST',
+  async sendMessage(
+    receiverId: number,
+    message: string,
+    productId?: string,
+  ): Promise<{ success: boolean; data: ChatMessage }> {
+    const response = await backendRequest<ChatMessage>("/chat/send", {
+      method: "POST",
       body: JSON.stringify({
         receiver_id: receiverId,
         message,
-        product_id: productId || null
+        product_id: productId || null,
       }),
     });
     return {
@@ -47,8 +51,8 @@ export const chatApi = {
   },
 
   async getConversations(): Promise<{ success: boolean; data: Conversation[] }> {
-    const response = await backendRequest<Conversation[]>('/chat/conversations');
-    const formattedData = response.data.map(conv => ({
+    const response = await backendRequest<Conversation[]>("/chat/conversations");
+    const formattedData = response.data.map((conv) => ({
       ...conv,
       other_user_avatar: formatAvatarUrl(conv.other_user_avatar),
     }));
@@ -68,7 +72,7 @@ export const chatApi = {
 
   // Add method to get total unread count across all conversations
   async getTotalUnreadCount(): Promise<{ success: boolean; data: { total: number } }> {
-    const response = await backendRequest<{ total: number }>('/chat/unread-count');
+    const response = await backendRequest<{ total: number }>("/chat/unread-count");
     return {
       success: true,
       data: response.data,

@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   TrendingUp,
   Shield,
@@ -12,21 +12,21 @@ import {
   ChevronRight,
   ArrowRight,
   Search,
-} from 'lucide-react';
+} from "lucide-react";
 
-import Header from '@/components/layout/Header';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import HeroSection from '@/components/sections/HeroSection';
-import CategoriesSection from '@/components/sections/CategoriesSection';
-import ProductGrid from '@/components/sections/ProductGrid';
-import Footer from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useIsMobile } from '@/hooks/use-mobile';
-import { cn } from '@/lib/utils';
-import { productsApi, imagesApi } from '@/lib/api';
-import type { ProductResponseData } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
+import Header from "@/components/layout/Header";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import HeroSection from "@/components/sections/HeroSection";
+import CategoriesSection from "@/components/sections/CategoriesSection";
+import ProductGrid from "@/components/sections/ProductGrid";
+import Footer from "@/components/layout/Footer";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+import { productsApi, imagesApi } from "@/lib/api";
+import type { ProductResponseData } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -40,10 +40,10 @@ interface ProductWithDetails extends ProductResponseData {
 const HomePage: React.FC = () => {
   const [featuredProducts, setFeaturedProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isScrolled, setIsScrolled] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const isMobile = useIsMobile();
   const searchRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -54,8 +54,8 @@ const HomePage: React.FC = () => {
       setIsScrolled(window.scrollY > 50);
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Handle click outside search bar
@@ -66,8 +66,8 @@ const HomePage: React.FC = () => {
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   // Load featured products
@@ -78,7 +78,7 @@ const HomePage: React.FC = () => {
   const loadFeaturedProducts = async () => {
     setLoading(true);
     try {
-      const response = await productsApi.getProducts({ limit: 8, sort: 'newest' });
+      const response = await productsApi.getProducts({ limit: 8, sort: "newest" });
 
       if (response.success && response.data) {
         const productsWithDetails = await Promise.all(
@@ -88,11 +88,11 @@ const HomePage: React.FC = () => {
             try {
               const imagesResponse = await imagesApi.getImages(product.pid);
               if (imagesResponse.success && imagesResponse.data.length > 0) {
-                const primaryImg = imagesResponse.data.find(img => img.is_primary);
+                const primaryImg = imagesResponse.data.find((img) => img.is_primary);
                 primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
               }
             } catch (error) {
-              console.error('Failed to load images for product:', product.pid);
+              console.error("Failed to load images for product:", product.pid);
             }
 
             return {
@@ -101,7 +101,7 @@ const HomePage: React.FC = () => {
               rating: 4.5,
               reviews: Math.floor(Math.random() * 200),
             };
-          })
+          }),
         );
 
         setFeaturedProducts(productsWithDetails);
@@ -110,7 +110,7 @@ const HomePage: React.FC = () => {
         setFeaturedProducts([]);
       }
     } catch (error) {
-      console.error('Failed to load featured products:', error);
+      console.error("Failed to load featured products:", error);
       setFeaturedProducts([]);
       toast({
         title: "Error",
@@ -124,66 +124,102 @@ const HomePage: React.FC = () => {
 
   // Featured categories for quick navigation
   const featuredCategories = [
-    { id: 'electronics', name: 'Electronics', icon: TrendingUp, count: 145 },
-    { id: 'fashion', name: 'Fashion', icon: Sparkles, count: 289 },
-    { id: 'home-living', name: 'Home & Living', icon: Award, count: 167 },
-    { id: 'phones', name: 'Phones', icon: Star, count: 98 },
-    { id: 'vehicles', name: 'Vehicles', icon: TrendingUp, count: 134 },
-    { id: 'okada-spares', name: 'Okada Spares', icon: Clock, count: 76 },
+    { id: "electronics", name: "Electronics", icon: TrendingUp, count: 145 },
+    { id: "fashion", name: "Fashion", icon: Sparkles, count: 289 },
+    { id: "home-living", name: "Home & Living", icon: Award, count: 167 },
+    { id: "phones", name: "Phones", icon: Star, count: 98 },
+    { id: "vehicles", name: "Vehicles", icon: TrendingUp, count: 134 },
+    { id: "okada-spares", name: "Okada Spares", icon: Clock, count: 76 },
   ];
 
   // Trust badges
   const trustBadges = [
-    { icon: Shield, title: 'Secure Payments', description: '100% secure payment processing' },
-    { icon: Truck, title: 'Free Shipping', description: 'Free delivery on orders over GHS 500' },
-    { icon: HeadphonesIcon, title: '24/7 Support', description: 'Round-the-clock customer service' },
-    { icon: Award, title: 'Quality Guarantee', description: '30-day money-back guarantee' },
+    { icon: Shield, title: "Secure Payments", description: "100% secure payment processing" },
+    { icon: Truck, title: "Free Shipping", description: "Free delivery on orders over GHS 500" },
+    {
+      icon: HeadphonesIcon,
+      title: "24/7 Support",
+      description: "Round-the-clock customer service",
+    },
+    { icon: Award, title: "Quality Guarantee", description: "30-day money-back guarantee" },
   ];
 
   // Featured brands
   const featuredBrands = [
-    { name: 'Apple', logo: 'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png', products: 67 },
-    { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 54 },
-    { name: 'iPhone', logo: 'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png', products: 45 },
-    { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 32 },
-    { name: 'Tecno', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 28 },
-    { name: 'Infinix', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 24 },
+    {
+      name: "Apple",
+      logo: "https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png",
+      products: 67,
+    },
+    {
+      name: "Samsung",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png",
+      products: 54,
+    },
+    {
+      name: "iPhone",
+      logo: "https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png",
+      products: 45,
+    },
+    {
+      name: "Samsung",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png",
+      products: 32,
+    },
+    {
+      name: "Tecno",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png",
+      products: 28,
+    },
+    {
+      name: "Infinix",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png",
+      products: 24,
+    },
   ];
 
   // Testimonials
   const testimonials = [
     {
       id: 1,
-      name: 'Sarah Johnson',
-      role: 'Fashion Enthusiast',
-      content: 'The quality of products here is exceptional. I\'ve been shopping for months and every purchase has exceeded my expectations.',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-      rating: 5
+      name: "Sarah Johnson",
+      role: "Fashion Enthusiast",
+      content:
+        "The quality of products here is exceptional. I've been shopping for months and every purchase has exceeded my expectations.",
+      avatar:
+        "https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face",
+      rating: 5,
     },
     {
       id: 2,
-      name: 'Michael Chen',
-      role: 'Tech Reviewer',
-      content: 'As someone who reviews tech products professionally, I can confidently say the electronics here are top-notch and fairly priced.',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      rating: 5
+      name: "Michael Chen",
+      role: "Tech Reviewer",
+      content:
+        "As someone who reviews tech products professionally, I can confidently say the electronics here are top-notch and fairly priced.",
+      avatar:
+        "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face",
+      rating: 5,
     },
     {
       id: 3,
-      name: 'Emily Rodriguez',
-      role: 'Interior Designer',
-      content: 'The home decor selection is curated beautifully. I always find unique pieces that my clients love.',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      rating: 4
+      name: "Emily Rodriguez",
+      role: "Interior Designer",
+      content:
+        "The home decor selection is curated beautifully. I always find unique pieces that my clients love.",
+      avatar:
+        "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face",
+      rating: 4,
     },
     {
       id: 4,
-      name: 'David Kim',
-      role: 'Fitness Coach',
-      content: 'The sports equipment I purchased has held up perfectly through months of heavy use. Great durability!',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      rating: 5
-    }
+      name: "David Kim",
+      role: "Fitness Coach",
+      content:
+        "The sports equipment I purchased has held up perfectly through months of heavy use. Great durability!",
+      avatar:
+        "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
+      rating: 5,
+    },
   ];
 
   // Render star ratings
@@ -193,7 +229,7 @@ const HomePage: React.FC = () => {
         key={i}
         className={cn(
           "w-4 h-4",
-          i < rating ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground"
+          i < rating ? "text-yellow-400 fill-yellow-400" : "text-muted-foreground",
         )}
       />
     ));
@@ -254,7 +290,9 @@ const HomePage: React.FC = () => {
                         <Icon className="w-6 h-6 md:w-8 md:h-8 text-primary" />
                       </div>
                     </div>
-                    <h3 className="font-semibold text-foreground mb-1 md:mb-2 text-sm md:text-base">{badge.title}</h3>
+                    <h3 className="font-semibold text-foreground mb-1 md:mb-2 text-sm md:text-base">
+                      {badge.title}
+                    </h3>
                     <p className="text-xs md:text-sm text-muted-foreground">{badge.description}</p>
                   </motion.div>
                 );
@@ -293,9 +331,9 @@ const HomePage: React.FC = () => {
                     transition={{ duration: 0.5, delay: index * 0.1 }}
                     whileHover={{ y: -5, scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => window.location.href = `/shop?category=${category.id}`}
+                    onClick={() => (window.location.href = `/shop?category=${category.id}`)}
                     className={cn(
-                      "p-3 md:p-4 rounded-xl text-center transition-all duration-300 flex flex-col items-center bg-card text-foreground shadow-soft hover:shadow-medium"
+                      "p-3 md:p-4 rounded-xl text-center transition-all duration-300 flex flex-col items-center bg-card text-foreground shadow-soft hover:shadow-medium",
                     )}
                   >
                     <div className="flex justify-center mb-2 md:mb-3">
@@ -338,7 +376,7 @@ const HomePage: React.FC = () => {
             <ProductGrid
               products={featuredProducts}
               viewMode="3"
-              onViewModeChange={() => { }}
+              onViewModeChange={() => {}}
               loading={loading}
             />
           </div>
@@ -375,7 +413,9 @@ const HomePage: React.FC = () => {
                   <div className="flex items-center gap-2 mb-4">
                     {renderStars(testimonial.rating)}
                   </div>
-                  <p className="text-sm text-muted-foreground mb-4 italic">"{testimonial.content}"</p>
+                  <p className="text-sm text-muted-foreground mb-4 italic">
+                    "{testimonial.content}"
+                  </p>
                   <div className="flex items-center gap-3">
                     <img
                       src={testimonial.avatar}
@@ -464,8 +504,8 @@ const HomePage: React.FC = () => {
                   Stay <span className="text-gradient">Updated</span>
                 </h2>
                 <p className="text-sm md:text-base text-muted-foreground mb-6 md:mb-8">
-                  Subscribe to our newsletter and be the first to know about new products,
-                  exclusive deals, and special promotions
+                  Subscribe to our newsletter and be the first to know about new products, exclusive
+                  deals, and special promotions
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
@@ -481,8 +521,8 @@ const HomePage: React.FC = () => {
                 </div>
 
                 <p className="text-xs text-muted-foreground mt-4">
-                  By subscribing, you agree to our Privacy Policy and consent to receive
-                  updates from our company.
+                  By subscribing, you agree to our Privacy Policy and consent to receive updates
+                  from our company.
                 </p>
               </motion.div>
             </div>

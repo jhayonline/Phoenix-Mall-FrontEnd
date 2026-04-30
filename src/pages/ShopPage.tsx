@@ -6,6 +6,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronRight as ChevronRightIcon,
+  RotateCcw,
 } from "lucide-react";
 import Header from "@/components/layout/Header";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
@@ -16,6 +17,7 @@ import { productsApi, categoriesApi, imagesApi } from "@/lib/api";
 import type { ProductResponseData, CategoryResponseData } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import SearchBar from "@/components/SearchBar";
+import SpecFilters from "@/components/SpecFilters";
 import { useSearchParams } from "react-router-dom";
 import { iconMap } from "@/lib/iconMap";
 import { Package } from "lucide-react";
@@ -40,15 +42,20 @@ interface CategoryWithSubs extends CategoryResponseData {
   subcategories?: CategoryResponseData[];
   deeperSubs?: CategoryResponseData[];
   icon?: React.ReactNode;
+  productCount?: number;
 }
 
 const ShopPage = () => {
   const [products, setProducts] = useState<ProductWithDetails[]>([]);
   const [allCategories, setAllCategories] = useState<CategoryResponseData[]>([]);
   const [categoriesWithSubs, setCategoriesWithSubs] = useState<CategoryWithSubs[]>([]);
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  const [priceRange, setPriceRange] = useState([0, 10000]);
+  const [minPrice, setMinPrice] = useState<number>(0);
+  const [maxPrice, setMaxPrice] = useState<number>(10000);
+  const [globalMinPrice, setGlobalMinPrice] = useState(0);
+  const [globalMaxPrice, setGlobalMaxPrice] = useState(10000);
   const [sortBy, setSortBy] = useState("default");
   const [viewMode, setViewMode] = useState("2");
   const [currentPage, setCurrentPage] = useState(1);
@@ -61,6 +68,7 @@ const ShopPage = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSort, setShowSort] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedSpecs, setSelectedSpecs] = useState<Record<string, string[]>>({});
   const [hoveredCategory, setHoveredCategory] = useState<CategoryWithSubs | null>(null);
   const [isHoveringSecondary, setIsHoveringSecondary] = useState(false);
   const hoverContainerRef = useRef<HTMLDivElement>(null);
@@ -69,7 +77,6 @@ const ShopPage = () => {
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Memoize API base URL to avoid recalculations
   const API_BASE_URL = useMemo(() => {
     const base = import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api";
     return base.replace("/api", "");
@@ -77,11 +84,12 @@ const ShopPage = () => {
 
   useEffect(() => {
     loadCategories();
+    loadCategoryCounts();
   }, []);
 
   useEffect(() => {
     loadProducts();
-  }, [selectedCategories, priceRange, sortBy, searchQuery, currentPage]);
+  }, [selectedCategories, minPrice, maxPrice, sortBy, searchQuery, currentPage, selectedSpecs]);
 
   useEffect(() => {
     const searchFromUrl = searchParams.get("search");
@@ -110,6 +118,18 @@ const ShopPage = () => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const loadCategoryCounts = async () => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api"}/categories/counts`,
+      );
+      const data = await response.json();
+      setCategoryCounts(data);
+    } catch (error) {
+      console.error("Failed to load category counts:", error);
+    }
+  };
+
   const loadCategories = async () => {
     try {
       const response = await categoriesApi.getAllCategories();
@@ -125,6 +145,7 @@ const ShopPage = () => {
               (sub) => sub.parent_id === cat.id && sub.level === 2,
             ),
             icon: <IconComponent className="w-5 h-5" />,
+            productCount: categoryCounts[cat.id] || 0,
           };
         });
         setCategoriesWithSubs(categoriesWithChildren);
@@ -139,7 +160,6 @@ const ShopPage = () => {
     }
   };
 
-  // Optimized product loading - load images in parallel but don't block rendering
   const loadProducts = async () => {
     setLoading(true);
     try {
@@ -171,11 +191,22 @@ const ShopPage = () => {
         }
       }
 
-      if (priceRange[0] > 0) {
-        params.min_price = priceRange[0];
+      if (minPrice > globalMinPrice) {
+        params.min_price = minPrice;
       }
-      if (priceRange[1] < 10000) {
-        params.max_price = priceRange[1];
+      if (maxPrice < globalMaxPrice) {
+        params.max_price = maxPrice;
+      }
+
+      // Add specification filters
+      const specFilters: string[] = [];
+      Object.entries(selectedSpecs).forEach(([specId, values]) => {
+        values.forEach((value) => {
+          specFilters.push(`${specId}:${value}`);
+        });
+      });
+      if (specFilters.length > 0) {
+        params.specs = specFilters.join(",");
       }
 
       const response = await productsApi.getProducts(params);
@@ -183,23 +214,31 @@ const ShopPage = () => {
       if (response.success && response.data) {
         if (response.pagination) {
           setPagination(response.pagination);
+          if (currentPage === 1 && response.data.length > 0) {
+            const prices = response.data.map((p) => p.price);
+            const minGlobalPrice = Math.min(...prices);
+            const maxGlobalPrice = Math.max(...prices);
+            setGlobalMinPrice(minGlobalPrice);
+            setGlobalMaxPrice(maxGlobalPrice);
+            if (minPrice === 0 && maxPrice === 10000) {
+              setMinPrice(minGlobalPrice);
+              setMaxPrice(maxGlobalPrice);
+            }
+          }
         }
 
-        // Set products first without images for faster display
         const productsWithoutImages = response.data.map((product) => ({
           ...product,
           primaryImage: undefined,
-          rating: 4.5,
-          reviews: Math.floor(Math.random() * 200),
+          rating: product.average_rating || 0,
+          reviews: product.total_reviews || 0,
         }));
         setProducts(productsWithoutImages);
 
-        // Load images in background
         const loadImages = async () => {
           const productsWithImages = await Promise.all(
-            response.data.map(async (product, index) => {
+            response.data.map(async (product) => {
               let primaryImage: string | undefined;
-
               try {
                 const imagesResponse = await imagesApi.getImages(product.pid);
                 if (imagesResponse.success && imagesResponse.data.length > 0) {
@@ -212,22 +251,20 @@ const ShopPage = () => {
                   }
                 }
               } catch (error) {
-                console.error("Failed to load images for product:", product.pid);
+                // silent fail
               }
-
               return {
                 ...product,
                 primaryImage:
                   primaryImage || "https://placehold.co/400x400/e2e8f0/94a3b8?text=No+Image",
-                rating: 4.5,
-                reviews: Math.floor(Math.random() * 200),
+                rating: product.average_rating || 0,
+                reviews: product.total_reviews || 0,
               };
             }),
           );
           setProducts(productsWithImages);
         };
-
-        loadImages(); // Don't await, let it load in background
+        loadImages();
       }
     } catch (error) {
       console.error("Failed to load products:", error);
@@ -245,6 +282,7 @@ const ShopPage = () => {
     setSelectedCategories([categoryName]);
     setCurrentPage(1);
     setSearchParams({ category: categoryName.toLowerCase() });
+    setSelectedSpecs({});
     setHoveredCategory(null);
     setIsHoveringSecondary(false);
   };
@@ -254,15 +292,34 @@ const ShopPage = () => {
     setCurrentPage(1);
     if (query) {
       setSearchParams({ search: query });
-    } else {
+    } else if (selectedCategories.length === 0) {
       setSearchParams({});
     }
+  };
+
+  const handleSpecChange = (specId: string, values: string[]) => {
+    setSelectedSpecs((prev) => ({
+      ...prev,
+      [specId]: values,
+    }));
+    setCurrentPage(1);
+  };
+
+  const clearAllFilters = () => {
+    setSelectedCategories([]);
+    setMinPrice(globalMinPrice);
+    setMaxPrice(globalMaxPrice);
+    setSelectedSpecs({});
+    setSearchQuery("");
+    setSortBy("default");
+    setCurrentPage(1);
+    setSearchParams({});
   };
 
   const goToPage = (page: number) => {
     if (page >= 1 && page <= pagination.total_pages) {
       setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: "auto" }); // Changed from "smooth" to "auto" for faster scrolling
+      window.scrollTo({ top: 0, behavior: "auto" });
     }
   };
 
@@ -302,11 +359,23 @@ const ShopPage = () => {
 
   const sortOptions = [
     { value: "default", label: "Default" },
+    { value: "newest", label: "Newest First" },
     { value: "price-low", label: "Price: Low to High" },
     { value: "price-high", label: "Price: High to Low" },
-    { value: "newest", label: "Newest First" },
     { value: "popular", label: "Most Popular" },
   ];
+
+  const hasActiveFilters =
+    selectedCategories.length > 0 ||
+    minPrice > globalMinPrice ||
+    maxPrice < globalMaxPrice ||
+    Object.keys(selectedSpecs).length > 0 ||
+    searchQuery;
+
+  const selectedCategoryObj =
+    selectedCategories.length > 0
+      ? categoriesWithSubs.find((c) => c.name === selectedCategories[0])
+      : null;
 
   if (loading && products.length === 0) {
     return (
@@ -393,15 +462,22 @@ const ShopPage = () => {
                           >
                             {category.icon}
                           </div>
-                          <span
-                            className={`text-sm font-medium ${
-                              selectedCategories.includes(category.name)
-                                ? "text-red-600"
-                                : "text-gray-700 group-hover:text-gray-900"
-                            }`}
-                          >
-                            {category.name}
-                          </span>
+                          <div className="text-left">
+                            <span
+                              className={`text-sm font-medium ${
+                                selectedCategories.includes(category.name)
+                                  ? "text-red-600"
+                                  : "text-gray-700 group-hover:text-gray-900"
+                              }`}
+                            >
+                              {category.name}
+                            </span>
+                            {category.productCount !== undefined && category.productCount > 0 && (
+                              <span className="text-xs text-gray-400 ml-1">
+                                ({category.productCount})
+                              </span>
+                            )}
+                          </div>
                         </div>
                         {category.subcategories && category.subcategories.length > 0 && (
                           <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-gray-500 transition-colors" />
@@ -411,34 +487,78 @@ const ShopPage = () => {
                   ))}
                 </div>
 
+                {/* Specification Filters */}
+                {selectedCategoryObj && (
+                  <div className="p-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-semibold text-gray-900 text-sm">Specifications</h4>
+                      {Object.keys(selectedSpecs).length > 0 && (
+                        <button
+                          onClick={() => setSelectedSpecs({})}
+                          className="text-xs text-red-500 hover:text-red-600"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <SpecFilters
+                      categoryId={selectedCategoryObj.id}
+                      selectedSpecs={selectedSpecs}
+                      onSpecChange={handleSpecChange}
+                    />
+                  </div>
+                )}
+
+                {/* Price Range */}
                 <div className="p-4 border-t border-gray-100 bg-gray-50">
                   <h4 className="font-semibold text-gray-900 mb-3 text-sm">Price Range</h4>
                   <div className="space-y-3">
                     <div className="flex gap-2">
-                      <input
-                        type="number"
-                        placeholder="Min"
-                        value={priceRange[0]}
-                        onChange={(e) =>
-                          setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])
-                        }
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                      />
-                      <input
-                        type="number"
-                        placeholder="Max"
-                        value={priceRange[1]}
-                        onChange={(e) =>
-                          setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])
-                        }
-                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
-                      />
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 mb-1 block">Min</label>
+                        <input
+                          type="number"
+                          value={minPrice}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setMinPrice(val);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 mb-1 block">Max</label>
+                        <input
+                          type="number"
+                          value={maxPrice}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setMaxPrice(val);
+                            setCurrentPage(1);
+                          }}
+                          className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                        />
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-500">
-                      {formatCurrency(priceRange[0])} - {formatCurrency(priceRange[1])}
+                    <p className="text-xs text-gray-500 text-center">
+                      {formatCurrency(minPrice)} - {formatCurrency(maxPrice)}
                     </p>
                   </div>
                 </div>
+
+                {/* Clear Filters */}
+                {hasActiveFilters && (
+                  <div className="p-3 border-t border-gray-100 bg-gray-50">
+                    <button
+                      onClick={clearAllFilters}
+                      className="w-full text-center text-xs text-red-500 hover:text-red-600 flex items-center justify-center gap-1"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Clear all filters
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -458,6 +578,7 @@ const ShopPage = () => {
                   <div className="py-2 max-h-[calc(100vh-200px)] overflow-y-auto">
                     {hoveredCategory.subcategories.map((sub) => {
                       const IconComponent = iconMap[sub.name] || Package;
+                      const subCount = categoryCounts[sub.id] || 0;
                       return (
                         <button
                           key={sub.id}
@@ -465,9 +586,14 @@ const ShopPage = () => {
                           className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors group text-left"
                         >
                           <IconComponent className="w-4 h-4 text-gray-400 group-hover:text-red-500 transition-colors" />
-                          <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                            {sub.name}
-                          </span>
+                          <div className="flex-1">
+                            <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                              {sub.name}
+                            </span>
+                            {subCount > 0 && (
+                              <span className="text-xs text-gray-400 ml-1">({subCount})</span>
+                            )}
+                          </div>
                         </button>
                       );
                     })}
@@ -557,7 +683,7 @@ const ShopPage = () => {
             />
             <div className="fixed left-0 top-0 bottom-0 w-80 bg-white z-50 lg:hidden flex flex-col">
               <div className="p-4 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
-                <h3 className="font-semibold text-lg">Categories</h3>
+                <h3 className="font-semibold text-lg">Filters</h3>
                 <button
                   onClick={() => setShowFilters(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg"
@@ -571,44 +697,100 @@ const ShopPage = () => {
                   placeholder="Search products..."
                   onSearch={handleSearch}
                   initialValue={searchQuery}
-                  className="mb-4"
                 />
-                {categoriesWithSubs.map((category) => (
-                  <div key={category.id}>
-                    <button
-                      onClick={() => {
-                        handleCategoryClick(category.name);
-                        setShowFilters(false);
-                      }}
-                      className={`w-full text-left py-2 flex items-center justify-between ${
-                        selectedCategories.includes(category.name)
-                          ? "text-red-600 font-medium"
-                          : "text-gray-700"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        {category.icon}
-                        <span>{category.name}</span>
-                      </div>
-                    </button>
-                    {category.subcategories && (
-                      <div className="ml-6 mt-1 space-y-1">
-                        {category.subcategories.map((sub) => (
-                          <button
-                            key={sub.id}
-                            onClick={() => {
-                              handleCategoryClick(sub.name);
-                              setShowFilters(false);
-                            }}
-                            className="block w-full text-left py-1.5 text-sm text-gray-500 hover:text-gray-700"
-                          >
-                            {sub.name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
+
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">Categories</h4>
+                  <div className="space-y-1">
+                    {categoriesWithSubs.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => {
+                          handleCategoryClick(category.name);
+                          setShowFilters(false);
+                        }}
+                        className={`w-full text-left py-2 px-3 rounded-lg text-sm ${
+                          selectedCategories.includes(category.name)
+                            ? "bg-red-50 text-red-600 font-medium"
+                            : "text-gray-700 hover:bg-gray-50"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          {category.icon}
+                          <span>{category.name}</span>
+                          {category.productCount !== undefined && category.productCount > 0 && (
+                            <span className="text-xs text-gray-400">({category.productCount})</span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* Price Range */}
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-3">Price Range</h4>
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500 mb-1 block">Min</label>
+                      <input
+                        type="number"
+                        value={minPrice}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setMinPrice(val);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500 mb-1 block">Max</label>
+                      <input
+                        type="number"
+                        value={maxPrice}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value) || 0;
+                          setMaxPrice(val);
+                          setCurrentPage(1);
+                        }}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Show Products Button */}
+                <div>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="w-full py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                  >
+                    Show {pagination.total.toLocaleString()} products
+                  </button>
+                </div>
+
+                {/* Specifications */}
+                {selectedCategoryObj && (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium text-gray-900">Specifications</h4>
+                      {Object.keys(selectedSpecs).length > 0 && (
+                        <button
+                          onClick={() => setSelectedSpecs({})}
+                          className="text-xs text-red-500"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                    <SpecFilters
+                      categoryId={selectedCategoryObj.id}
+                      selectedSpecs={selectedSpecs}
+                      onSpecChange={handleSpecChange}
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </>
@@ -632,7 +814,8 @@ const ShopPage = () => {
                 </button>
               </div>
 
-              <div className="p-4">
+              <div className="p-4 pb-24">
+                {" "}
                 {sortOptions.map((option) => (
                   <button
                     key={option.value}
@@ -654,7 +837,7 @@ const ShopPage = () => {
           </>
         )}
 
-        <div className="h-20 lg:hidden"></div>
+        <div className="h-24 lg:hidden"></div>
 
         <Footer />
         <MobileBottomNav />

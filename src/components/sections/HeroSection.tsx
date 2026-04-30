@@ -1,270 +1,211 @@
-import React, { useEffect, useState } from 'react';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { ArrowRight, Flame } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState, useEffect } from "react";
+import { ArrowRight, Shield, Store, Users, TrendingUp, Eye, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const HeroSection: React.FC = () => {
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [currentSlide, setCurrentSlide] = useState(0);
-  const { scrollY } = useScroll();
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // Parallax effects
-  const y1 = useTransform(scrollY, [0, 500], [0, -150]);
-  const y2 = useTransform(scrollY, [0, 500], [0, -100]);
-  const opacity = useTransform(scrollY, [0, 300], [1, 0]);
-
-  // Hero slides data
   const slides = [
     {
-      title: "Discover Your Style",
-      subtitle: "Premium Collection 2026",
-      description: "Curated products that define modern elegance and exceptional quality.",
-      cta: "Shop Now",
-      accent: "New Arrivals"
+      title: "Start Selling Today",
+      subtitle: "Join Thousands of Sellers",
+      description:
+        "Turn your passion into profit. List your products and reach millions of buyers across the country.",
+      cta: "Start Selling",
+      secondaryCta: "Browse Products",
+      badge: "For Sellers",
+      badgeIcon: Store,
+      image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&h=600&fit=crop",
     },
     {
-      title: "Limitless Possibilities",
-      subtitle: "Innovation Meets Design",
-      description: "Experience the future of shopping with our cutting-edge selections.",
-      cta: "Explore",
-      accent: "Featured"
+      title: "Discover Unique Finds",
+      subtitle: "Shop from Local Sellers",
+      description:
+        "From handmade crafts to electronics, find everything you need directly from trusted sellers in your community.",
+      cta: "Start Shopping",
+      secondaryCta: "View Categories",
+      badge: "For Buyers",
+      badgeIcon: Users,
+      image: "https://images.unsplash.com/photo-1472851294608-062f824d29cc?w=1200&h=600&fit=crop",
     },
     {
-      title: "Elevate Your Lifestyle",
-      subtitle: "Luxury Redefined",
-      description: "Transform your world with products crafted for the extraordinary.",
-      cta: "Discover",
-      accent: "Exclusive"
-    }
+      title: "Top Rated Sellers",
+      subtitle: "Shop with Confidence",
+      description:
+        "Connect with verified sellers who have earned the trust of thousands of buyers through quality products and service.",
+      cta: "Explore Sellers",
+      secondaryCta: "Learn More",
+      badge: "Trusted Marketplace",
+      badgeIcon: Sparkles,
+      image: "https://images.unsplash.com/photo-1556741533-6e6a4bd8b49c?w=1200&h=600&fit=crop",
+    },
   ];
 
-  // Auto-slide functionality
+  // Auto-slide functionality with very light transition
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 5000);
+      setIsTransitioning(true);
+      setTimeout(() => {
+        setCurrentSlide((prev) => (prev + 1) % slides.length);
+        setTimeout(() => setIsTransitioning(false), 50);
+      }, 150);
+    }, 6000);
     return () => clearInterval(timer);
   }, [slides.length]);
 
-  // Mouse tracking for interactive effects
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      setMousePosition({
-        x: (e.clientX / window.innerWidth) * 100,
-        y: (e.clientY / window.innerHeight) * 100
-      });
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
-
-  // Floating elements animation variants
-  const floatingVariants = {
-    animate: {
-      y: [0, -20, 0],
-      rotate: [0, 5, 0],
-      transition: {
-        duration: 6,
-        repeat: Infinity,
-        ease: "easeInOut" as const
-      }
-    }
-  };
-
-  const slideVariants = {
-    enter: {
-      opacity: 0,
-      y: 30,
-      scale: 0.95
-    },
-    center: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: {
-        duration: 0.8,
-        ease: "easeOut" as const
-      }
-    },
-    exit: {
-      opacity: 0,
-      y: -30,
-      scale: 1.05,
-      transition: {
-        duration: 0.5
-      }
-    }
+  const handleSlideChange = (index: number) => {
+    if (index === currentSlide) return;
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setCurrentSlide(index);
+      setTimeout(() => setIsTransitioning(false), 50);
+    }, 150);
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-hero">
-      {/* Interactive Background */}
+    <section className="relative min-h-[600px] md:min-h-[650px] flex items-center overflow-hidden bg-gradient-hero">
+      {/* Background Pattern */}
       <div className="absolute inset-0">
-        {/* Gradient Orbs */}
-        <motion.div
-          className="absolute top-20 left-20 w-72 h-72 bg-primary/10 rounded-full blur-3xl"
-          style={{
-            x: useTransform(scrollY, [0, 500], [0, -100]),
-            y: useTransform(scrollY, [0, 500], [0, -50])
-          }}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3]
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut" as const
-          }}
-        />
-
-        <motion.div
-          className="absolute bottom-20 right-20 w-96 h-96 bg-primary/5 rounded-full blur-3xl"
-          style={{ y: y2 }}
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.2, 0.4, 0.2]
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: "easeInOut" as const
-          }}
-        />
-
-        {/* Grid Pattern */}
         <div
-          className="absolute inset-0 opacity-[0.02]"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: `
-              linear-gradient(rgba(0,0,0,0.1) 1px, transparent 1px),
-              linear-gradient(90deg, rgba(0,0,0,0.1) 1px, transparent 1px)
-            `,
-            backgroundSize: '50px 50px',
-            transform: `translate(${mousePosition.x * 0.05}px, ${mousePosition.y * 0.05}px)`
+            backgroundImage: `radial-gradient(circle at 2px 2px, currentColor 1px, transparent 1px)`,
+            backgroundSize: "40px 40px",
           }}
         />
       </div>
 
-      {/* Main Content */}
-      <motion.div
-        className="relative z-10 container mx-auto px-4 text-center"
-        style={{ opacity, y: y1 }}
-      >
-        {/* Slides */}
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={currentSlide}
-            variants={slideVariants}
-            initial="enter"
-            animate="center"
-            exit="exit"
-            className="space-y-8"
-          >
-            {/* Accent Badge */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
-              className="inline-flex items-center space-x-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary font-medium text-sm"
+      {/* Main Container */}
+      <div className="relative z-10 container mx-auto px-4 py-12 md:py-16">
+        {/* Slides Container */}
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+          {/* Left Column - Content */}
+          <div className="space-y-6 text-center lg:text-left">
+            {/* Slide Content */}
+            <div
+              key={currentSlide}
+              className="space-y-6"
+              style={{
+                opacity: isTransitioning ? 0.7 : 1,
+                transform: isTransitioning ? "translateY(4px)" : "translateY(0)",
+                transition: "opacity 150ms ease-out, transform 150ms ease-out",
+              }}
             >
-              <Flame className="w-4 h-4 mr-2" />
-              <span>{slides[currentSlide].accent}</span>
-            </motion.div>
+              {/* Badge */}
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full text-primary text-sm font-medium">
+                {(() => {
+                  const BadgeIcon = slides[currentSlide].badgeIcon;
+                  return <BadgeIcon className="w-4 h-4" />;
+                })()}
+                <span>{slides[currentSlide].badge}</span>
+              </div>
 
-            {/* Main Headline */}
-            <div className="space-y-4">
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3, duration: 0.8 }}
-                className="text-5xl md:text-7xl lg:text-8xl font-bold font-heading leading-tight"
-              >
-                <span className="block">{slides[currentSlide].title.split(' ')[0]}</span>
-                <span className="block text-gradient">
-                  {slides[currentSlide].title.split(' ').slice(1).join(' ')}
-                </span>
-              </motion.h1>
+              {/* Title */}
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold font-heading leading-tight">
+                {slides[currentSlide].title}
+                <span className="block text-gradient mt-2">{slides[currentSlide].subtitle}</span>
+              </h1>
 
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.4, duration: 0.8 }}
-                className="text-xl md:text-2xl font-medium text-muted-foreground"
-              >
-                {slides[currentSlide].subtitle}
-              </motion.p>
+              {/* Description */}
+              <p className="text-base md:text-lg text-muted-foreground max-w-lg mx-auto lg:mx-0">
+                {slides[currentSlide].description}
+              </p>
+
+              {/* Marketplace Trust Badges */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Store className="w-4 h-4 text-primary" />
+                  <span>1,000+ Sellers</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Shield className="w-4 h-4 text-primary" />
+                  <span>Buyer Protection</span>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Users className="w-4 h-4 text-primary" />
+                  <span>50k+ Buyers</span>
+                </div>
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-4">
+                <Button
+                  size="lg"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-base px-8 transition-all duration-300"
+                >
+                  {slides[currentSlide].cta}
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-border hover:bg-muted text-base px-6 transition-all duration-300"
+                >
+                  <Eye className="mr-2 w-4 h-4" />
+                  {slides[currentSlide].secondaryCta}
+                </Button>
+              </div>
             </div>
+          </div>
 
-            {/* Description */}
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed"
+          {/* Right Column - Hero Image with marketplace-focused badges */}
+          <div className="relative">
+            <div
+              className="relative rounded-2xl overflow-hidden shadow-2xl"
+              style={{
+                opacity: isTransitioning ? 0.8 : 1,
+                transition: "opacity 150ms ease-out",
+              }}
             >
-              {slides[currentSlide].description}
-            </motion.p>
+              {/* Main Image */}
+              <img
+                src={slides[currentSlide].image}
+                alt={slides[currentSlide].title}
+                className="w-full h-auto object-cover transition-all duration-300"
+                style={{ aspectRatio: "16/9" }}
+              />
 
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6, duration: 0.8 }}
-              className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-6"
-            >
-              <Button className="hero-button group">
-                {slides[currentSlide].cta}
-                <ArrowRight className="ml-2 w-5 h-5 transition-transform group-hover:translate-x-1" />
-              </Button>
+              {/* Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent" />
 
-              <Button className="hero-button-outline">
-                View Collection
-              </Button>
-            </motion.div>
-          </motion.div>
-        </AnimatePresence>
+              {/* Floating Badges */}
+              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg px-3 py-2 shadow-lg">
+                <div className="flex items-center gap-2">
+                  <Store className="w-4 h-4 text-primary" />
+                  <div>
+                    <p className="text-xs font-semibold">Multi-Vendor</p>
+                    <p className="text-xs text-muted-foreground">Shop from anywhere</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur-sm rounded-lg px-3 py-2">
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-green-400" />
+                  <p className="text-xs text-white">Active sellers daily</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Slide Indicators */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.8 }}
-          className="flex items-center justify-center space-x-3 mt-12"
-        >
-          {slides.map((_, index) => (
+        <div className="flex items-center justify-center gap-2 mt-8 md:mt-10">
+          {slides.map((_, idx) => (
             <button
-              key={index}
-              onClick={() => setCurrentSlide(index)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentSlide
-                ? 'bg-primary w-8'
-                : 'bg-muted-foreground/30 hover:bg-muted-foreground/50'
-                }`}
+              key={idx}
+              onClick={() => handleSlideChange(idx)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                idx === currentSlide
+                  ? "bg-primary w-8"
+                  : "bg-muted-foreground/30 w-4 hover:bg-muted-foreground/50"
+              }`}
+              aria-label={`Go to slide ${idx + 1}`}
             />
           ))}
-        </motion.div>
-      </motion.div>
-
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1, duration: 0.8 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-      >
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="w-6 h-10 border-2 border-muted-foreground/30 rounded-full flex justify-center"
-        >
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="w-1 h-3 bg-primary rounded-full mt-2"
-          />
-        </motion.div>
-      </motion.div>
+        </div>
+      </div>
     </section>
   );
 };
