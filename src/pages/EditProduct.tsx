@@ -39,6 +39,7 @@ const EditProduct: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
+  const [productLoaded, setProductLoaded] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -79,10 +80,10 @@ const EditProduct: React.FC = () => {
 
   // Load specs when category changes
   useEffect(() => {
-    if (categoryId) {
+    if (categoryId && productLoaded) {
       loadSpecs();
     }
-  }, [categoryId]);
+  }, [categoryId, productLoaded]);
 
   const loadSpecs = async () => {
     setLoadingSpecs(true);
@@ -92,7 +93,16 @@ const EditProduct: React.FC = () => {
       );
       const data = await response.json();
       const specsData = Array.isArray(data) ? data : data.data || [];
-      setSpecs(specsData.map((s: Spec) => ({ ...s, value: "" })));
+      setSpecs((prevSpecs) => {
+        const prevValuesById: Record<string, string> = {};
+        prevSpecs.forEach((s) => {
+          prevValuesById[s.id] = s.value;
+        });
+        return specsData.map((s: Spec) => ({
+          ...s,
+          value: prevValuesById[s.id] ?? "",
+        }));
+      });
     } catch (error) {
       console.error("Failed to load specs:", error);
     } finally {
@@ -106,15 +116,17 @@ const EditProduct: React.FC = () => {
       const response = await productsApi.getProduct(pid!);
       if (response.success && response.data) {
         const product = response.data as any;
-        setTitle(product.title);
+
+        // Set all form values from the product
+        setTitle(product.title || "");
         setDescription(product.description || "");
-        setPrice(product.price.toString());
+        setPrice(product.price?.toString() || "");
         setCondition(product.condition || "new");
         setNegotiation(product.negotiation || "negotiable");
         setCategoryId(product.category_id || null);
-        setWhatsappContact(product.whatsapp_contact);
-        setPhoneContact(product.phone_contact);
-        setInternalProductId(product.id);
+        setWhatsappContact(product.whatsapp_contact ?? true);
+        setPhoneContact(product.phone_contact ?? false);
+        setInternalProductId(product.id || "");
 
         // Load location data from product response
         if (product.region_id) setRegionId(product.region_id);
@@ -148,6 +160,8 @@ const EditProduct: React.FC = () => {
         } catch (error) {
           console.error("Failed to load images:", error);
         }
+
+        setProductLoaded(true);
       }
     } catch (error) {
       console.error("Failed to load product:", error);
@@ -539,7 +553,7 @@ const EditProduct: React.FC = () => {
             </div>
 
             {/* Price Insight Component - Shows market intelligence */}
-            {internalProductId && (
+            {internalProductId && productLoaded && (
               <div className="mt-2">
                 <PriceInsight
                   productId={internalProductId}
