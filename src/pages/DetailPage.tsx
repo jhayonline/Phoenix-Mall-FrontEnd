@@ -754,16 +754,17 @@ const DetailPage: React.FC = () => {
                     </span>
                   )}
                 </div>
+                {/* Online indicator dot - positioned at bottom-right of avatar */}
                 {seller.id && (
-                  <OnlineIndicator
-                    userId={seller.id}
-                    size="sm"
-                    className="absolute -bottom-0.5 -right-0.5"
-                  />
+                  <div className="absolute -bottom-0.5 -right-0.5">
+                    <OnlineIndicator userId={seller.id} size="sm" />
+                  </div>
                 )}
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-gray-900">{seller.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-gray-900">{seller.name}</p>
+                </div>
                 {seller.username && <p className="text-xs text-gray-500">@{seller.username}</p>}
                 <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
                   <span>{seller.product_count || 0} listings</span>
@@ -1059,16 +1060,17 @@ const DetailPage: React.FC = () => {
                               </span>
                             )}
                           </div>
+                          {/* Online indicator dot - positioned at bottom-right of avatar */}
                           {seller.id && (
-                            <OnlineIndicator
-                              userId={seller.id}
-                              size="sm"
-                              className="absolute -bottom-0.5 -right-0.5"
-                            />
+                            <div className="absolute -bottom-0.5 -right-0.5">
+                              <OnlineIndicator userId={seller.id} size="sm" />
+                            </div>
                           )}
                         </div>
                         <div className="flex-1">
-                          <p className="font-semibold text-gray-900">{seller.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-gray-900">{seller.name}</p>
+                          </div>
                           {seller.username && (
                             <p className="text-sm text-gray-500">@{seller.username}</p>
                           )}
