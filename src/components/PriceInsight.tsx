@@ -176,10 +176,10 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
           {intel.recommendation.includes("Lower") && onPriceSuggestion && (
             <button
               type="button"
-              onClick={() => onPriceSuggestion(intel.market_average_price)}
+              onClick={() => onPriceSuggestion(Math.round(intel.market_average_price))}
               className="w-full py-2 px-4 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
             >
-              Apply suggested price ({formatCurrency(intel.market_average_price)})
+              Apply suggested price ({formatCurrency(Math.round(intel.market_average_price))})
             </button>
           )}
 
