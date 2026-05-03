@@ -1,15 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import {
-  Loader2,
-  ImageIcon,
-  X,
-  ChevronRight,
-  ChevronLeft,
-  Check,
-  AlertCircle,
-  MapPin,
-} from "lucide-react";
+import { Loader2, ImageIcon, X, AlertCircle } from "lucide-react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import MobileBottomNav from "@/components/layout/MobileBottomNav";
@@ -18,10 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import CategoryPicker from "@/components/sell/CategoryPicker";
 import LocationPicker from "@/components/sell/LocationPicker";
-import { productsApi, categoriesApi, imagesApi } from "@/lib/api";
+import { productsApi, imagesApi } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import type { CategoryResponseData, ProductImage } from "@/lib/api";
+import type { ProductImage } from "@/lib/api";
+import PriceInsight from "@/components/PriceInsight";
 
 interface Spec {
   id: string;
@@ -61,6 +53,7 @@ const EditProduct: React.FC = () => {
   const [townName, setTownName] = useState("");
   const [whatsappContact, setWhatsappContact] = useState(true);
   const [phoneContact, setPhoneContact] = useState(false);
+  const [internalProductId, setInternalProductId] = useState<string>("");
 
   // Specifications
   const [specs, setSpecs] = useState<Spec[]>([]);
@@ -73,15 +66,16 @@ const EditProduct: React.FC = () => {
   const [uploadingImages, setUploadingImages] = useState(false);
 
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
+    if (isLoading) return;
     if (!user) {
       navigate("/login");
       return;
     }
     loadProduct();
-  }, [pid]);
+  }, [pid, user, isLoading]);
 
   // Load specs when category changes
   useEffect(() => {
@@ -120,6 +114,7 @@ const EditProduct: React.FC = () => {
         setCategoryId(product.category_id || null);
         setWhatsappContact(product.whatsapp_contact);
         setPhoneContact(product.phone_contact);
+        setInternalProductId(product.id);
 
         // Load location data from product response
         if (product.region_id) setRegionId(product.region_id);
@@ -512,6 +507,7 @@ const EditProduct: React.FC = () => {
               )
             )}
 
+            {/* Price and Condition Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Price */}
               <div>
@@ -541,6 +537,24 @@ const EditProduct: React.FC = () => {
                 </select>
               </div>
             </div>
+
+            {/* Price Insight Component - Shows market intelligence */}
+            {internalProductId && (
+              <div className="mt-2">
+                <PriceInsight
+                  productId={internalProductId}
+                  productTitle={title}
+                  currentPrice={parseFloat(price) || 0}
+                  onPriceSuggestion={(suggestedPrice) => {
+                    setPrice(suggestedPrice.toString());
+                    toast({
+                      title: "Price Updated",
+                      description: `Suggested price GHS ${suggestedPrice} applied`,
+                    });
+                  }}
+                />
+              </div>
+            )}
 
             {/* Negotiation */}
             <div>

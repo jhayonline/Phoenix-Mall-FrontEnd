@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   ArrowRight,
   Inbox,
+  TrendingDown,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
@@ -16,10 +17,11 @@ import Footer from "@/components/layout/Footer";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { chatApi, type Conversation } from "@/lib/api/chat";
+import { priceIntelApi, type PriceRecommendation } from "@/lib/api/priceIntel";
 
 interface Notification {
   id: string;
-  type: "message" | "like" | "follow";
+  type: "message" | "like" | "follow" | "price_recommendation";
   title: string;
   description: string;
   timestamp: string;
@@ -29,6 +31,11 @@ interface Notification {
     conversation_id?: string;
     user_id?: number;
     user_name?: string;
+    product_id?: string;
+    product_title?: string;
+    market_avg?: number;
+    current_price?: number;
+    recommendation_id?: string;
   };
 }
 
@@ -44,7 +51,11 @@ const Notifications = () => {
   }, []);
 
   const loadNotifications = async () => {
+    setLoading(true);
     try {
+      const allNotifications: Notification[] = [];
+
+      // 1. Load message notifications from chat
       const convResponse = await chatApi.getConversations();
       if (convResponse.success && convResponse.data) {
         const unreadConversations = convResponse.data.filter((conv) => conv.unread_count > 0);
@@ -63,9 +74,38 @@ const Notifications = () => {
             user_name: conv.other_user_name,
           },
         }));
-
-        setNotifications(messageNotifications);
+        allNotifications.push(...messageNotifications);
       }
+
+      // 2. Load price recommendation notifications
+      try {
+        const recommendations = await priceIntelApi.getProductRecommendations();
+        const priceNotifications: Notification[] = recommendations.map((rec) => ({
+          id: `price-${rec.id}`,
+          type: "price_recommendation",
+          title: "Price Recommendation Available",
+          description: `Market analysis shows similar items average GHS ${rec.market_avg_price}. Consider adjusting your price.`,
+          timestamp: rec.created_at,
+          isRead: rec.is_viewed,
+          link: `/edit-product/${rec.product_id}`,
+          data: {
+            product_id: rec.product_id,
+            market_avg: rec.market_avg_price,
+            recommended_price: rec.recommended_price || rec.market_avg_price,
+            recommendation_id: rec.id,
+          },
+        }));
+        allNotifications.push(...priceNotifications);
+      } catch (error) {
+        console.error("Failed to load price recommendations:", error);
+      }
+
+      // Sort by timestamp (newest first)
+      allNotifications.sort(
+        (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
+      );
+
+      setNotifications(allNotifications);
     } catch (error) {
       console.error("Failed to load notifications:", error);
     } finally {
@@ -73,16 +113,44 @@ const Notifications = () => {
     }
   };
 
-  const markAsRead = (id: string) => {
+  const markAsRead = async (id: string, recommendationId?: string) => {
     setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, isRead: true } : n)));
+
+    // If it's a price recommendation, mark it as viewed in the backend
+    if (recommendationId) {
+      try {
+        await priceIntelApi.markAsViewed(recommendationId);
+      } catch (error) {
+        console.error("Failed to mark recommendation as viewed:", error);
+      }
+    }
   };
 
-  const markAllAsRead = () => {
+  const markAllAsRead = async () => {
+    const unreadNotifications = notifications.filter((n) => !n.isRead);
+
+    // Mark all as read in UI
     setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+
+    // Mark price recommendations as viewed in backend
+    for (const notification of unreadNotifications) {
+      if (notification.type === "price_recommendation" && notification.data?.recommendation_id) {
+        try {
+          await priceIntelApi.markAsViewed(notification.data.recommendation_id);
+        } catch (error) {
+          console.error("Failed to mark recommendation as viewed:", error);
+        }
+      }
+    }
+
+    toast({
+      title: "Marked all as read",
+      description: "All notifications have been marked as read",
+    });
   };
 
   const handleNotificationClick = (notification: Notification) => {
-    markAsRead(notification.id);
+    markAsRead(notification.id, notification.data?.recommendation_id);
 
     if (notification.link) {
       navigate(notification.link);
@@ -117,6 +185,8 @@ const Notifications = () => {
         return <Heart className={`${baseClasses} ${iconColor}`} />;
       case "follow":
         return <UserPlus className={`${baseClasses} ${iconColor}`} />;
+      case "price_recommendation":
+        return <TrendingDown className={`${baseClasses} ${iconColor}`} />;
       default:
         return <Bell className={`${baseClasses} ${iconColor}`} />;
     }
@@ -222,10 +292,23 @@ const Notifications = () => {
                     </div>
                   </div>
 
+                  {/* Price Recommendation Badge */}
+                  {notification.type === "price_recommendation" &&
+                    notification.data?.market_avg && (
+                      <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-red-50 rounded-full">
+                        <TrendingDown className="w-3 h-3 text-red-500" />
+                        <span className="text-xs text-red-600 font-medium">
+                          Market Avg: GHS {notification.data.market_avg}
+                        </span>
+                      </div>
+                    )}
+
                   {/* Action hint */}
                   <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="text-xs text-gray-400 flex items-center gap-1">
-                      Click to view <ArrowRight className="w-3 h-3" />
+                      Click to{" "}
+                      {notification.type === "price_recommendation" ? "adjust price" : "view"}{" "}
+                      <ArrowRight className="w-3 h-3" />
                     </span>
                   </div>
                 </div>
@@ -240,7 +323,8 @@ const Notifications = () => {
             </div>
             <h3 className="text-base font-medium text-gray-900 mb-1">No notifications yet</h3>
             <p className="text-sm text-gray-500 max-w-sm">
-              When you receive messages or activity updates, they'll appear here.
+              When you receive messages, price recommendations, or activity updates, they'll appear
+              here.
             </p>
           </div>
         )}

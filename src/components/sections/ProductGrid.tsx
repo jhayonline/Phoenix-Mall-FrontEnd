@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Heart, MapPin, Star, Grid, List } from "lucide-react";
+import { Heart, MapPin, Star, Grid, List, TrendingDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { favoritesApi } from "@/lib/api";
 import type { ProductResponseData } from "@/lib/api";
@@ -13,6 +13,7 @@ interface ProductWithDetails extends ProductResponseData {
   originalPrice?: number;
   discount?: number;
   seller?: string;
+  recommended_price?: number;
 }
 
 interface ProductGridProps {
@@ -200,7 +201,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       </div>
 
-      {/* Products Grid - No framer-motion animations */}
+      {/* Products Grid */}
       <div className={`grid gap-3 sm:gap-4 ${getGridCols()}`}>
         {products.map((product) => (
           <div
@@ -250,6 +251,14 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                     {product.status === "sold" ? "SOLD" : "INACTIVE"}
                   </span>
                 )}
+
+                {/* Price Recommendation Badge */}
+                {product.recommended_price && product.recommended_price < product.price && (
+                  <span className="absolute bottom-2 left-2 px-1.5 py-0.5 bg-red-500 text-white text-[10px] font-medium rounded flex items-center gap-0.5">
+                    <TrendingDown className="w-2.5 h-2.5" />
+                    Price High
+                  </span>
+                )}
               </div>
 
               {/* Product Info */}
@@ -297,6 +306,11 @@ const ProductGrid: React.FC<ProductGridProps> = ({
                     >
                       {formatCurrency(product.price)}
                     </span>
+                    {product.recommended_price && product.recommended_price < product.price && (
+                      <span className="text-xs text-gray-400 line-through">
+                        {formatCurrency(product.recommended_price)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

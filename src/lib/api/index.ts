@@ -8,5 +8,7 @@ export { wishlistApi } from "./wishlist";
 export { adminApi } from "./admin";
 export { chatApi } from "./chat";
 export { followsApi } from "./follows";
+export { priceIntelApi } from "./priceIntel";
+export type * from "./priceIntel";
 
 export type * from "./types";
