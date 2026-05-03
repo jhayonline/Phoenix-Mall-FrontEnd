@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Flame,
   Laptop,
@@ -14,14 +14,15 @@ import {
   Utensils,
   Baby,
   Sparkles,
-} from 'lucide-react';
+} from "lucide-react";
 
 const categories = [
   {
     id: 1,
     name: "Electronics",
     description: "Laptops, Computers, Printers etc",
-    image: "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1498049794561-7780e7231661?w=400&h=400&fit=crop&crop=center",
     IconComponent: Laptop,
     color: "from-blue-500 to-cyan-500",
   },
@@ -29,7 +30,8 @@ const categories = [
     id: 2,
     name: "Fashion",
     description: "Clothing & Accessories",
-    image: "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=400&fit=crop&crop=center",
     IconComponent: Shirt,
     color: "from-pink-500 to-rose-500",
   },
@@ -37,7 +39,8 @@ const categories = [
     id: 3,
     name: "Vehicles",
     description: "Cars, Motorcycles & More",
-    image: "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=400&h=400&fit=crop&crop=center",
     IconComponent: Car,
     color: "from-red-500 to-pink-500",
   },
@@ -45,7 +48,8 @@ const categories = [
     id: 4,
     name: "Home & Living",
     description: "Home & Living",
-    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
     IconComponent: Home,
     color: "from-green-500 to-emerald-500",
   },
@@ -53,7 +57,8 @@ const categories = [
     id: 5,
     name: "Mobile Phones",
     description: "Mobile Phones, Tablets",
-    image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=400&fit=crop&crop=center",
     IconComponent: Smartphone,
     color: "from-purple-500 to-indigo-500",
   },
@@ -61,7 +66,8 @@ const categories = [
     id: 6,
     name: "Furniture",
     description: "Home & Office Furniture",
-    image: "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=400&h=400&fit=crop&crop=center",
     IconComponent: Sofa,
     color: "from-amber-500 to-orange-500",
   },
@@ -69,7 +75,8 @@ const categories = [
     id: 7,
     name: "Home Appliances",
     description: "Kitchen & Home Appliances",
-    image: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400&h=400&fit=crop&crop=center",
     IconComponent: Home,
     color: "from-green-500 to-emerald-500",
   },
@@ -77,7 +84,8 @@ const categories = [
     id: 8,
     name: "Jewelries",
     description: "Rings, Necklaces & More",
-    image: "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1515562141207-7a88fb7ce338?w=400&h=400&fit=crop&crop=center",
     IconComponent: Gem,
     color: "from-violet-500 to-purple-500",
   },
@@ -85,7 +93,8 @@ const categories = [
     id: 9,
     name: "Property",
     description: "Houses & Real Estate",
-    image: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=400&h=400&fit=crop&crop=center",
     IconComponent: Building,
     color: "from-slate-500 to-gray-500",
   },
@@ -93,7 +102,8 @@ const categories = [
     id: 10,
     name: "Services",
     description: "Professional Services",
-    image: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=400&h=400&fit=crop&crop=center",
     IconComponent: Wrench,
     color: "from-teal-500 to-cyan-500",
   },
@@ -101,7 +111,8 @@ const categories = [
     id: 11,
     name: "Food & Agriculture",
     description: "Fresh Food & Farm Products",
-    image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop&crop=center",
     IconComponent: Utensils,
     color: "from-lime-500 to-green-500",
   },
@@ -109,7 +120,8 @@ const categories = [
     id: 12,
     name: "Babies & Kids",
     description: "Baby Items & Kids Products",
-    image: "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=400&fit=crop&crop=center",
     IconComponent: Baby,
     color: "from-yellow-400 to-amber-400",
   },
@@ -117,23 +129,27 @@ const categories = [
     id: 13,
     name: "Beauty & Personal Care",
     description: "Skincare & Cosmetics",
-    image: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&crop=center",
+    image:
+      "https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=400&h=400&fit=crop&crop=center",
     IconComponent: Sparkles,
     color: "from-fuchsia-500 to-pink-500",
   },
 ];
 
+// Split categories into rows: first 5, next 5, last 3
+const firstRow = categories.slice(0, 5);
+const secondRow = categories.slice(5, 10);
+const thirdRow = categories.slice(10, 13);
 
 const CategoriesSection: React.FC = () => {
   const [hoveredCategory, setHoveredCategory] = useState<number | null>(null);
   const [loadedImages, setLoadedImages] = useState<Set<number>>(new Set());
 
   const handleImageLoad = (id: number) => {
-    setLoadedImages(prev => new Set(prev).add(id));
+    setLoadedImages((prev) => new Set(prev).add(id));
   };
 
   const handleCategoryClick = (categoryName: string) => {
-    // Handle navigation to category section
     console.log(`Navigate to ${categoryName} section`);
   };
 
@@ -143,16 +159,16 @@ const CategoriesSection: React.FC = () => {
       opacity: 1,
       transition: {
         staggerChildren: 0.05,
-        delayChildren: 0.1
-      }
-    }
+        delayChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
     hidden: {
       opacity: 0,
       y: 30,
-      scale: 0.8
+      scale: 0.8,
     },
     visible: {
       opacity: 1,
@@ -162,9 +178,95 @@ const CategoriesSection: React.FC = () => {
         type: "spring",
         stiffness: 150,
         damping: 12,
-        duration: 0.6
-      }
-    }
+        duration: 0.6,
+      },
+    },
+  };
+
+  const renderCategoryCard = (category: (typeof categories)[0]) => {
+    const IconComponent = category.IconComponent;
+    const isImageLoaded = loadedImages.has(category.id);
+    const isHovered = hoveredCategory === category.id;
+
+    return (
+      <motion.div
+        key={category.id}
+        variants={itemVariants}
+        whileHover={{
+          scale: 1.05,
+          y: -8,
+          transition: { type: "spring", stiffness: 300, damping: 20 },
+        }}
+        whileTap={{ scale: 0.95 }}
+        onClick={() => handleCategoryClick(category.name)}
+        onHoverStart={() => setHoveredCategory(category.id)}
+        onHoverEnd={() => setHoveredCategory(null)}
+        className="flex flex-col items-center cursor-pointer group"
+      >
+        {/* Circle Container */}
+        <div className="relative mb-4">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full overflow-hidden relative bg-gray-200 dark:bg-slate-700 shadow-lg group-hover:shadow-xl transition-all duration-300">
+            {/* Loading State */}
+            {!isImageLoaded && (
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-20 animate-pulse rounded-full`}
+              />
+            )}
+
+            {/* Category Image */}
+            <img
+              src={category.image}
+              alt={category.name}
+              className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+              onLoad={() => handleImageLoad(category.id)}
+              loading="lazy"
+            />
+
+            {/* Hover Overlay */}
+            <AnimatePresence>
+              {isHovered && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-80 flex items-center justify-center rounded-full`}
+                >
+                  <IconComponent className="w-8 h-8 md:w-10 md:h-10 text-white drop-shadow-lg" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Category Name */}
+        <motion.h3
+          className="text-center font-semibold text-sm sm:text-base md:text-lg text-slate-900 dark:text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-300"
+          style={{
+            backgroundImage: isHovered
+              ? `linear-gradient(to right, ${category.color.split(" ")[1].replace("to-", "")}, ${category.color.split(" ")[2]})`
+              : "none",
+          }}
+        >
+          {category.name}
+        </motion.h3>
+
+        {/* Category Description - Show on Hover */}
+        <AnimatePresence>
+          {isHovered && (
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 10 }}
+              transition={{ duration: 0.2, delay: 0.1 }}
+              className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1 max-w-[120px]"
+            >
+              {category.description}
+            </motion.p>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    );
   };
 
   return (
@@ -190,111 +292,28 @@ const CategoriesSection: React.FC = () => {
           </p>
         </motion.div>
 
-        {/* Categories Grid */}
+        {/* Categories Grid - 5-5-3 Layout */}
         <motion.div
           variants={containerVariants}
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-50px" }}
-          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-8 justify-items-center"
+          className="flex flex-col items-center gap-8"
         >
-          {categories.map((category) => {
-            const IconComponent = category.IconComponent;
-            const isImageLoaded = loadedImages.has(category.id);
-            const isHovered = hoveredCategory === category.id;
+          {/* First Row - 5 items */}
+          <div className="flex flex-wrap justify-center gap-6 md:gap-8">
+            {firstRow.map((category) => renderCategoryCard(category))}
+          </div>
 
-            return (
-              <motion.div
-                key={category.id}
-                variants={itemVariants}
-                whileHover={{
-                  scale: 1.05,
-                  y: -8,
-                  transition: { type: "spring", stiffness: 300, damping: 20 }
-                }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => handleCategoryClick(category.name)}
-                onHoverStart={() => setHoveredCategory(category.id)}
-                onHoverEnd={() => setHoveredCategory(null)}
-                className="flex flex-col items-center cursor-pointer group"
-              >
-                {/* Circle Container */}
-                <div className="relative mb-4">
-                  {/* Main Circle */}
-                  <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 lg:w-36 lg:h-36 rounded-full overflow-hidden relative bg-gray-200 dark:bg-slate-700 shadow-lg group-hover:shadow-xl transition-all duration-300">
+          {/* Second Row - 5 items */}
+          <div className="flex flex-wrap justify-center gap-6 md:gap-8">
+            {secondRow.map((category) => renderCategoryCard(category))}
+          </div>
 
-                    {/* Loading State */}
-                    {!isImageLoaded && (
-                      <div className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-20 animate-pulse rounded-full`} />
-                    )}
-
-                    {/* Category Image */}
-                    <img
-                      src={category.image}
-                      alt={category.name}
-                      className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
-                      onLoad={() => handleImageLoad(category.id)}
-                      loading="lazy"
-                    />
-
-                    {/* Hover Overlay */}
-                    <AnimatePresence>
-                      {isHovered && (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.2 }}
-                          className={`absolute inset-0 bg-gradient-to-br ${category.color} opacity-80 flex items-center justify-center rounded-full`}
-                        >
-                          <IconComponent className="w-8 h-8 md:w-10 md:h-10 text-white drop-shadow-lg" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-
-                  {/* Floating Ring on Hover */}
-                  {/* <AnimatePresence>
-                    {isHovered && (
-                      <motion.div
-                        initial={{ scale: 0.8, opacity: 0 }}
-                        animate={{ scale: 1.1, opacity: 1 }}
-                        exit={{ scale: 0.8, opacity: 0 }}
-                        transition={{ duration: 0.3 }}
-                        className={`absolute inset-0 rounded-full border-4 bg-gradient-to-r ${category.color} opacity-60 blur-sm`}
-                        style={{ margin: '-8px' }}
-                      />
-                    )}
-                  </AnimatePresence> */}
-                </div>
-
-                {/* Category Name */}
-                <motion.h3
-                  className="text-center font-semibold text-sm sm:text-base md:text-lg text-slate-900 dark:text-white group-hover:text-transparent group-hover:bg-gradient-to-r group-hover:bg-clip-text transition-all duration-300"
-                  style={{
-                    backgroundImage: isHovered ? `linear-gradient(to right, ${category.color.split(' ')[1].replace('to-', '')}, ${category.color.split(' ')[2]})` : 'none'
-                  }}
-                >
-                  {category.name}
-                </motion.h3>
-
-                {/* Category Description - Show on Hover */}
-                <AnimatePresence>
-                  {isHovered && (
-                    <motion.p
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.2, delay: 0.1 }}
-                      className="text-xs text-slate-500 dark:text-slate-400 text-center mt-1 max-w-[120px]"
-                    >
-                      {category.description}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
+          {/* Third Row - 3 items, centered */}
+          <div className="flex flex-wrap justify-center gap-6 md:gap-8">
+            {thirdRow.map((category) => renderCategoryCard(category))}
+          </div>
         </motion.div>
 
         {/* Bottom CTA */}
