@@ -7,6 +7,7 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  Info,
 } from "lucide-react";
 import { priceIntelApi, type PriceIntelData, type CompetitorListing } from "@/lib/api/priceIntel";
 
@@ -50,36 +51,21 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
     }
   };
 
-  const getComparisonIcon = () => {
+  const getPositionLabel = () => {
     if (!intel) return null;
-
     const diff = currentPrice - intel.market_average_price;
     const percentDiff = (diff / intel.market_average_price) * 100;
 
-    if (percentDiff > 10) {
-      return <TrendingUp className="w-5 h-5 text-red-500" />;
-    } else if (percentDiff < -10) {
-      return <TrendingDown className="w-5 h-5 text-green-500" />;
-    } else {
-      return <Minus className="w-5 h-5 text-yellow-500" />;
-    }
-  };
-
-  const getRecommendationColor = () => {
-    if (!intel) return "text-gray-600";
-
-    if (intel.recommendation.includes("Lower")) {
-      return "text-red-600";
-    } else if (intel.recommendation.includes("competitive")) {
-      return "text-green-600";
-    }
-    return "text-gray-600";
+    if (percentDiff > 15) return { text: "Above market", color: "text-red-600" };
+    if (percentDiff < -15) return { text: "Below market", color: "text-green-600" };
+    return { text: "At market", color: "text-gray-600" };
   };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "GHS",
+      minimumFractionDigits: 0,
     }).format(amount);
   };
 
@@ -96,105 +82,104 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
     return (
       <div className="bg-gray-50 rounded-lg p-4">
         <div className="flex items-center gap-2 text-gray-500">
-          <AlertCircle className="w-4 h-4" />
+          <Info className="w-4 h-4" />
           <span className="text-sm">Not enough market data for price analysis yet.</span>
         </div>
       </div>
     );
   }
 
+  const position = getPositionLabel();
+
   return (
-    <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+    <div className="border border-gray-200 rounded-lg overflow-hidden">
       {/* Header */}
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors bg-gray-50/50"
       >
-        <div className="flex items-center gap-3">
-          {getComparisonIcon()}
-          <div className="text-left">
-            <h4 className="font-medium text-gray-900">Price Intelligence</h4>
-            <p className="text-xs text-gray-500">
-              Based on {intel.competitor_count} competitor listings
-            </p>
-          </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-gray-700">Market Price Analysis</span>
+          <span className={`text-xs font-medium ${position?.color}`}>{position?.text}</span>
         </div>
-        {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        {expanded ? (
+          <ChevronUp className="w-4 h-4 text-gray-400" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-gray-400" />
+        )}
       </button>
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="p-4 pt-0 border-t border-gray-100">
-          {/* Market Stats */}
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-blue-50 rounded-lg p-3 text-center">
-              <p className="text-xs text-gray-600">Market Average</p>
-              <p className="text-lg font-bold text-blue-600">
+        <div className="p-4 space-y-4">
+          {/* Price Comparison Row */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500 mb-1">Your Price</p>
+              <p className="text-xl font-semibold text-gray-900">{formatCurrency(currentPrice)}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500 mb-1">Market Average</p>
+              <p className="text-xl font-semibold text-gray-900">
                 {formatCurrency(intel.market_average_price)}
               </p>
             </div>
-            <div className="bg-purple-50 rounded-lg p-3 text-center">
-              <p className="text-xs text-gray-600">Market Median</p>
-              <p className="text-lg font-bold text-purple-600">
+            <div className="text-right">
+              <p className="text-xs text-gray-500 mb-1">Market Median</p>
+              <p className="text-xl font-semibold text-gray-900">
                 {formatCurrency(intel.market_median_price)}
               </p>
             </div>
-            <div className="bg-green-50 rounded-lg p-3 text-center">
-              <p className="text-xs text-gray-600">Lowest Price</p>
-              <p className="text-lg font-bold text-green-600">
-                {formatCurrency(intel.market_lowest_price)}
-              </p>
-            </div>
-            <div className="bg-orange-50 rounded-lg p-3 text-center">
-              <p className="text-xs text-gray-600">Highest Price</p>
-              <p className="text-lg font-bold text-orange-600">
-                {formatCurrency(intel.market_highest_price)}
-              </p>
-            </div>
           </div>
 
-          {/* Price Range Indicator */}
-          <div className="mb-4">
-            <div className="flex justify-between text-xs text-gray-500 mb-1">
-              <span>Lower</span>
-              <span>25th %ile</span>
+          {/* Price Range Bar */}
+          <div>
+            <div className="flex justify-between text-xs text-gray-400 mb-1">
+              <span>{formatCurrency(intel.market_lowest_price)}</span>
+              <span>{formatCurrency(intel.market_highest_price)}</span>
+            </div>
+            <div className="relative h-1.5 bg-gray-100 rounded-full">
+              <div
+                className="absolute h-full bg-gray-300 rounded-full"
+                style={{
+                  left: `${((intel.market_lowest_price - intel.market_lowest_price) / (intel.market_highest_price - intel.market_lowest_price)) * 100}%`,
+                  right: `${((intel.market_highest_price - intel.market_highest_price) / (intel.market_highest_price - intel.market_lowest_price)) * 100}%`,
+                  width: "100%",
+                }}
+              />
+              <div
+                className="absolute w-2.5 h-2.5 bg-gray-700 rounded-full -translate-x-1/2 -top-0.5"
+                style={{
+                  left: `${((currentPrice - intel.market_lowest_price) / (intel.market_highest_price - intel.market_lowest_price)) * 100}%`,
+                }}
+              />
+            </div>
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>25th</span>
               <span>Median</span>
-              <span>75th %ile</span>
-              <span>Higher</span>
+              <span>75th</span>
             </div>
-            <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div
-                className="absolute h-full bg-gradient-to-r from-green-400 via-yellow-400 to-red-400"
-                style={{ width: "100%" }}
-              />
-              <div
-                className="absolute h-3 w-1 bg-gray-900 top-1/2 -translate-y-1/2"
-                style={{ left: `${(currentPrice / intel.market_highest_price) * 100}%` }}
-              />
+            <div className="flex justify-between text-xs text-gray-500 mt-0.5">
+              <span>{formatCurrency(intel.percentile_25)}</span>
+              <span>{formatCurrency(intel.market_median_price)}</span>
+              <span>{formatCurrency(intel.percentile_75)}</span>
             </div>
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              Your price: {formatCurrency(currentPrice)}
-            </p>
           </div>
 
-          {/* Recommendation */}
-          <div
-            className={`bg-${intel.recommendation.includes("Lower") ? "red" : intel.recommendation.includes("competitive") ? "green" : "gray"}-50 rounded-lg p-3 mb-4`}
-          >
-            <p className={`text-sm font-medium ${getRecommendationColor()}`}>
-              {intel.recommendation}
-            </p>
+          {/* Insight Message */}
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-sm text-gray-700">{intel.recommendation}</p>
           </div>
 
-          {/* Suggested Action Button */}
+          {/* Apply Button */}
           {intel.recommendation.includes("Lower") && onPriceSuggestion && (
             <button
               type="button"
               onClick={() => onPriceSuggestion(intel.market_average_price)}
-              className="w-full mb-3 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+              className="w-full py-2 px-4 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
             >
-              Apply Suggested Price ({formatCurrency(intel.market_average_price)})
+              Apply suggested price ({formatCurrency(intel.market_average_price)})
             </button>
           )}
 
@@ -204,9 +189,9 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
               <button
                 type="button"
                 onClick={() => setShowCompetitors(!showCompetitors)}
-                className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
               >
-                View competitor listings
+                View {competitors.length} competitor listings
                 {showCompetitors ? (
                   <ChevronUp className="w-3 h-3" />
                 ) : (
@@ -215,26 +200,24 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
               </button>
 
               {showCompetitors && (
-                <div className="mt-2 space-y-2 max-h-64 overflow-y-auto">
+                <div className="mt-3 space-y-2 max-h-64 overflow-y-auto">
                   {competitors.slice(0, 5).map((comp, idx) => (
                     <a
                       key={idx}
                       href={comp.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block p-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                      className="block p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
                           <p className="text-sm font-medium text-gray-900 line-clamp-1">
                             {comp.product_title}
                           </p>
-                          <p className="text-xs text-gray-500">
-                            {comp.platform} • {comp.location || "Location not specified"}
-                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">{comp.platform}</p>
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-bold text-gray-900">
+                          <p className="text-sm font-semibold text-gray-900">
                             {formatCurrency(comp.price)}
                           </p>
                           {comp.condition && (
@@ -242,13 +225,20 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
                           )}
                         </div>
                       </div>
-                      <ExternalLink className="w-3 h-3 text-gray-400 mt-1" />
+                      {comp.location && (
+                        <p className="text-xs text-gray-400 mt-1">{comp.location}</p>
+                      )}
                     </a>
                   ))}
                 </div>
               )}
             </div>
           )}
+
+          {/* Data Source Note */}
+          <p className="text-xs text-gray-400 pt-2 border-t border-gray-100">
+            Based on {intel.competitor_count} competitor listings from Jiji
+          </p>
         </div>
       )}
     </div>
