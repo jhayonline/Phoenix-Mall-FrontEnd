@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import {
   ArrowRight,
   TrendingUp,
@@ -7,18 +7,18 @@ import {
   Shield,
   MapPin,
   HeadphonesIcon,
-  MessageCircle
-} from 'lucide-react';
-import Header from '@/components/layout/Header';
-import MobileBottomNav from '@/components/layout/MobileBottomNav';
-import HeroSection from '@/components/sections/HeroSection';
-import CategoriesSection from '@/components/sections/CategoriesSection';
-import ProductGrid from '@/components/sections/ProductGrid';
-import Footer from '@/components/layout/Footer';
-import { Button } from '@/components/ui/button';
-import { productsApi, imagesApi } from '@/lib/api';
-import type { ProductResponseData } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
+  MessageCircle,
+} from "lucide-react";
+import Header from "@/components/layout/Header";
+import MobileBottomNav from "@/components/layout/MobileBottomNav";
+import HeroSection from "@/components/sections/HeroSection";
+import CategoriesSection from "@/components/sections/CategoriesSection";
+import ProductGrid from "@/components/sections/ProductGrid";
+import Footer from "@/components/layout/Footer";
+import { Button } from "@/components/ui/button";
+import { productsApi, imagesApi } from "@/lib/api";
+import type { ProductResponseData } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProductWithDetails extends ProductResponseData {
   primaryImage?: string;
@@ -31,7 +31,7 @@ interface ProductWithDetails extends ProductResponseData {
 const Index = () => {
   const [featuredProducts, setFeaturedProducts] = useState<ProductWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<string>('3');
+  const [viewMode, setViewMode] = useState<string>("3");
   const { toast } = useToast();
 
   // Load featured products on mount
@@ -43,7 +43,7 @@ const Index = () => {
     setLoading(true);
     try {
       // Get newest products for featured section
-      const response = await productsApi.getProducts({ limit: 8, sort: 'newest' });
+      const response = await productsApi.getProducts({ limit: 8, sort: "newest" });
 
       if (response.success && response.data) {
         const productsWithDetails = await Promise.all(
@@ -53,11 +53,11 @@ const Index = () => {
             try {
               const imagesResponse = await imagesApi.getImages(product.pid);
               if (imagesResponse.success && imagesResponse.data.length > 0) {
-                const primaryImg = imagesResponse.data.find(img => img.is_primary);
+                const primaryImg = imagesResponse.data.find((img) => img.is_primary);
                 primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
               }
             } catch (error) {
-              console.error('Failed to load images for product:', product.pid);
+              console.error("Failed to load images for product:", product.pid);
             }
 
             return {
@@ -66,7 +66,7 @@ const Index = () => {
               rating: 4.5,
               reviews: Math.floor(Math.random() * 200),
             };
-          })
+          }),
         );
 
         setFeaturedProducts(productsWithDetails);
@@ -74,7 +74,7 @@ const Index = () => {
         setFeaturedProducts([]);
       }
     } catch (error) {
-      console.error('Failed to load featured products:', error);
+      console.error("Failed to load featured products:", error);
       toast({
         title: "Error",
         description: "Failed to load products",
@@ -90,34 +90,58 @@ const Index = () => {
   const trustBadges = [
     {
       icon: MapPin,
-      title: 'Local Meetups',
-      description: 'Connect with sellers in Accra, Kumasi, and across Ghana'
+      title: "Local Meetups",
+      description: "Connect with sellers in Accra, Kumasi, and across Ghana",
     },
     {
       icon: MessageCircle,
-      title: 'Direct Chat',
-      description: 'Communicate directly with sellers via messaging'
+      title: "Direct Chat",
+      description: "Communicate directly with sellers via messaging",
     },
     {
       icon: Shield,
-      title: 'Safe Trading Tips',
-      description: 'Follow our safety guidelines for secure transactions'
+      title: "Safe Trading Tips",
+      description: "Follow our safety guidelines for secure transactions",
     },
     {
       icon: HeadphonesIcon,
-      title: 'Seller Support',
-      description: 'We help resolve disputes between buyers and sellers'
+      title: "Seller Support",
+      description: "We help resolve disputes between buyers and sellers",
     },
   ];
 
   // Featured brands
   const featuredBrands = [
-    { name: 'Apple', logo: 'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png', products: 67 },
-    { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 54 },
-    { name: 'iPhone', logo: 'https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png', products: 45 },
-    { name: 'Samsung', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 32 },
-    { name: 'Tecno', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 28 },
-    { name: 'Infinix', logo: 'https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png', products: 24 },
+    {
+      name: "Apple",
+      logo: "https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png",
+      products: 67,
+    },
+    {
+      name: "Samsung",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png",
+      products: 54,
+    },
+    {
+      name: "iPhone",
+      logo: "https://1000logos.net/wp-content/uploads/2016/10/Apple-Logo.png",
+      products: 45,
+    },
+    {
+      name: "Samsung",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png",
+      products: 32,
+    },
+    {
+      name: "Tecno",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png",
+      products: 28,
+    },
+    {
+      name: "Infinix",
+      logo: "https://upload.wikimedia.org/wikipedia/commons/0/00/Samsung_Orig_Wordmark_BLACK_RGB.png",
+      products: 24,
+    },
   ];
 
   return (
@@ -261,8 +285,8 @@ const Index = () => {
                   Stay <span className="text-gradient">Updated</span>
                 </h2>
                 <p className="text-lg text-muted-foreground mb-8">
-                  Subscribe to our newsletter and be the first to know about new products,
-                  exclusive deals, and special promotions
+                  Subscribe to our newsletter and be the first to know about new products, exclusive
+                  deals, and special promotions
                 </p>
 
                 <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
@@ -278,8 +302,8 @@ const Index = () => {
                 </div>
 
                 <p className="text-sm text-muted-foreground mt-4">
-                  By subscribing, you agree to our Privacy Policy and consent to receive
-                  updates from our company.
+                  By subscribing, you agree to our Privacy Policy and consent to receive updates
+                  from our company.
                 </p>
               </motion.div>
             </div>

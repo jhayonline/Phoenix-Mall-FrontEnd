@@ -36,17 +36,10 @@ const HeroSection: React.FC = () => {
       <div className="container mx-auto px-4 pt-16 pb-12 md:pt-20 md:pb-16">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-12">
           {/* Left Column - Content */}
-          <div className="flex-1 max-w-2xl">
-            {/* Trust Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white rounded-full border border-gray-100 shadow-sm mb-6">
-              <span className="text-xs font-medium text-gray-700">Trusted Marketplace</span>
-              <span className="w-1 h-1 bg-gray-300 rounded-full" />
-              <span className="text-xs text-gray-500">100+ Active Sellers</span>
-            </div>
-
+          <div className="flex-1 max-w-2xl mb-6">
             {/* Main Heading */}
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight tracking-tight">
-              Ghana's Largest
+              Ghana's Premium
               <span className="block text-red-600 mt-2">Online Marketplace</span>
             </h1>
 
