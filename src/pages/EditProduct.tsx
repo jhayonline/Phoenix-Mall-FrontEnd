@@ -40,6 +40,7 @@ const EditProduct: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [existingImages, setExistingImages] = useState<ProductImage[]>([]);
   const [productLoaded, setProductLoaded] = useState(false);
+  const [isPriceSuggestionApplied, setIsPriceSuggestionApplied] = useState(false);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -560,6 +561,7 @@ const EditProduct: React.FC = () => {
                   productTitle={title}
                   currentPrice={parseFloat(price) || 0}
                   onPriceSuggestion={(suggestedPrice) => {
+                    // Only update price when user explicitly clicks the button
                     setPrice(suggestedPrice.toString());
                     toast({
                       title: "Price Updated",

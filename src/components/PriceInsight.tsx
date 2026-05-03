@@ -107,6 +107,7 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
     <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
       {/* Header */}
       <button
+        type="button"
         onClick={() => setExpanded(!expanded)}
         className="w-full p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
       >
@@ -189,6 +190,7 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
           {/* Suggested Action Button */}
           {intel.recommendation.includes("Lower") && onPriceSuggestion && (
             <button
+              type="button"
               onClick={() => onPriceSuggestion(intel.market_average_price)}
               className="w-full mb-3 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
             >
@@ -200,6 +202,7 @@ const PriceInsight: React.FC<PriceInsightProps> = ({
           {competitors.length > 0 && (
             <div>
               <button
+                type="button"
                 onClick={() => setShowCompetitors(!showCompetitors)}
                 className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
               >
