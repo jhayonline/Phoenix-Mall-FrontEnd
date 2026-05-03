@@ -266,9 +266,6 @@ const UserProfile: React.FC = () => {
                     <span className="text-white text-3xl font-bold">{profile.name.charAt(0)}</span>
                   )}
                 </div>
-                <div className="absolute bottom-0 right-0">
-                  <OnlineIndicator userId={profile.id} size="md" />
-                </div>
               </div>
 
               {/* User Info */}
