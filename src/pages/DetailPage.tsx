@@ -176,7 +176,7 @@ const DetailPage: React.FC = () => {
         });
 
         if (productData.category_id) {
-          loadRelatedProducts(productData.category_id);
+          loadRelatedProducts();
         }
       }
     } catch (error) {
@@ -200,7 +200,48 @@ const DetailPage: React.FC = () => {
     }
   }, [user, product]);
 
-  const loadRelatedProducts = useCallback(
+  const loadRelatedProducts = useCallback(async () => {
+    if (!pid) return;
+    try {
+      // Use the new related products endpoint
+      const response = await productsApi.getRelatedProducts(pid!);
+      if (response.success && response.data) {
+        const productsWithImages = await Promise.all(
+          (Array.isArray(response.data) ? response.data : [response.data])
+            .slice(0, 6)
+            .map(async (product) => {
+              let primaryImage: string | undefined;
+              try {
+                const imagesResponse = await imagesApi.getImages(product.pid);
+                if (imagesResponse.success && imagesResponse.data.length > 0) {
+                  const primaryImg = imagesResponse.data.find((img) => img.is_primary);
+                  primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
+                }
+              } catch (error) {
+                // Silent fail
+              }
+
+              return {
+                ...product,
+                primaryImage,
+                rating: product.average_rating || 0,
+                reviews: product.total_reviews || 0,
+              };
+            }),
+        );
+        setRelatedProducts(productsWithImages);
+      }
+    } catch (error) {
+      console.error("Failed to load related products:", error);
+      // Fallback to category-based products
+      if (product?.category_id) {
+        loadCategoryRelatedProducts(product.category_id);
+      }
+    }
+  }, [pid, product?.category_id]);
+
+  // Fallback
+  const loadCategoryRelatedProducts = useCallback(
     async (categoryId: string) => {
       try {
         const response = await productsApi.getProducts({
@@ -209,7 +250,6 @@ const DetailPage: React.FC = () => {
         });
         if (response.success && response.data) {
           const filtered = response.data.filter((p) => p.pid !== pid);
-
           const productsWithImages = await Promise.all(
             filtered.slice(0, 6).map(async (product) => {
               let primaryImage: string | undefined;
@@ -220,9 +260,8 @@ const DetailPage: React.FC = () => {
                   primaryImage = primaryImg?.image_url || imagesResponse.data[0]?.image_url;
                 }
               } catch (error) {
-                //
+                // Silent fail
               }
-
               return {
                 ...product,
                 primaryImage,
@@ -231,11 +270,10 @@ const DetailPage: React.FC = () => {
               };
             }),
           );
-
           setRelatedProducts(productsWithImages);
         }
       } catch (error) {
-        //
+        console.error("Failed to load category related products:", error);
       }
     },
     [pid],

@@ -1,4 +1,4 @@
-import { backendRequest } from './client';
+import { backendRequest } from "./client";
 import {
   CreateProductData,
   ProductResponse,
@@ -6,33 +6,33 @@ import {
   ProductsResponse,
   UpdateProductData,
   PaginatedProductsResponse,
-} from './types';
+} from "./types";
 
 export const productsApi = {
   async getProducts(filters?: Record<string, unknown>): Promise<ProductsResponse> {
     const queryParams = new URLSearchParams();
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
+        if (value !== undefined && value !== null && value !== "") {
           queryParams.append(key, String(value));
         }
       });
     }
     const queryString = queryParams.toString();
-    const endpoint = `/products/list${queryString ? `?${queryString}` : ''}`;
+    const endpoint = `/products/list${queryString ? `?${queryString}` : ""}`;
 
     const response = await backendRequest<PaginatedProductsResponse>(endpoint);
 
     return {
       success: true,
       data: response.data.items,
-      message: 'Success',
+      message: "Success",
       pagination: {
         total: response.data.total,
         page: response.data.page,
         per_page: response.data.per_page,
         total_pages: response.data.total_pages,
-      }
+      },
     };
   },
 
@@ -46,24 +46,24 @@ export const productsApi = {
     return {
       success: true,
       data: response.data,
-      message: 'Success'
+      message: "Success",
     };
   },
 
   async trackView(pid: string): Promise<void> {
     try {
       await backendRequest<void>(`/products/${pid}/track-view`, {
-        method: 'POST',
+        method: "POST",
       });
     } catch (error) {
       // Silently fail - view tracking is non-critical
-      console.warn('Track view failed:', error);
+      console.warn("Track view failed:", error);
     }
   },
 
   async createProduct(productData: CreateProductData): Promise<ProductResponse> {
-    const response = await backendRequest<ProductResponseData>('/products/create', {
-      method: 'POST',
+    const response = await backendRequest<ProductResponseData>("/products/create", {
+      method: "POST",
       body: JSON.stringify({
         title: productData.title,
         description: productData.description,
@@ -72,20 +72,20 @@ export const productsApi = {
         location: productData.location,
         category_id: productData.category_id,
         whatsapp_contact: productData.whatsapp_contact,
-        phone_contact: productData.phone_contact
+        phone_contact: productData.phone_contact,
       }),
     });
 
     return {
       success: true,
       data: response.data,
-      message: 'Product created'
+      message: "Product created",
     };
   },
 
   async updateProduct(pid: string, productData: UpdateProductData): Promise<ProductResponse> {
     const response = await backendRequest<ProductResponseData>(`/products/update/${pid}`, {
-      method: 'PUT',
+      method: "PUT",
       body: JSON.stringify({
         title: productData.title,
         description: productData.description,
@@ -95,47 +95,60 @@ export const productsApi = {
         category_id: productData.category_id,
         status: productData.status,
         whatsapp_contact: productData.whatsapp_contact,
-        phone_contact: productData.phone_contact
+        phone_contact: productData.phone_contact,
       }),
     });
 
     return {
       success: true,
       data: response.data,
-      message: 'Product updated'
+      message: "Product updated",
     };
   },
 
   async deleteProduct(pid: string): Promise<{ success: boolean; data: null; message: string }> {
     await backendRequest<unknown>(`/products/delete/${pid}`, {
-      method: 'DELETE',
+      method: "DELETE",
     });
 
     return {
       success: true,
       data: null,
-      message: 'Product deleted'
+      message: "Product deleted",
     };
   },
 
   async markAsSold(pid: string): Promise<ProductResponse> {
     const response = await backendRequest<ProductResponseData>(`/products/${pid}/mark-sold`, {
-      method: 'POST',
+      method: "POST",
     });
 
     return {
       success: true,
       data: response.data,
-      message: 'Product marked as sold'
+      message: "Product marked as sold",
     };
   },
 
-  async getSearchSuggestions(searchTerm: string): Promise<{ success: boolean; data: string[]; message: string }> {
-    const response = await backendRequest<string[]>(`/products/search/suggestions?search=${encodeURIComponent(searchTerm)}`);
+  async getSearchSuggestions(
+    searchTerm: string,
+  ): Promise<{ success: boolean; data: string[]; message: string }> {
+    const response = await backendRequest<string[]>(
+      `/products/search/suggestions?search=${encodeURIComponent(searchTerm)}`,
+    );
     return {
       success: true,
       data: response.data,
-      message: 'Success'
+      message: "Success",
+    };
+  },
+
+  async getRelatedProducts(pid: string): Promise<ProductResponse> {
+    const response = await backendRequest<ProductResponseData>(`/products/${pid}/related`);
+    return {
+      success: true,
+      data: response.data,
+      message: "Success",
     };
   },
 };
