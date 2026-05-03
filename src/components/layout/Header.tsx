@@ -262,7 +262,7 @@ const Header: React.FC = () => {
             {/* Action Buttons */}
             <div className="flex items-center space-x-2">
               {/* Auth Buttons */}
-              {isHome && !user && (
+              {!user && (
                 <div className="hidden md:flex items-center space-x-2">
                   <Button
                     variant="ghost"
