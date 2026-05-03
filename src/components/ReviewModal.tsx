@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Star, X } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/use-auth';
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -14,16 +14,18 @@ interface ReviewModalProps {
   onReviewSubmitted: () => void;
 }
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5150/api";
+
 const ReviewModal: React.FC<ReviewModalProps> = ({
   isOpen,
   onClose,
   productId,
   productName,
-  onReviewSubmitted
+  onReviewSubmitted,
 }) => {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState('');
+  const [comment, setComment] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
@@ -49,13 +51,13 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
     setSubmitting(true);
     try {
-      const response = await fetch(`http://localhost:5150/api/products/${productId}/reviews`, {
-        method: 'POST',
+      const response = await fetch(`${API_BASE_URL}/products/${productId}/reviews`, {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("access_token")}`,
         },
-        body: JSON.stringify({ rating, comment })
+        body: JSON.stringify({ rating, comment }),
       });
 
       if (response.ok) {
@@ -66,14 +68,17 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
         onReviewSubmitted();
         onClose();
         setRating(0);
-        setComment('');
+        setComment("");
       } else {
-        throw new Error('Failed to submit review');
+        const error = await response.json();
+        throw new Error(error.message || "Failed to submit review");
       }
     } catch (error) {
+      console.error("Review submission error:", error);
       toast({
         title: "Error",
-        description: "Failed to submit review. Please try again.",
+        description:
+          error instanceof Error ? error.message : "Failed to submit review. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -132,17 +137,18 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                           className="focus:outline-none transform transition-transform hover:scale-110"
                         >
                           <Star
-                            className={`w-10 h-10 transition-all ${star <= (hoverRating || rating)
-                              ? 'text-yellow-400 fill-yellow-400'
-                              : 'text-gray-300'
-                              }`}
+                            className={`w-10 h-10 transition-all ${
+                              star <= (hoverRating || rating)
+                                ? "text-yellow-400 fill-yellow-400"
+                                : "text-gray-300"
+                            }`}
                           />
                         </button>
                       ))}
                     </div>
                     {rating > 0 && (
                       <p className="text-center text-sm text-gray-500 mt-2">
-                        You selected {rating} star{rating !== 1 ? 's' : ''}
+                        You selected {rating} star{rating !== 1 ? "s" : ""}
                       </p>
                     )}
                   </div>
@@ -163,11 +169,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
 
                   {/* Action Buttons */}
                   <div className="flex gap-3">
-                    <Button
-                      onClick={onClose}
-                      variant="outline"
-                      className="flex-1"
-                    >
+                    <Button onClick={onClose} variant="outline" className="flex-1">
                       Cancel
                     </Button>
                     <Button
@@ -175,7 +177,7 @@ const ReviewModal: React.FC<ReviewModalProps> = ({
                       disabled={submitting || rating === 0}
                       className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                     >
-                      {submitting ? 'Submitting...' : 'Submit Review'}
+                      {submitting ? "Submitting..." : "Submit Review"}
                     </Button>
                   </div>
                 </div>
